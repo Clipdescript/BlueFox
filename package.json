@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -69,7 +69,7 @@
     ],
     "directories": {
       "buildResources": "assets",
-      "output": "release-101"
+      "output": "release-102"
     },
     "win": {
       "target": "nsis",
