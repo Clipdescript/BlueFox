@@ -157,6 +157,12 @@ const SpeedDial = ({ onNavigate }) => {
                 url="https://etudiant.lefigaro.fr/" 
                 onNavigate={onNavigate} 
             />
+
+            <SpeedDialItem 
+                title="Télécharger BlueFox" 
+                url="https://clipdescript.github.io/BlueFox-download/" 
+                onNavigate={onNavigate} 
+            />
             
             <div className="h-28 w-44 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors border border-dashed border-gray-300 hover:border-blue-600">
                 <VscAdd className="text-3xl" />
