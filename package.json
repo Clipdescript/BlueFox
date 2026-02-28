@@ -1,0 +1,92 @@
+{
+  "name": "bluefox-browser",
+  "private": true,
+  "version": "1.0.0",
+  "author": "BlueFox Team",
+  "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
+  "main": "main.js",
+  "scripts": {
+    "dev": "concurrently \"cross-env BROWSER=none npm run react-start\" \"wait-on http://localhost:5173 && electron .\"",
+    "react-start": "npx vite",
+    "build": "npx vite build",
+    "dist": "npm run build && electron-builder",
+    "build:inno": "npm run build && electron-builder --dir && npm run inno",
+    "inno": "C:\\Users\\ADMINI~1\\AppData\\Local\\Programs\\INNOSE~1\\ISCC.exe build\\setup.iss",
+    "lint": "npx eslint .",
+    "preview": "npx vite preview"
+  },
+  "dependencies": {
+    "electron-is-dev": "^3.0.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
+    "fetch-jsonp": "^1.4.0",
+    "fs-extra": "^11.3.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-icons": "^5.5.0",
+    "unzipper": "^0.12.3",
+    "windows-shortcuts": "^0.1.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.5.8",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "postcss": "^8.5.3",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.2.0",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Clipdescript",
+        "repo": "BlueFox"
+      }
+    ],
+    "appId": "com.bluefox.browser",
+    "productName": "BlueFox Browser",
+    "files": [
+      "dist-react/**/*",
+      "public/**/*",
+      "main.js",
+      "preload.js",
+      "package.json",
+      "splash.html"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/Logo.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BlueFox Browser",
+      "installerIcon": "public/Logo.ico",
+      "uninstallerIcon": "public/Logo.ico",
+      "installerHeaderIcon": "public/Logo.ico",
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
+    }
+  }
+}
