@@ -21,7 +21,6 @@ function App() {
   const [isAddSiteOpen, setIsAddSiteOpen] = useState(false);
   const [customSites, setCustomSites] = useState([]);
   const [openCustomSiteId, setOpenCustomSiteId] = useState(null);
-  const [addTitle, setAddTitle] = useState('');
   const [addUrl, setAddUrl] = useState('');
   const [isWhatsAppOnline, setIsWhatsAppOnline] = useState(false);
   const [showMiniPlayer, setShowMiniPlayer] = useState(false);
@@ -507,13 +506,6 @@ function App() {
            <div className="space-y-3">
              <input 
                type="text" 
-               value={addTitle} 
-               onChange={(e) => setAddTitle(e.target.value)} 
-               placeholder="Nom du site" 
-               className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-blue-600"
-             />
-             <input 
-               type="text" 
                value={addUrl} 
                onChange={(e) => setAddUrl(e.target.value)} 
                placeholder="URL (https://...)" 
@@ -524,10 +516,11 @@ function App() {
                onClick={() => {
                  if (!addUrl) return;
                  const id = Date.now();
-                 setCustomSites(prev => [...prev, { id, title: addTitle || addUrl, url: addUrl }]);
+                 let title = addUrl;
+                 try { title = new URL(addUrl).hostname.replace('www.', ''); } catch(e) {}
+                 setCustomSites(prev => [...prev, { id, title, url: addUrl }]);
                  setOpenCustomSiteId(id);
                  setAddSiteOpen(false);
-                 setAddTitle('');
                  setAddUrl('');
                }}
              >

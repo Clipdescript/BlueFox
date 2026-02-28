@@ -85,8 +85,7 @@
       "uninstallerIcon": "public/Logo.ico",
       "installerHeaderIcon": "public/Logo.ico",
       "deleteAppDataOnUninstall": true,
-      "runAfterFinish": true,
-      "include": "build/installer.nsh"
+      "runAfterFinish": true
     }
   }
 }
