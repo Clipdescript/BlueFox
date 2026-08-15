@@ -4,17 +4,28 @@ const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
+const AI_ENV_TEMPLATE = `# BlueFox Foxy AI configuration
+# Add your own keys, then restart BlueFox.
+EXA_API_KEY=
+MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-small-latest
+`;
+
 function loadLocalEnv(extraPaths = []) {
   const envPaths = [
+    process.env.BLUEFOX_ENV_FILE,
     path.join(__dirname, '.env'),
     process.resourcesPath ? path.join(process.resourcesPath, '.env') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', '.env') : null,
     path.join(path.dirname(process.execPath), '.env'),
+    path.join(path.dirname(process.execPath), 'resources', '.env'),
     ...extraPaths
   ].filter(Boolean);
 
   for (const envPath of [...new Set(envPaths)]) {
     if (!fs.existsSync(envPath)) continue;
 
+    let loadedAnyValue = false;
     for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
@@ -23,12 +34,27 @@ function loadLocalEnv(extraPaths = []) {
       const key = trimmed.slice(0, separatorIndex).trim();
       const rawValue = trimmed.slice(separatorIndex + 1).trim();
       const value = rawValue.replace(/^['\"]|['\"]$/g, '');
-      if (!process.env[key]) process.env[key] = value;
+      if (value && !process.env[key]) {
+        process.env[key] = value;
+        loadedAnyValue = true;
+      }
     }
-    return envPath;
+    if (loadedAnyValue) return envPath;
   }
 
   return null;
+}
+
+const getMissingAiKeys = () => ['EXA_API_KEY', 'MISTRAL_API_KEY']
+  .filter((key) => !String(process.env[key] || '').trim());
+
+function ensureAiEnvTemplate(templatePath) {
+  try {
+    if (!fs.existsSync(templatePath)) fs.writeFileSync(templatePath, AI_ENV_TEMPLATE, { encoding: 'utf8', flag: 'wx' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 let loadedEnvPath = loadLocalEnv();
@@ -188,10 +214,11 @@ ipcMain.handle('ask-ai', async (event, rawPrompt) => {
   const mistralApiKey = process.env.MISTRAL_API_KEY;
 
   if (!prompt) return { ok: false, error: 'Écris une question pour Foxy.' };
-  if (!exaApiKey || !mistralApiKey) {
+  const missingAiKeys = getMissingAiKeys();
+  if (missingAiKeys.length > 0) {
     return {
       ok: false,
-      error: 'Les clés EXA_API_KEY et MISTRAL_API_KEY ne sont pas configurées. Ajoute un fichier .env à côté de BlueFox Browser.exe ou dans le dossier de données indiqué dans les DevTools.'
+      error: `Clés IA manquantes : ${missingAiKeys.join(' et ')}. Configure le fichier .env indiqué dans les DevTools, puis redémarre BlueFox.`
     };
   }
 
@@ -430,13 +457,17 @@ if (!isDev) {
 
 app.whenReady().then(() => {
   const userDataEnvPath = path.join(app.getPath('userData'), '.env');
-  if (!loadedEnvPath) loadedEnvPath = loadLocalEnv([userDataEnvPath]);
+  const appDataEnvPath = path.join(app.getPath('appData'), 'BlueFox Browser', '.env');
+  if (!loadedEnvPath) loadedEnvPath = loadLocalEnv([userDataEnvPath, appDataEnvPath]);
 
   logProduction('info', `[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
-  if (loadedEnvPath) {
-    logProduction('info', `[AI] Environment loaded from ${loadedEnvPath}; secret values hidden`);
+  const missingAiKeys = getMissingAiKeys();
+  if (missingAiKeys.length === 0) {
+    logProduction('info', `[AI] Configuration loaded${loadedEnvPath ? ` from ${loadedEnvPath}` : ' from Windows environment'}; secret values hidden`);
   } else {
-    logProduction('warn', `[AI] No .env file found. Configure EXA_API_KEY and MISTRAL_API_KEY in ${userDataEnvPath} or beside the executable`);
+    const templatePath = `${userDataEnvPath}.example`;
+    const templateCreated = ensureAiEnvTemplate(templatePath);
+    logProduction('warn', `[AI] Missing ${missingAiKeys.join(' and ')}. Configure ${userDataEnvPath}; template${templateCreated ? ' created' : ''}: ${templatePath}`);
   }
   if (app.isPackaged) {
     try {

@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.5",
+  "version": "2.0.6",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -72,9 +72,15 @@
       "package.json",
       "splash.html"
     ],
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
     "directories": {
       "buildResources": "assets",
-      "output": "release-205"
+      "output": "release-206"
     },
     "win": {
       "target": "nsis",
