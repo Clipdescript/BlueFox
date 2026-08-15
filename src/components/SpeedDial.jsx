@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdSecurity } from 'react-icons/md';
+import { MdMusicNote, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
@@ -23,7 +23,7 @@ const SHORTCUTS = [
   ['Google Maps', 'https://maps.google.com'],
   ['Amazon', 'https://www.amazon.fr'],
   ['Netflix', 'https://www.netflix.com'],
-  ['Doctolib', 'https://www.doctolib.fr'],
+  ['Nookup', 'https://nookup.me/', 'https://nookup.me/assets/favicon.png'],
   ['Météo-France', 'https://meteofrance.com']
 ];
 
@@ -39,12 +39,12 @@ const stripHtml = (value = '') => {
 
 const getArticleImage = (item) => item.thumbnail || item.enclosure?.thumbnail || item.enclosure?.link || '';
 
-const FavoriteTile = ({ title, url, onNavigate }) => {
-  const logo = getFaviconUrl(url);
+const FavoriteTile = ({ title, url, iconUrl, onNavigate }) => {
+  const logo = iconUrl || getFaviconUrl(url);
   const domain = title;
 
   return (
-    <button type="button" onClick={() => onNavigate(url)} className="group flex min-w-0 flex-col items-center gap-2 text-center text-[#202124]">
+    <button type="button" onClick={() => onNavigate(url)} className="group flex min-w-0 flex-col items-center gap-2 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
       <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
@@ -54,18 +54,28 @@ const FavoriteTile = ({ title, url, onNavigate }) => {
 };
 
 const SuggestionCard = ({ article }) => (
-  <a href={article.link} target="_blank" rel="noreferrer" className="group relative flex h-[82px] min-w-0 items-center overflow-hidden rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-3.5 text-left text-[#202124] shadow-none transition-colors duration-200 hover:bg-[#f0f0f1]">
-    <div className="min-w-0 flex-1 pr-14">
-      <p className="line-clamp-2 text-[11px] font-medium leading-[1.35] text-[#292a2d]">{article.title}</p>
-      <span className="mt-1 block truncate text-[10px] text-[#77787c]">{article.source}</span>
+  <a
+    href={article.link}
+    target="_blank"
+    rel="noreferrer"
+    onMouseEnter={(event) => event.currentTarget.querySelectorAll('.bluefox-article-title, .bluefox-article-source').forEach((element) => element.style.setProperty('color', '#137b8b', 'important'))}
+    onMouseLeave={(event) => event.currentTarget.querySelectorAll('.bluefox-article-title, .bluefox-article-source').forEach((element) => element.style.setProperty('color', '#292a2d', 'important'))}
+    className="group bluefox-article-card relative flex h-[96px] min-w-0 items-center overflow-hidden rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-3.5 text-left text-[#202124] shadow-none transition-colors duration-200 hover:bg-[#f0f0f1]">
+    <div className="min-w-0 flex-1 pr-16">
+      <p className="bluefox-article-title line-clamp-2 text-[13px] font-medium leading-[1.35] text-[#292a2d] transition-colors duration-200 group-hover:text-[#137b8b]">{article.title}</p>
+      <span className="bluefox-article-source mt-2 flex items-center gap-1.5 truncate text-[11px] text-[#77787c]">
+        <img src={article.logo || getFaviconUrl(article.link)} alt="" className="h-4 w-4 shrink-0 rounded-[3px] object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+        <span className="truncate">{article.source}</span>
+      </span>
     </div>
-    <div className="absolute right-2.5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-[6px] border border-[#e1e1e4] bg-white p-1.5">
-      {article.image ? <img src={article.image} alt="" loading="lazy" className="h-full w-full rounded-[4px] object-cover" /> : <img src={article.logo} alt="" className="h-8 w-8 object-contain" />}
+    <div className="absolute right-2.5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[6px] border border-[#e1e1e4] bg-white p-1.5">
+      {article.image ? <img src={article.image} alt="" loading="lazy" className="h-full w-full rounded-[4px] object-cover" /> : <img src={article.logo} alt="" className="h-9 w-9 object-contain" />}
     </div>
   </a>
 );
 
 const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
+  const privacyIconRef = useRef(null);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
@@ -104,6 +114,10 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
   };
 
   useEffect(() => {
+    privacyIconRef.current?.style.setProperty('color', '#137b8b', 'important');
+  }, []);
+
+  useEffect(() => {
     loadNews();
     const refreshTimer = setInterval(loadNews, 5 * 60 * 1000);
     return () => clearInterval(refreshTimer);
@@ -115,6 +129,9 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
 
   return (
     <div className="bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124]">
+      <button type="button" className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Audio et musique" title="Audio et musique">
+        <MdMusicNote className="text-[21px]" />
+      </button>
       <div className="absolute left-5 top-4 z-20">
         <ThemeToggle />
       </div>
@@ -136,24 +153,24 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
         </div>
 
         <section className="mb-12">
-          <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favorites</h1>
+          <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">
-            {SHORTCUTS.map(([title, url]) => <FavoriteTile key={url} title={title} url={url} onNavigate={onNavigate} />)}
+            {SHORTCUTS.map(([title, url, iconUrl]) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} onNavigate={onNavigate} />)}
           </div>
         </section>
 
         <section className="mb-10">
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Privacy Report</h2>
+          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Rapport de confidentialité</h2>
           <div className="flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
-            <MdSecurity className="shrink-0 text-lg" />
+            <MdSecurity ref={privacyIconRef} className="bluefox-privacy-icon shrink-0 text-lg text-[#137b8b]" />
             <span className="text-lg font-semibold">0</span>
             <span className="text-[12px] text-[#66676c]">BlueFox n’enregistre pas votre historique de navigation.</span>
           </div>
         </section>
 
         <section>
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Foxy Suggestions</h2>
-          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="h-[82px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
+          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Suggestions de Foxy</h2>
+          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}
           {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">Les suggestions ne sont pas disponibles pour le moment.</div>}
         </section>

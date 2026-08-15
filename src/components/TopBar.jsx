@@ -13,7 +13,6 @@ import {
   MdExitToApp,
   MdExtension,
   MdFavoriteBorder,
-  MdGraphicEq,
   MdHelpOutline,
   MdHistory,
   MdKey,
@@ -24,7 +23,7 @@ import {
   MdSearch,
   MdSecurity,
   MdSettings,
-  MdTune,
+  MdMenu,
   MdViewSidebar,
   MdWindow,
   MdZoomIn,
@@ -43,7 +42,7 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, currentFavicon, onAssistant, isAssistantActive, onNewTab }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, currentFavicon, onAssistant, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
   const [inputVal, setInputVal] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -132,6 +131,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
             placeholder="Rechercher ou saisir une adresse"
             value={inputVal}
             onChange={(event) => setInputVal(event.target.value)}
+            onClick={(event) => event.currentTarget.select()}
             onKeyDown={handleKeyDown}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onFocus={() => inputVal.length > 1 && setShowSuggestions(true)}
@@ -152,7 +152,6 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" className={`hidden h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929] sm:flex`} aria-label="Audio"><MdGraphicEq className="text-[19px]" /></button>
         <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdChatBubbleOutline className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
         <div ref={menuRef} className="relative">
@@ -163,13 +162,13 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
             aria-label="Ouvrir le menu"
             aria-expanded={isMenuOpen}
           >
-            <MdTune className="text-[19px]" />
+            <MdMenu className="text-[20px]" />
           </button>
 
           {isMenuOpen && (
             <div className="absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
               <MenuRow icon={MdAddBox} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); setIsMenuOpen(false); }}>Nouvel onglet</MenuRow>
-              <MenuRow icon={MdWindow} shortcut="Ctrl+N">Nouvelle fenêtre</MenuRow>
+              <MenuRow icon={MdWindow} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); setIsMenuOpen(false); }}>Nouvelle fenêtre</MenuRow>
               <MenuRow icon={MdLock} shortcut="Ctrl+Maj+N">Nouvelle fenêtre privée</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
@@ -178,7 +177,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
               <MenuRow icon={MdSecurity}>VPN BlueFox</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdViewSidebar} shortcut="Activé">Barre latérale</MenuRow>
+              <MenuRow icon={MdViewSidebar} shortcut="Activé" onClick={() => { onAssistant?.(); setIsMenuOpen(false); }}>Barre latérale</MenuRow>
               <MenuRow icon={MdKey}>Mots de passe et saisie automatique</MenuRow>
               <MenuRow icon={MdHistory}>Historique</MenuRow>
               <MenuRow icon={MdFavoriteBorder}>Favoris et listes</MenuRow>
@@ -190,13 +189,13 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
               <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[12px]">
                 <MdZoomIn className="shrink-0 text-[16px] text-[#5f6368]" />
                 <span className="flex-1">Zoom</span>
-                <button type="button" className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Réduire le zoom">−</button>
-                <span className="text-[11px]">100 %</span>
-                <button type="button" className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Augmenter le zoom">+</button>
+                <button type="button" onClick={onZoomOut} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Réduire le zoom">−</button>
+                <span className="text-[11px]">{Math.round(zoomFactor * 100)} %</span>
+                <button type="button" onClick={onZoomIn} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Augmenter le zoom">+</button>
               </div>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdPrint} shortcut="Ctrl+P">Imprimer…</MenuRow>
+              <MenuRow icon={MdPrint} shortcut="Ctrl+P" onClick={() => { onPrint?.(); setIsMenuOpen(false); }}>Imprimer…</MenuRow>
               <MenuRow icon={MdSearch}>Rechercher et modifier</MenuRow>
               <MenuRow icon={MdDownload}>Enregistrer et partager</MenuRow>
               <MenuRow icon={MdConstruction}>Plus d’outils</MenuRow>
@@ -204,7 +203,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
               <MenuRow icon={MdSettings}>Paramètres</MenuRow>
-              <MenuRow icon={MdExitToApp} onClick={() => window.electron?.close()}>Quitter</MenuRow>
+              <MenuRow icon={MdExitToApp} onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
             </div>
           )}
         </div>

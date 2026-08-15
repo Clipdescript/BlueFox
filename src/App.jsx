@@ -138,7 +138,37 @@ function App() {
     setActiveTabId(newId);
   }, []);
 
-  const handleCloseTab = useCallback((id) => {
+  const handleNewWindow = useCallback(() => {
+    window.electron?.newWindow?.();
+  }, []);
+
+  const handleCloseTab = useCallback(async (id) => {
+    const tab = tabs.find((currentTab) => currentTab.id === id);
+    const webview = webviewRefs.current[id];
+
+    if (tab?.isSearching && webview?.executeJavaScript) {
+      try {
+        const hasUnsavedChanges = await webview.executeJavaScript(`(() => {
+          const controls = [...document.querySelectorAll('textarea, select, input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="search"]), [contenteditable="true"]')];
+          return controls.some((control) => {
+            if (control.disabled || control.readOnly) return false;
+            if (control.isContentEditable) return Boolean(control.innerText.trim());
+            if (control.tagName === 'SELECT') return [...control.options].some((option) => option.selected !== option.defaultSelected);
+            if (control.type === 'checkbox' || control.type === 'radio') return control.checked !== control.defaultChecked;
+            const description = [control.name, control.id, control.placeholder, control.getAttribute('aria-label')].filter(Boolean).join(' ');
+            if (/search|recherche/i.test(description)) return false;
+            return control.value !== control.defaultValue && Boolean(control.value);
+          });
+        })()`, true);
+
+        if (hasUnsavedChanges && !window.confirm('Cette page contient des modifications non enregistrées. Voulez-vous vraiment la quitter ?')) {
+          return false;
+        }
+      } catch {
+        // Some protected pages reject script execution; let their own unload handling apply.
+      }
+    }
+
     setTabs(prev => {
         const newTabs = prev.filter(t => t.id !== id);
         if (newTabs.length === 0) {
@@ -152,7 +182,8 @@ function App() {
         return newTabs;
     });
     delete webviewRefs.current[id];
-  }, [activeTabId]);
+    return true;
+  }, [activeTabId, tabs]);
 
   const handleSearch = useCallback((query) => {
     let url = query.trim();
@@ -217,6 +248,15 @@ function App() {
   const handleReload = useCallback(() => {
      const webview = webviewRefs.current[activeTabId];
      if(webview) webview.reload();
+  }, [activeTabId]);
+
+  const handlePrint = useCallback(() => {
+    const webview = webviewRefs.current[activeTabId];
+    if (webview?.print) {
+      webview.print({ silent: false, printBackground: true });
+      return;
+    }
+    window.electron?.print?.();
   }, [activeTabId]);
 
   const handleBack = useCallback(() => {
@@ -671,6 +711,11 @@ function App() {
             onForward={handleForward}
             currentFavicon={activeTab?.favicon || ''}
             onNewTab={handleNewTab}
+            onPrint={handlePrint}
+            onNewWindow={handleNewWindow}
+            onZoomOut={handleZoomOut}
+            onZoomIn={handleZoomIn}
+            zoomFactor={zoomFactor}
         />
 
         <main

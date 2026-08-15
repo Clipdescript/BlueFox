@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  newWindow: () => ipcRenderer.send('window-new'),
+  print: () => ipcRenderer.send('window-print'),
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
   onCloseRequest: (callback) => {
     // Wrap callback to ensure it's called safely

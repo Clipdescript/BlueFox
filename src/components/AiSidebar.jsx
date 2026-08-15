@@ -24,7 +24,7 @@ const AiSidebar = ({ isOpen, onClose }) => (
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
-        <AiPage isAiMode hideModeSwitch onModeChange={() => {}} />
+        <AiPage isAiMode hideModeSwitch hideThemeToggle hideMusicToggle onModeChange={() => {}} />
       </div>
     </aside>
   </div>

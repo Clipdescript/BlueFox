@@ -19,6 +19,7 @@ import {
   MdMenu,
   MdMic,
   MdMoreHoriz,
+  MdMusicNote,
   MdNewspaper,
   MdPsychology,
   MdReply,
@@ -149,7 +150,7 @@ const FastMarkdownMessage = ({ content, sources = [], messageKey, onTypingComple
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = false }) => {
+const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -333,9 +334,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       </aside>
 
       <section onScroll={handleResultsScroll} className="foxy-interface relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-        <div className="absolute left-5 top-4 z-20">
-          <ThemeToggle />
-        </div>
+        {!hasConversation && !hideMusicToggle && <button type="button" className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Audio et musique" title="Audio et musique">
+          <MdMusicNote className="text-[21px]" />
+        </button>}
         {hasConversation ? (
         <div className="flex h-14 shrink-0 items-center border-b border-[#e6e5e2] px-6 sm:px-10">
           <div className="flex h-full items-center gap-5 text-[14px] text-[#66676a]">
@@ -345,24 +346,26 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
               <button type="button" onClick={() => setActiveView('news')} className={`relative flex h-full items-center gap-2 ${activeView === 'news' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdNewspaper /> Actualités{activeView === 'news' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
 
           </div>
-          {!hideModeSwitch && <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
+          {(!hideModeSwitch || !hideThemeToggle) && <div className="ml-auto flex items-center gap-2">
+            {!hideThemeToggle && <ThemeToggle />}
+            {!hideModeSwitch && <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
               role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
               <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
               <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
               <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
-            </button>
+            </button>}
           </div>}
         </div>
         ) : (
-          !hideModeSwitch && <div className="absolute right-5 top-4 z-20 flex items-center gap-3">
-            <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
+          ((!hideModeSwitch || !hideThemeToggle) && <div className="absolute right-5 top-4 z-20 flex items-center gap-3">
+            {!hideThemeToggle && <ThemeToggle />}
+            {!hideModeSwitch && <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
               role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
               <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
               <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
               <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
-            </button>
-          </div>
+            </button>}
+          </div>)
         )}
 
         <div className={`relative mx-auto flex w-full ${activeView === 'images' ? 'max-w-[1180px]' : 'max-w-[1040px]'} flex-col px-6 pb-8 pt-8 sm:px-10 ${hasConversation ? 'justify-start' : 'min-h-full justify-center -translate-y-8'}`}>

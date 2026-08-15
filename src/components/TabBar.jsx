@@ -52,13 +52,14 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
     if (closingTabs.has(id)) return;
 
     setClosingTabs((current) => new Set(current).add(id));
-    window.setTimeout(() => {
-      onTabClose(id);
+    window.setTimeout(async () => {
+      const shouldClose = await onTabClose(id);
       setClosingTabs((current) => {
         const next = new Set(current);
         next.delete(id);
         return next;
       });
+      if (shouldClose === false) return;
     }, CLOSE_ANIMATION_MS);
   };
 
@@ -75,6 +76,12 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
               {index > 0 && <span className="mx-0.5 h-4 w-px shrink-0 bg-[#d2d1ce]" aria-hidden="true" />}
               <div
               onClick={() => !isClosing && onTabClick(tab.id)}
+              onAuxClick={(event) => {
+                if (event.button === 1) {
+                  event.preventDefault();
+                  closeTab(event, tab.id);
+                }
+              }}
               className={`group relative flex h-8 ${tabDensity} shrink-0 cursor-pointer items-center rounded-[9px] transition-[background-color,color,box-shadow,opacity,transform] duration-200 ease-out ${
                 isClosing ? 'bluefox-tab-closing pointer-events-none' : 'bluefox-tab-enter'
               } ${

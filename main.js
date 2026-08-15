@@ -367,26 +367,39 @@ function createWindow() {
   });
 
   // Window Controls
-  ipcMain.on('window-minimize', () => mainWindow.minimize());
-  ipcMain.on('window-maximize', () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
+  ipcMain.on('window-minimize', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
+  });
+  ipcMain.on('window-maximize', (event) => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+    if (!targetWindow) return;
+    if (targetWindow.isMaximized()) {
+      targetWindow.unmaximize();
     } else {
-      mainWindow.maximize();
+      targetWindow.maximize();
     }
   });
-  ipcMain.on('window-theme', (_event, theme) => {
+  ipcMain.on('window-close', () => app.quit());
+  ipcMain.on('window-print', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.webContents.print({
+      silent: false,
+      printBackground: true
+    });
+  });
+  ipcMain.on('window-theme', (event, theme) => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+    if (!targetWindow) return;
     const windowColors = getWindowColors(theme);
-    if (typeof mainWindow.setTitleBarOverlay === 'function') {
+    if (typeof targetWindow.setTitleBarOverlay === 'function') {
       // Electron owns these controls. Matching the TabBar surface keeps the
       // native area continuous; Windows supplies the hover highlight itself.
-      mainWindow.setTitleBarOverlay({
+      targetWindow.setTitleBarOverlay({
         color: windowColors.titleBar,
         symbolColor: windowColors.symbol,
         height: WINDOW_TITLE_BAR_HEIGHT
       });
     }
-    mainWindow.setBackgroundColor(windowColors.background);
+    targetWindow.setBackgroundColor(windowColors.background);
   });
   
   // Close immediately with the native Windows close control; no confirmation popup.
@@ -422,6 +435,10 @@ function createWindow() {
     menu.popup(mainWindow);
   });
 }
+
+ipcMain.on('window-new', () => {
+  createWindow();
+});
 
 // Set as Default Browser & PDF Reader (Best effort)
 if (!isDev) {
