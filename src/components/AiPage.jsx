@@ -60,7 +60,7 @@ const getFaviconUrl = (url) => {
   try {
     return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`;
   } catch {
-    return '/Logo.ico';
+    return './Logo.ico';
   }
 };
 
@@ -305,7 +305,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       <aside className="hidden">
         <div className="flex h-16 items-center justify-between border-b border-[#e7e6e3] px-5">
           <div className="flex items-center gap-2 text-[15px] font-semibold">
-            <img src="/Logo.ico" alt="BlueFox" className="h-7 w-7 object-contain" />
+            <img src="./Logo.ico" alt="BlueFox" className="h-7 w-7 object-contain" />
             <span>Foxy</span>
           </div>
           <button type="button" className="flex h-8 w-8 items-center justify-center rounded-md text-[#6f7073] hover:bg-[#ecebe8]" aria-label="Réduire le menu">

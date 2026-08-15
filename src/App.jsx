@@ -9,15 +9,32 @@ import { MdSearch, MdClose } from 'react-icons/md';
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 
+const createHomeTab = (id = Date.now()) => ({
+  id,
+  title: 'Accès rapide',
+  url: '',
+  isSearching: false,
+  favicon: '',
+  isLoading: false
+});
+
 function App() {
+  const initialTabId = useRef(Date.now()).current;
   const hasCleanStartup = localStorage.getItem('bluefox_clean_startup_v1') === 'true';
   const savedTabs = hasCleanStartup ? localStorage.getItem('bluefox_tabs') : null;
   const savedActiveId = hasCleanStartup ? localStorage.getItem('bluefox_active_tab_id') : null;
+  const initialTabs = (() => {
+    if (!savedTabs) return [createHomeTab(initialTabId)];
+    try {
+      const restoredTabs = JSON.parse(savedTabs).map(({ isAi, ...tab }) => isAi ? { ...tab, title: 'Accès rapide' } : tab);
+      return restoredTabs.length > 0 ? restoredTabs : [createHomeTab(initialTabId)];
+    } catch {
+      return [createHomeTab(initialTabId)];
+    }
+  })();
 
-  const [tabs, setTabs] = useState(() => savedTabs
-    ? JSON.parse(savedTabs).map(({ isAi, ...tab }) => isAi ? { ...tab, title: 'Accès rapide' } : tab)
-    : []);
-  const [activeTabId, setActiveTabId] = useState(savedActiveId ? parseInt(savedActiveId, 10) : null);
+  const [tabs, setTabs] = useState(initialTabs);
+  const [activeTabId, setActiveTabId] = useState(savedActiveId ? parseInt(savedActiveId, 10) : initialTabs[0].id);
   const [isAiMode, setIsAiMode] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState('');
   const [isSpotifyOpen, setIsSpotifyOpen] = useState(false);
@@ -133,18 +150,19 @@ function App() {
 
   const handleNewTab = useCallback(() => {
     setIsAiMode(false);
-    const newId = Date.now();
-    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, favicon: '', isLoading: false }]);
-    setActiveTabId(newId);
+    const newTab = createHomeTab();
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
   }, []);
 
   const handleCloseTab = useCallback((id) => {
     setTabs(prev => {
         const newTabs = prev.filter(t => t.id !== id);
         if (newTabs.length === 0) {
+             const replacementTab = createHomeTab();
              setIsAiMode(false);
-             setActiveTabId(null);
-             return [];
+             setActiveTabId(replacementTab.id);
+             return [replacementTab];
         }
         if (id === activeTabId) {
              setActiveTabId(newTabs[newTabs.length - 1].id);

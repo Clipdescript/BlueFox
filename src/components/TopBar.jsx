@@ -33,7 +33,7 @@ import fetchJsonp from 'fetch-jsonp';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 
-const MenuLogo = ({ className = '' }) => <img src="/Logo.ico" alt="" className={`h-4 w-4 object-contain ${className}`} />;
+const MenuLogo = ({ className = '' }) => <img src="./Logo.ico" alt="" className={`h-4 w-4 object-contain ${className}`} />;
 
 const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   <button type="button" onClick={onClick} className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed]">
@@ -125,7 +125,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
 
       <div className="relative min-w-0 flex-1">
         <div className="flex h-9 items-center rounded-[9px] border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3]">
-          <img src={currentFavicon || '/Logo.ico'} alt="" className="mr-2 h-[18px] w-[18px] object-contain" />
+          <img src={currentFavicon || './Logo.ico'} alt="" className="mr-2 h-[18px] w-[18px] object-contain" />
           <input
             type="text"
             className="w-full bg-transparent text-[13px] text-[#292929] outline-none placeholder:text-[#77787b]"
