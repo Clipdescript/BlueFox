@@ -367,6 +367,13 @@ function createWindow() {
       mainWindow.maximize();
     }
   });
+  ipcMain.on('window-close', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.close();
+    } else {
+      app.quit();
+    }
+  });
   ipcMain.on('window-theme', (_event, theme) => {
     const windowColors = getWindowColors(theme);
     if (typeof mainWindow.setTitleBarOverlay === 'function') {
