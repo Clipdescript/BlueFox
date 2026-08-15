@@ -384,6 +384,15 @@ button {
   color: #ffffff !important;
 }
 
+.bluefox-app .bluefox-ai-send-button {
+  background-color: #cfeef2 !important;
+  color: #16788a !important;
+}
+
+.bluefox-app .bluefox-ai-send-button svg {
+  color: #16788a !important;
+}
+
 .bluefox-app .bluefox-ai-audio-button svg {
   color: #ffffff !important;
 }
