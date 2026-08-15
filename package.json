@@ -76,6 +76,7 @@
       "buildResources": "assets",
       "output": "release-212"
     },
+    "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
     "win": {
       "target": "nsis",
       "icon": "public/Logo.ico"
