@@ -15,7 +15,10 @@ function App() {
   const savedActiveId = hasCleanStartup ? localStorage.getItem('bluefox_active_tab_id') : null;
 
   const [tabs, setTabs] = useState(() => savedTabs
-    ? JSON.parse(savedTabs).map(({ isAi, ...tab }) => isAi ? { ...tab, title: 'Accès rapide' } : tab)
+    ? JSON.parse(savedTabs).map((tab) => ({
+        ...tab,
+        isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA'))
+      }))
     : []);
   const [activeTabId, setActiveTabId] = useState(savedActiveId ? parseInt(savedActiveId, 10) : null);
   const [isAiMode, setIsAiMode] = useState(false);
@@ -85,6 +88,16 @@ function App() {
   const activeTab = tabs.find(t => t.id === activeTabId) || null;
   const webviewRefs = useRef({});
 
+  useEffect(() => {
+    setIsAiMode(Boolean(activeTab?.isAi));
+  }, [activeTabId]);
+
+  const handleTabClick = useCallback((id) => {
+    const nextTab = tabs.find((tab) => tab.id === id);
+    setActiveTabId(id);
+    setIsAiMode(Boolean(nextTab?.isAi));
+  }, [tabs]);
+
   // Tab Hibernation Logic - OPTIMIZED FOR SPEED
   useEffect(() => {
     const interval = setInterval(() => {
@@ -113,8 +126,8 @@ function App() {
         localStorage.removeItem('bluefox_active_tab_id');
         return;
     }
-    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon }) => ({
-        id, title, url, isSearching, favicon, isLoading: false 
+    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi }) => ({
+        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isLoading: false
     }));
     localStorage.setItem('bluefox_tabs', JSON.stringify(tabsToSave));
     if (activeTabId !== null) {
@@ -127,14 +140,16 @@ function App() {
     setTabs((currentTabs) => currentTabs.map((tab) => {
       if (tab.id !== activeTabId || tab.isSearching) return tab;
       const nextTitle = nextMode ? 'Foxy IA' : 'Accès rapide';
-      return tab.title === nextTitle ? tab : { ...tab, title: nextTitle };
+      return tab.isAi === nextMode && tab.title === nextTitle
+        ? tab
+        : { ...tab, isAi: nextMode, title: nextTitle };
     }));
   }, [activeTabId]);
 
   const handleNewTab = useCallback(() => {
     setIsAiMode(false);
     const newId = Date.now();
-    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, favicon: '', isLoading: false }]);
+    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, isAi: false, favicon: '', isLoading: false }]);
     setActiveTabId(newId);
   }, []);
 
@@ -177,7 +192,9 @@ function App() {
              return [];
         }
         if (id === activeTabId) {
-             setActiveTabId(newTabs[newTabs.length - 1].id);
+             const nextActiveTab = newTabs[newTabs.length - 1];
+             setActiveTabId(nextActiveTab.id);
+             setIsAiMode(Boolean(nextActiveTab.isAi));
         }
         return newTabs;
     });
@@ -226,6 +243,7 @@ function App() {
       title: url,
       url,
       isSearching: true,
+      isAi: false,
       favicon: '',
       isLoading: true
     }]);
@@ -700,7 +718,7 @@ function App() {
         <TabBar 
             tabs={tabs} 
             activeTabId={activeTabId} 
-            onTabClick={setActiveTabId} 
+            onTabClick={handleTabClick}
             onTabClose={handleCloseTab}
             onNewTab={handleNewTab}
         />
