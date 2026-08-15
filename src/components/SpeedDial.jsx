@@ -85,7 +85,7 @@ const SuggestionCard = ({ article }) => (
   </a>
 );
 
-const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
+const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
   const privacyIconRef = useRef(null);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -157,7 +157,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
 
   return (
     <div className="bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124]">
-      <button type="button" className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Audio et musique" title="Audio et musique">
+      <button type="button" onClick={onMusicOpen} className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
         <MdMusicNote className="text-[21px]" />
       </button>
       <div className="absolute left-5 top-4 z-20 flex items-center gap-2">

@@ -152,7 +152,7 @@ const FastMarkdownMessage = ({ content, sources = [], messageKey, onTypingComple
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false }) => {
+const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false, onMusicOpen }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -336,7 +336,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       </aside>
 
       <section onScroll={handleResultsScroll} className="foxy-interface relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-        {!hasConversation && !hideMusicToggle && <button type="button" className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Audio et musique" title="Audio et musique">
+        {!hasConversation && !hideMusicToggle && <button type="button" onClick={onMusicOpen} className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
           <MdMusicNote className="text-[21px]" />
         </button>}
         {hasConversation ? (

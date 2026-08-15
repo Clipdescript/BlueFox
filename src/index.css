@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -524,3 +524,631 @@ button {
   color: #137b8b !important;
 }
 
+.bluefox-music-page {
+  position: relative;
+  min-height: 100%;
+  background: radial-gradient(circle at 78% 20%, rgba(74, 175, 191, 0.13), transparent 32%), var(--theme-bg);
+  color: var(--theme-text);
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-page > header,
+.bluefox-music-page > footer {
+  border-color: var(--theme-border) !important;
+}
+
+.bluefox-music-glow {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.bluefox-music-glow-one {
+  top: 10%;
+  right: 8%;
+  background: #54c7d5;
+}
+
+.bluefox-music-glow-two {
+  bottom: 4%;
+  left: 7%;
+  background: #377b9e;
+  opacity: 0.13;
+}
+
+.bluefox-music-logo {
+  border: 1px solid rgba(74, 175, 191, 0.6);
+  background: rgba(74, 175, 191, 0.12);
+  color: #2b9bad !important;
+}
+
+.bluefox-music-brand,
+.bluefox-music-title,
+.bluefox-music-card-title {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-overline,
+.bluefox-music-kicker,
+.bluefox-music-card-kicker,
+.bluefox-music-card-label {
+  color: #2b9bad !important;
+}
+
+.bluefox-music-lead,
+.bluefox-music-card-copy,
+.bluefox-music-page > footer {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-music-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  padding: 8px 11px;
+  background: var(--theme-surface);
+  color: var(--theme-text-muted) !important;
+  font-size: 11px;
+}
+
+.bluefox-music-pill svg {
+  color: #2b9bad !important;
+  font-size: 16px;
+}
+
+.bluefox-music-card {
+  border-color: var(--theme-border) !important;
+  background: color-mix(in srgb, var(--theme-surface) 88%, #55c8d6 12%);
+  box-shadow: 0 20px 70px rgba(21, 74, 84, 0.13);
+}
+
+.bluefox-music-card-icon {
+  background: rgba(74, 175, 191, 0.14);
+  color: #2b9bad !important;
+}
+
+.bluefox-music-services-card {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-surface);
+  box-shadow: 0 20px 70px rgba(21, 74, 84, 0.12);
+}
+
+.bluefox-music-services-mark {
+  color: #2b9bad !important;
+}
+
+.bluefox-music-service {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-bg);
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.bluefox-music-service:hover {
+  border-color: rgba(43, 155, 173, 0.7) !important;
+  background: var(--theme-surface-hover);
+  transform: translateY(-2px);
+}
+
+.bluefox-music-service-icon {
+  background: var(--theme-surface);
+}
+
+.bluefox-music-service-name {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-service-description,
+.bluefox-music-service-arrow {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-music-service-arrow {
+  color: #2b9bad !important;
+  transition: transform 180ms ease;
+}
+
+.bluefox-music-service:hover .bluefox-music-service-arrow {
+  transform: translate(2px, -2px);
+}
+
+.bluefox-music-card-label {
+  border: 1px solid rgba(74, 175, 191, 0.3);
+  background: rgba(74, 175, 191, 0.1);
+}
+
+.bluefox-music-player {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-bg);
+}
+
+.bluefox-music-play {
+  color: #2b9bad !important;
+}
+
+.bluefox-music-line {
+  background: linear-gradient(90deg, #2b9bad 0 28%, var(--theme-border) 28% 100%);
+}
+
+.bluefox-music-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 620ms ease, transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.bluefox-music-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.bluefox-music-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.82em;
+  margin-left: 5px;
+  vertical-align: -0.06em;
+  background: #2b9bad;
+  animation: bluefox-music-caret-blink 700ms steps(1) infinite;
+}
+
+@keyframes bluefox-music-caret-blink {
+  50% { opacity: 0; }
+}
+
+.bluefox-music-feature {
+  min-height: 220px;
+  border-color: var(--theme-border) !important;
+  background: var(--theme-surface);
+}
+
+.bluefox-music-feature-icon,
+.bluefox-music-privacy-icon {
+  color: #2b9bad !important;
+}
+
+.bluefox-music-feature-title {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-feature-copy,
+.bluefox-music-privacy-panel .bluefox-music-lead {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-music-privacy-panel {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-music-reveal,
+  .bluefox-music-reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .bluefox-music-caret {
+    animation: none;
+  }
+}
+
+/* BlueMusic launcher: colorful brand marks stay free-standing, never inside app cards. */
+.bluefox-music-page {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 109, 161, 0.14), transparent 25%),
+    radial-gradient(circle at 88% 32%, rgba(74, 175, 191, 0.18), transparent 30%),
+    radial-gradient(circle at 48% 92%, rgba(255, 193, 78, 0.12), transparent 28%),
+    var(--theme-bg);
+}
+
+.bluefox-music-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
+}
+
+.bluefox-music-logo {
+  border: 0;
+  background: linear-gradient(135deg, #ff5b91, #8b6cff 55%, #42c6d5);
+  color: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(139, 108, 255, 0.24);
+}
+
+.bluefox-music-hero {
+  position: relative;
+}
+
+.bluefox-music-visual {
+  position: relative;
+  display: flex;
+  min-height: 330px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 42% 58% 62% 38% / 43% 39% 61% 57%;
+  background: linear-gradient(145deg, rgba(255, 91, 145, 0.92), rgba(139, 108, 255, 0.92) 48%, rgba(66, 198, 213, 0.9));
+  box-shadow: 0 28px 70px rgba(116, 86, 190, 0.22);
+  transform: rotate(-3deg);
+}
+
+.bluefox-music-visual::before,
+.bluefox-music-visual::after {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  content: '';
+}
+
+.bluefox-music-visual::before {
+  width: 250px;
+  height: 250px;
+}
+
+.bluefox-music-visual::after {
+  width: 380px;
+  height: 380px;
+}
+
+.bluefox-music-visual-note {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 94px;
+  height: 94px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #8b6cff !important;
+  font-size: 55px;
+  box-shadow: 0 20px 42px rgba(67, 45, 120, 0.25);
+  transform: rotate(3deg);
+}
+
+.bluefox-music-wave {
+  position: absolute;
+  z-index: 1;
+  bottom: 26%;
+  width: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.75);
+  animation: bluefox-music-wave 1.2s ease-in-out infinite alternate;
+}
+
+.bluefox-music-wave-one { left: 22%; height: 42px; animation-delay: -0.3s; }
+.bluefox-music-wave-two { left: 27%; height: 75px; animation-delay: -0.7s; }
+.bluefox-music-wave-three { right: 23%; height: 58px; animation-delay: -0.5s; }
+
+@keyframes bluefox-music-wave {
+  from { opacity: 0.4; transform: scaleY(0.55); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+.bluefox-music-visual-label {
+  position: absolute;
+  right: 13%;
+  bottom: 17%;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transform: rotate(3deg);
+}
+
+.bluefox-music-trust {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--theme-text-muted) !important;
+  font-size: 11px;
+}
+
+.bluefox-music-trust svg {
+  color: #2b9bad !important;
+  font-size: 17px;
+}
+
+.bluefox-music-section-note {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-music-services-section {
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent) !important;
+}
+
+.bluefox-music-service {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: none;
+  transition: transform 180ms ease;
+}
+
+.bluefox-music-service:hover {
+  border: 0 !important;
+  background: transparent !important;
+  transform: translateY(-3px);
+}
+
+.bluefox-music-service-icon {
+  color: var(--service-color) !important;
+  filter: drop-shadow(0 8px 13px color-mix(in srgb, var(--service-color) 25%, transparent));
+}
+
+.bluefox-music-service-name {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-service-description,
+.bluefox-music-step-copy {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-music-service-open {
+  color: var(--service-color) !important;
+}
+
+.bluefox-music-step {
+  border-top: 2px solid #ff5b91;
+  padding-top: 18px;
+}
+
+.bluefox-music-step:nth-child(2) { border-color: #8b6cff; }
+.bluefox-music-step:nth-child(3) { border-color: #42c6d5; }
+
+.bluefox-music-step-number {
+  color: #2b9bad !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.bluefox-music-step-title {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-privacy-panel {
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent) !important;
+  background: linear-gradient(100deg, rgba(255, 91, 145, 0.06), rgba(66, 198, 213, 0.08));
+}
+
+.bluefox-music-footer {
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+@media (max-width: 640px) {
+  .bluefox-music-visual {
+    min-height: 250px;
+  }
+
+  .bluefox-music-visual-label {
+    right: 9%;
+    bottom: 12%;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-music-wave {
+    animation: none;
+  }
+}
+
+.bluefox-music-service-favicon {
+  display: block;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 12px color-mix(in srgb, var(--service-color) 22%, transparent));
+}
+
+.bluefox-music-service:hover .bluefox-music-service-favicon {
+  background: transparent !important;
+}
+
+.bluefox-music-privacy-panel {
+  border-color: color-mix(in srgb, var(--theme-border) 72%, transparent) !important;
+  background: linear-gradient(105deg, rgba(255, 91, 145, 0.08), rgba(139, 108, 255, 0.06) 46%, rgba(66, 198, 213, 0.09));
+}
+
+.bluefox-music-privacy-icon {
+  color: #ff5b91 !important;
+  filter: drop-shadow(0 7px 12px rgba(255, 91, 145, 0.28));
+}
+
+.bluefox-music-page-icon,
+.bluefox-tab-music-icon {
+  color: #1686d9 !important;
+  background: transparent !important;
+  filter: drop-shadow(0 4px 8px rgba(22, 134, 217, 0.22));
+}
+
+.bluefox-music-carousel {
+  min-width: 0;
+}
+
+.bluefox-music-carousel-heading {
+  color: var(--theme-text-strong) !important;
+  font-family: Roboto, 'DM Sans', sans-serif;
+}
+
+.bluefox-music-carousel-control {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-surface);
+  color: #1686d9 !important;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.bluefox-music-carousel-control:hover {
+  border-color: #1686d9;
+  background: rgba(22, 134, 217, 0.08);
+}
+
+.bluefox-music-carousel-control svg {
+  font-size: 20px;
+}
+
+.bluefox-music-carousel-track {
+  display: flex;
+  justify-content: center;
+}
+
+.bluefox-music-track-card {
+  display: block;
+  width: min(100%, 440px);
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e5ea;
+  border-radius: 9px;
+  background: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(32, 52, 78, 0.14);
+  animation: bluefox-music-card-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bluefox-music-card-in {
+  from { opacity: 0.45; transform: translateX(12px) scale(0.97); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.bluefox-music-track-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.bluefox-music-track-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 4px 3px;
+  color: #202124 !important;
+  text-align: left;
+}
+
+.bluefox-music-track-copy strong,
+.bluefox-music-track-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bluefox-music-track-copy strong {
+  color: #202124 !important;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bluefox-music-track-copy small {
+  color: #6d737c !important;
+  font-size: 11px;
+}
+
+.bluefox-music-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.bluefox-music-carousel-dots button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: var(--theme-border);
+  cursor: pointer;
+  transition: width 160ms ease, background-color 160ms ease;
+}
+
+.bluefox-music-carousel-dots button.is-active {
+  width: 20px;
+  background: #1686d9;
+}
+
+.bluefox-music-waveform {
+  display: flex;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(5px, 1vw, 10px);
+  padding: 20px 8px;
+  overflow: hidden;
+}
+
+.bluefox-music-waveform span {
+  display: block;
+  width: clamp(5px, 0.7vw, 9px);
+  height: var(--wave-height);
+  max-height: 180px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1686d9, #42c6d5 58%, #8b6cff);
+  box-shadow: 0 8px 20px rgba(22, 134, 217, 0.2);
+  transform-origin: center;
+  animation: bluefox-music-wave-rise 1.35s cubic-bezier(0.45, 0, 0.55, 1) var(--wave-delay) infinite alternate;
+}
+
+@keyframes bluefox-music-wave-rise {
+  from { opacity: 0.64; transform: translateY(8px) scaleY(0.66); }
+  to { opacity: 1; transform: translateY(-13px) scaleY(1); }
+}
+
+.bluefox-music-service,
+.bluefox-music-service:hover {
+  transform: none !important;
+  transition: none !important;
+}
+
+.bluefox-music-service-favicon,
+.bluefox-music-service:hover .bluefox-music-service-favicon {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.bluefox-music-service-open {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+@media (max-width: 640px) {
+  .bluefox-music-waveform {
+    min-height: 190px;
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-music-waveform span,
+  .bluefox-music-track-card {
+    animation: none;
+    transform: none;
+  }
+}

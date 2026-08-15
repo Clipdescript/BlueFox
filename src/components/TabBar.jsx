@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
@@ -91,7 +91,9 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
                   : 'text-[#68686b] hover:bg-[#e8e7e4] hover:text-[#252525]'
               }`}
             >                <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
-                {tab.url && tab.favicon ? (
+                {tab.isMusic ? (
+                  <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
+                ) : tab.url && tab.favicon ? (
                   <img src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
                 ) : (
                   <img src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />

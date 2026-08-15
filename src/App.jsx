@@ -3,6 +3,7 @@ import { SidebarPanel } from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
+import MusicPage from './components/MusicPage';
 import { turboScript } from './utils/turbo';
 import { MdSearch, MdClose } from 'react-icons/md';
 
@@ -143,8 +144,8 @@ function App() {
         localStorage.removeItem('bluefox_active_tab_id');
         return;
     }
-    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi }) => ({
-        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isLoading: false
+    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isMusic }) => ({
+        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isMusic: Boolean(isMusic), isLoading: false
     }));
     localStorage.setItem('bluefox_tabs', JSON.stringify(tabsToSave));
     if (activeTabId !== null) {
@@ -155,7 +156,7 @@ function App() {
   const handleModeChange = useCallback((nextMode) => {
     setIsAiMode(nextMode);
     setTabs((currentTabs) => currentTabs.map((tab) => {
-      if (tab.id !== activeTabId || tab.isSearching) return tab;
+      if (tab.id !== activeTabId || tab.isSearching || tab.isMusic) return tab;
       const nextTitle = nextMode ? 'Foxy IA' : 'Accès rapide';
       return tab.isAi === nextMode && tab.title === nextTitle
         ? tab
@@ -166,7 +167,14 @@ function App() {
   const handleNewTab = useCallback(() => {
     setIsAiMode(false);
     const newId = Date.now();
-    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, isAi: false, favicon: '', isLoading: false }]);
+    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, isAi: false, isMusic: false, favicon: '', isLoading: false }]);
+    setActiveTabId(newId);
+  }, []);
+
+  const handleMusicTab = useCallback(() => {
+    const newId = Date.now();
+    setIsAiMode(false);
+    setTabs(prev => [...prev, { id: newId, title: 'BlueMusic', url: '', isSearching: false, isAi: false, isMusic: true, favicon: '', isLoading: false }]);
     setActiveTabId(newId);
   }, []);
 
@@ -243,7 +251,7 @@ function App() {
 
     setTabs(prev => prev.map(t => 
       t.id === activeTabId 
-        ? { ...t, url: url, isSearching: true, title: query, favicon: '', isLoading: true } 
+        ? { ...t, url: url, isSearching: true, isMusic: false, title: query, favicon: '', isLoading: true }
         : t
     ));
   }, [activeTabId, isAiMode]);
@@ -276,7 +284,7 @@ function App() {
   const goHome = useCallback(() => {
      setTabs(prev => prev.map(t => 
         t.id === activeTabId 
-          ? { ...t, url: '', isSearching: false, title: 'Accès rapide', favicon: '', isLoading: false } 
+          ? { ...t, url: '', isSearching: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
           : t
       ));
   }, [activeTabId]);
@@ -788,12 +796,14 @@ function App() {
                                 <p className="text-sm">Cliquez pour réactiver</p>
                             </div>
                         )
+                   ) : tab.isMusic ? (
+                       <MusicPage />
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} onMusicOpen={handleMusicTab} />
                          ) : (
-                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} />
+                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} onMusicOpen={handleMusicTab} />
                          )}
                        </Suspense>
                    )}
