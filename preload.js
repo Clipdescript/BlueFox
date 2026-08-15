@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electron', {
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
+  setTheme: (theme) => ipcRenderer.send('window-theme', theme),
   onCloseRequest: (callback) => {
     // Wrap callback to ensure it's called safely
     const subscription = (event, ...args) => callback(...args);

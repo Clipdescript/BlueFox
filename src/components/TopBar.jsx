@@ -1,13 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { MdArrowBack, MdArrowForward, MdRefresh, MdSearch, MdMic, MdTune, MdGraphicEq, MdChatBubbleOutline, MdExpandMore, MdAccountCircle } from 'react-icons/md';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  MdAccountBalanceWallet,
+  MdAccountCircle,
+  MdAddBox,
+  MdArrowBack,
+  MdArrowForward,
+  MdConstruction,
+  MdChatBubbleOutline,
+  MdDeleteSweep,
+  MdDownload,
+  MdExpandMore,
+  MdExitToApp,
+  MdExtension,
+  MdFavoriteBorder,
+  MdGraphicEq,
+  MdHelpOutline,
+  MdHistory,
+  MdKey,
+  MdLock,
+  MdMic,
+  MdPrint,
+  MdRefresh,
+  MdSearch,
+  MdSecurity,
+  MdSettings,
+  MdTune,
+  MdViewSidebar,
+  MdWindow,
+  MdZoomIn,
+} from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 
-const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, currentFavicon, onAssistant, isAssistantActive }) => {
+const MenuLogo = ({ className = '' }) => <img src="/Logo.ico" alt="" className={`h-4 w-4 object-contain ${className}`} />;
+
+const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
+  <button type="button" onClick={onClick} className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed]">
+    <Icon className="shrink-0 text-[16px] text-[#5f6368]" />
+    <span className="min-w-0 flex-1 truncate">{children}</span>
+    {shortcut && <span className="shrink-0 text-[11px] text-[#6d6e72]">{shortcut}</span>}
+  </button>
+);
+
+const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, currentFavicon, onAssistant, isAssistantActive, onNewTab }) => {
   const [inputVal, setInputVal] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     if (!suggestions.length) return undefined;
@@ -21,6 +62,23 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
   }, [suggestions]);
 
   useEffect(() => setInputVal(currentUrl || ''), [currentUrl]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    const closeMenu = (event) => {
+      if (!menuRef.current?.contains(event.target)) setIsMenuOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeMenu);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeMenu);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -94,10 +152,62 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Options"><MdTune className="text-[19px]" /></button>
         <button type="button" className={`hidden h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929] sm:flex`} aria-label="Audio"><MdGraphicEq className="text-[19px]" /></button>
         <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdChatBubbleOutline className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${isMenuOpen ? 'bg-[#f0efed] text-[#292929]' : ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`}
+            aria-label="Ouvrir le menu"
+            aria-expanded={isMenuOpen}
+          >
+            <MdTune className="text-[19px]" />
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
+              <MenuRow icon={MdAddBox} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); setIsMenuOpen(false); }}>Nouvel onglet</MenuRow>
+              <MenuRow icon={MdWindow} shortcut="Ctrl+N">Nouvelle fenêtre</MenuRow>
+              <MenuRow icon={MdLock} shortcut="Ctrl+Maj+N">Nouvelle fenêtre privée</MenuRow>
+
+              <div className="my-1 border-t border-[#e7e6e3]" />
+              <MenuRow icon={MenuLogo}>Foxy IA</MenuRow>
+              <MenuRow icon={MdAccountBalanceWallet}>Portefeuille</MenuRow>
+              <MenuRow icon={MdSecurity}>VPN BlueFox</MenuRow>
+
+              <div className="my-1 border-t border-[#e7e6e3]" />
+              <MenuRow icon={MdViewSidebar} shortcut="Activé">Barre latérale</MenuRow>
+              <MenuRow icon={MdKey}>Mots de passe et saisie automatique</MenuRow>
+              <MenuRow icon={MdHistory}>Historique</MenuRow>
+              <MenuRow icon={MdFavoriteBorder}>Favoris et listes</MenuRow>
+              <MenuRow icon={MdDownload} shortcut="Ctrl+J">Téléchargements</MenuRow>
+              <MenuRow icon={MdExtension}>Extensions</MenuRow>
+              <MenuRow icon={MdDeleteSweep} shortcut="Ctrl+Maj+Suppr">Supprimer les données de navigation…</MenuRow>
+
+              <div className="my-1 border-t border-[#e7e6e3]" />
+              <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[12px]">
+                <MdZoomIn className="shrink-0 text-[16px] text-[#5f6368]" />
+                <span className="flex-1">Zoom</span>
+                <button type="button" className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Réduire le zoom">−</button>
+                <span className="text-[11px]">100 %</span>
+                <button type="button" className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Augmenter le zoom">+</button>
+              </div>
+
+              <div className="my-1 border-t border-[#e7e6e3]" />
+              <MenuRow icon={MdPrint} shortcut="Ctrl+P">Imprimer…</MenuRow>
+              <MenuRow icon={MdSearch}>Rechercher et modifier</MenuRow>
+              <MenuRow icon={MdDownload}>Enregistrer et partager</MenuRow>
+              <MenuRow icon={MdConstruction}>Plus d’outils</MenuRow>
+
+              <div className="my-1 border-t border-[#e7e6e3]" />
+              <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
+              <MenuRow icon={MdSettings}>Paramètres</MenuRow>
+              <MenuRow icon={MdExitToApp} onClick={() => window.electron?.close()}>Quitter</MenuRow>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

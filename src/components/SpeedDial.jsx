@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MdSecurity } from 'react-icons/md';
+import ThemeToggle from './ThemeToggle';
 
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
@@ -114,6 +115,9 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
 
   return (
     <div className="bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124]">
+      <div className="absolute left-5 top-4 z-20">
+        <ThemeToggle />
+      </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         <div className="absolute right-5 top-4 z-20">
           <button
@@ -122,12 +126,12 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
             aria-checked={isAiMode}
             aria-label="Basculer entre le mode web et le mode IA"
             title={isAiMode ? 'Mode IA' : 'Mode normal'}
-            onClick={() => onModeChange((currentMode) => !currentMode)}
-            className={`relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#2d7fe0] bg-[#2d7fe0] text-white' : 'border-[#d8d7d4] bg-[#f1f0ee] text-[#6d6e72]'}`}
+            onClick={() => onModeChange(!isAiMode)}
+            className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
           >
             <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
-            <span className={`relative z-10 flex w-1/2 justify-center ${!isAiMode ? 'text-[#292929]' : 'text-[#77787c]'}`}>WEB</span>
-            <span className={`relative z-10 flex w-1/2 justify-center ${isAiMode ? 'text-[#176f7c]' : 'text-[#77787c]'}`}>IA</span>
+            <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
+            <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
           </button>
         </div>
 

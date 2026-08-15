@@ -98,7 +98,7 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
               <button
                 type="button"
                 onClick={(event) => closeTab(event, tab.id)}
-                className={`${isCrowded ? 'ml-1' : 'ml-2'} flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ICON_COLOR} transition-[background-color,color,opacity,transform] duration-150 hover:bg-[#deddda] hover:text-[#252525] ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`bluefox-tab-close ${isCrowded ? 'ml-1' : 'ml-2'} flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ICON_COLOR} transition-[background-color,color,opacity,transform] duration-150 hover:bg-[#deddda] hover:text-[#252525] ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 aria-label="Fermer l'onglet"
               >
                 <MdClose className="text-[14px]" />

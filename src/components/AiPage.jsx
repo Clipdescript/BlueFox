@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ThemeToggle from './ThemeToggle';
 import {
   MdAdd,
   MdArrowForward,
@@ -332,6 +333,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       </aside>
 
       <section onScroll={handleResultsScroll} className="foxy-interface relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+        <div className="absolute left-5 top-4 z-20">
+          <ThemeToggle />
+        </div>
         {hasConversation ? (
         <div className="flex h-14 shrink-0 items-center border-b border-[#e6e5e2] px-6 sm:px-10">
           <div className="flex h-full items-center gap-5 text-[14px] text-[#66676a]">
@@ -342,19 +346,21 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
 
           </div>
           {!hideModeSwitch && <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={() => onModeChange((currentMode) => !currentMode)} className={`relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#d8d7d4] bg-[#f1f0ee] text-[#6d6e72]' : 'border-[#d8d7d4] bg-[#f1f0ee] text-[#6d6e72]'}`} role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
+            <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
+              role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
               <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
-              <span className={`relative z-10 flex w-1/2 justify-center ${!isAiMode ? 'text-[#292929]' : 'text-[#77787c]'}`}>WEB</span>
-              <span className={`relative z-10 flex w-1/2 justify-center ${isAiMode ? 'text-[#292929]' : 'text-[#77787c]'}`}>IA</span>
+              <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
+              <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
             </button>
           </div>}
         </div>
         ) : (
           !hideModeSwitch && <div className="absolute right-5 top-4 z-20 flex items-center gap-3">
-            <button type="button" onClick={() => onModeChange((currentMode) => !currentMode)} className={`relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#d8d7d4] bg-[#f1f0ee] text-[#6d6e72]' : 'border-[#d8d7d4] bg-[#f1f0ee] text-[#6d6e72]'}`} role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
+            <button type="button" onClick={() => onModeChange(!isAiMode)} className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
+              role="switch" aria-checked={isAiMode} aria-label="Basculer entre le mode web et le mode IA" title={isAiMode ? 'Mode IA' : 'Mode normal'}>
               <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
-              <span className={`relative z-10 flex w-1/2 justify-center ${!isAiMode ? 'text-[#292929]' : 'text-[#77787c]'}`}>WEB</span>
-              <span className={`relative z-10 flex w-1/2 justify-center ${isAiMode ? 'text-[#292929]' : 'text-[#77787c]'}`}>IA</span>
+              <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
+              <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
             </button>
           </div>
         )}
@@ -495,7 +501,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs'} aria-label="Question à Foxy" />
             <div className="flex items-center justify-between pt-1.5">
               <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button><span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span><span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
-              <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bg-[#292929] text-white' : 'bg-[#a6a6a6] text-white'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? (hasConversation ? <MdArrowForward className="text-lg" /> : <MdSend className="text-lg" />) : <MdGraphicEq className="text-[19px]" />}</button></div>
+              <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bg-[#292929] text-white' : 'bluefox-ai-audio-button'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? (hasConversation ? <MdArrowForward className="text-lg" /> : <MdSend className="text-lg" />) : <MdGraphicEq className="text-[19px]" />}</button></div>
             </div>
           </form></div>}
 

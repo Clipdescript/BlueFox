@@ -122,6 +122,15 @@ function App() {
     }
   }, [tabs, activeTabId]);
 
+  const handleModeChange = useCallback((nextMode) => {
+    setIsAiMode(nextMode);
+    setTabs((currentTabs) => currentTabs.map((tab) => {
+      if (tab.id !== activeTabId || tab.isSearching) return tab;
+      const nextTitle = nextMode ? 'Foxy IA' : 'Accès rapide';
+      return tab.title === nextTitle ? tab : { ...tab, title: nextTitle };
+    }));
+  }, [activeTabId]);
+
   const handleNewTab = useCallback(() => {
     setIsAiMode(false);
     const newId = Date.now();
@@ -370,7 +379,7 @@ function App() {
   }, []);
 
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden border border-[#d7d7dc] bg-[#f7f7f9] text-[#202124]">
+    <div className="bluefox-app relative flex h-screen w-screen overflow-hidden border border-[#d7d7dc] bg-[#f7f7f9] text-[#202124]">
       {/* Spotify Sidebar Panel (Persistent Webview) */}
       <SidebarPanel title="Spotify" isOpen={isSpotifyOpen} onClose={() => setIsSpotifyOpen(false)}>
          {/* Persistent Webview for Spotify - Loaded only when activated once */}
@@ -653,6 +662,7 @@ function App() {
             onBack={handleBack}
             onForward={handleForward}
             currentFavicon={activeTab?.favicon || ''}
+            onNewTab={handleNewTab}
         />
 
         <main
@@ -697,9 +707,9 @@ function App() {
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={setIsAiMode} initialPrompt={aiInitialPrompt} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} />
                          ) : (
-                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={setIsAiMode} />
+                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} />
                          )}
                        </Suspense>
                    )}

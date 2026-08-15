@@ -6,18 +6,57 @@
 
 :root {
   color-scheme: light;
+  --theme-bg: #f7f7f9;
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #f8f8f9;
+  --theme-surface-hover: #f0efed;
+  --theme-text: #000000;
+  --theme-text-strong: #000000;
+  --theme-text-muted: #000000;
+  --theme-border: #e1e0dd;
+  --theme-chrome: #f3f2f0;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --theme-bg: #15171b;
+  --theme-surface: #1d2026;
+  --theme-surface-muted: #252932;
+  --theme-surface-hover: #303640;
+  --theme-text: #ffffff;
+  --theme-text-strong: #ffffff;
+  --theme-text-muted: #ffffff;
+  --theme-border: #363c48;
+  --theme-chrome: #1d2026;
 }
 
 * {
   box-sizing: border-box;
 }
 
+.drag-region {
+  background-color: var(--theme-chrome) !important;
+  border-color: var(--theme-border) !important;
+}
+
 body {
   margin: 0;
-  background: #f7f7f9;
-  color: #202124;
+  background: var(--theme-bg);
+  color: var(--theme-text);
   overflow: hidden;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.bluefox-app {
+  background-color: var(--theme-bg) !important;
+  color: var(--theme-text) !important;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.bluefox-reference-home {
+  background-color: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
 }
 
 button,
@@ -261,11 +300,11 @@ button {
 }
 
 .bluefox-home-bg {
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .bluefox-reference-home {
-  background-color: #ffffff;
+  background-color: var(--theme-surface);
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
@@ -298,6 +337,156 @@ button {
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+}
+
+/* Keep every app-surface background and every neutral label synchronized with the active theme. */
+:root[data-theme='light'] .bluefox-app :where(*) {
+  color: #000000 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app :where(*) {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app input::placeholder,
+:root[data-theme='light'] .bluefox-app textarea::placeholder {
+  color: #000000 !important;
+  opacity: 0.72;
+}
+
+:root[data-theme='dark'] .bluefox-app input::placeholder,
+:root[data-theme='dark'] .bluefox-app textarea::placeholder {
+  color: #ffffff !important;
+  opacity: 0.72;
+}
+
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#e"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#d"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#c"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#a"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-white"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-gray"] {
+  background-color: var(--theme-surface) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-close {
+  background-color: transparent !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-close:hover {
+  background-color: #555b66 !important;
+  color: #ffffff !important;
+}
+
+.bluefox-app .bluefox-ai-audio-button {
+  background-color: #8fcbd6 !important;
+  color: #ffffff !important;
+}
+
+.bluefox-app .bluefox-ai-audio-button svg {
+  color: #ffffff !important;
+}
+
+.bluefox-app .bluefox-mode-switch {
+  border-color: #707070 !important;
+  background-color: #707070 !important;
+}
+
+.bluefox-app .bluefox-mode-switch > span:first-child {
+  background-color: #4a4a4a !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-mode-switch {
+  border-color: #d9d9d9 !important;
+  background-color: #d9d9d9 !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-mode-switch > span:first-child {
+  background-color: #a6a6a6 !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-mode-label-active {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-mode-label-inactive {
+  color: #000000 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-mode-label-active {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-mode-label-inactive {
+  color: #ffffff !important;
+}
+
+/* Keep the existing utility-first markup readable when the shared app theme is dark. */
+:root[data-theme='dark'] .bluefox-app [class*="bg-white"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#fffefe"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f7f7f9"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f8f8f9"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f7f7f8"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f3f2f0"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f3f3f1"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f4f4f6"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f4f3f1"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f2f1ef"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f1f0ed"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#f1f0ee"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#ecebe8"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#eef0f4"],
+:root[data-theme='dark'] .bluefox-app [class*="bg-[#fcfcfa"] {
+  background-color: var(--theme-surface) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app [class*="text-[#202124"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#252525"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#292929"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#303134"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#3f4042"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#4f5054"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#4f5053"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#55565b"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#55565a"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#66676"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#68696d"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#6d6e72"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#707174"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#77787"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#85868"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#86878"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#8a8b8"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#a0a1"],
+:root[data-theme='dark'] .bluefox-app [class*="text-[#a0a0a0"] {
+  color: var(--theme-text-muted) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app [class*="border-[#d"],
+:root[data-theme='dark'] .bluefox-app [class*="border-[#e"],
+:root[data-theme='dark'] .bluefox-app [class*="border-gray"] {
+  border-color: var(--theme-border) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app [class*="hover:bg-[#f"],
+:root[data-theme='dark'] .bluefox-app [class*="hover:bg-[#e"]:hover {
+  background-color: var(--theme-surface-hover) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app input,
+:root[data-theme='dark'] .bluefox-app textarea {
+  color: var(--theme-text) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app input::placeholder,
+:root[data-theme='dark'] .bluefox-app textarea::placeholder {
+  color: #ffffff !important;
+  opacity: 0.72;
+}
+
+:root[data-theme='dark'] .bluefox-app [class*="divide-y"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--theme-border) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

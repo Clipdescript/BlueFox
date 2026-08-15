@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, Menu, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, session, Menu, shell, dialog, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -26,40 +26,69 @@ loadLocalEnv();
 log.transports.file.level = 'info';
 autoUpdater.logger = log;
 autoUpdater.verifyUpdateCodeSignature = false; // Important pour les applis non signées
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
-// Check for updates and notify
-function checkForUpdates() {
-  autoUpdater.checkForUpdates();
+let updateCheckInProgress = false;
+let updateDialogOpen = false;
+
+const logUpdate = (message) => log.info(`[UPDATE] ${message}`);
+
+// Check for updates only in an installed build and never overlap requests.
+async function checkForUpdates() {
+  if (!app.isPackaged || updateCheckInProgress) return null;
+
+  logUpdate(`Checking from version ${app.getVersion()}`);
+  updateCheckInProgress = true;
+  try {
+    return await autoUpdater.checkForUpdates();
+  } catch (error) {
+    logUpdate(`Check failed: ${error.message}`);
+    return null;
+  } finally {
+    updateCheckInProgress = false;
+  }
 }
 
 // Auto-updater events
 autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for update...');
+  logUpdate('Checking for update');
 });
 autoUpdater.on('update-available', (info) => {
-  log.info('Update available.');
+  logUpdate(`Update available: ${info.version}`);
 });
 autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available.');
+  logUpdate(`No update available; current version: ${info.version}`);
 });
 autoUpdater.on('error', (err) => {
-  log.error('Error in auto-updater. ' + err);
+  log.error(`[UPDATE] Error: ${err.stack || err.message || err}`);
 });
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = "Download speed: " + progressObj.bytesPerSecond;
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
   log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-  log.info(log_message);
+  logUpdate(`Download progress: ${log_message}`);
 });
 autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded');
+  if (updateDialogOpen) return;
+  updateDialogOpen = true;
+  logUpdate(`Update downloaded and ready to install: ${info.version}`);
   dialog.showMessageBox({
     type: 'info',
     title: 'Mise à jour disponible',
     message: 'Une nouvelle version de BlueFox Browser a été téléchargée. Voulez-vous redémarrer l\'application pour l\'installer maintenant ?',
     buttons: ['Redémarrer', 'Plus tard']
   }).then((returnValue) => {
-    if (returnValue.response === 0) autoUpdater.quitAndInstall();
+    if (returnValue.response === 0) {
+      logUpdate(`User confirmed installation of ${info.version}`);
+      autoUpdater.quitAndInstall();
+      return;
+    }
+    logUpdate(`User postponed installation of ${info.version}`);
+  }).catch((error) => {
+    logUpdate(`Update dialog failed: ${error.message}`);
+  }).finally(() => {
+    updateDialogOpen = false;
   });
 });
 
@@ -223,17 +252,34 @@ app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder,CanvasOopRast
 
 // app.disableHardwareAcceleration(); // DO NOT DISABLE THIS for speed!
 
+const WINDOW_TITLE_BAR_HEIGHT = 48;
+const LIGHT_WINDOW_COLORS = {
+  titleBar: '#f3f2f0',
+  background: '#f7f7f9',
+  symbol: '#000000'
+};
+const DARK_WINDOW_COLORS = {
+  // This must match the dark TabBar surface, otherwise the native controls
+  // leave a visible vertical seam at the right edge of the tab strip.
+  titleBar: '#1d2026',
+  background: '#15171b',
+  symbol: '#ffffff'
+};
+
+const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
+
 function createWindow() {
+  const initialWindowColors = nativeTheme.shouldUseDarkColors ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#f3f2f0',
-      symbolColor: '#66676b',
-      height: 48
+      color: initialWindowColors.titleBar,
+      symbolColor: initialWindowColors.symbol,
+      height: WINDOW_TITLE_BAR_HEIGHT
     },
-    backgroundColor: '#ffffff',
+    backgroundColor: initialWindowColors.background,
     icon: path.join(__dirname, 'public/Logo.ico'),
     show: true,
     webPreferences: {
@@ -288,6 +334,19 @@ function createWindow() {
       mainWindow.maximize();
     }
   });
+  ipcMain.on('window-theme', (_event, theme) => {
+    const windowColors = getWindowColors(theme);
+    if (typeof mainWindow.setTitleBarOverlay === 'function') {
+      // Electron owns these controls. Matching the TabBar surface keeps the
+      // native area continuous; Windows supplies the hover highlight itself.
+      mainWindow.setTitleBarOverlay({
+        color: windowColors.titleBar,
+        symbolColor: windowColors.symbol,
+        height: WINDOW_TITLE_BAR_HEIGHT
+      });
+    }
+    mainWindow.setBackgroundColor(windowColors.background);
+  });
   
   // Close immediately with the native Windows close control; no confirmation popup.
   mainWindow.on('close', () => {
@@ -330,6 +389,15 @@ if (!isDev) {
 }
 
 app.whenReady().then(() => {
+  log.info(`[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
+  if (app.isPackaged) {
+    try {
+      logUpdate(`Log file: ${log.transports.file.getFile().path}`);
+    } catch {
+      logUpdate('Log file path unavailable');
+    }
+  }
+
   // Fix User-Agent globally for all sessions to prevent ERR_ABORTED on some sites
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36';
   
@@ -343,7 +411,7 @@ app.whenReady().then(() => {
   // Check for updates (only in production)
   if (!isDev) {
     setTimeout(() => {
-        checkForUpdates();
+        void checkForUpdates();
     }, 3000);
   }
 
