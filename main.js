@@ -313,6 +313,29 @@ function createWindow() {
     return { action: 'deny' };
   };
 
+  const showContextMenu = (targetContents, params) => {
+    const menu = Menu.buildFromTemplate([
+      { role: 'undo', label: 'Annuler' },
+      { role: 'redo', label: 'Rétablir' },
+      { type: 'separator' },
+      { role: 'cut', label: 'Couper' },
+      { role: 'copy', label: 'Copier' },
+      { role: 'paste', label: 'Coller' },
+      { role: 'selectAll', label: 'Tout sélectionner' },
+      { type: 'separator' },
+      {
+        label: 'Rechercher avec Google',
+        visible: params.selectionText.trim().length > 0,
+        click: () => shell.openExternal(`https://google.com/search?q=${encodeURIComponent(params.selectionText)}`)
+      },
+      { type: 'separator' },
+      { role: 'reload', label: 'Actualiser' },
+      { role: 'forceReload', label: 'Forcer l\'actualisation' },
+      { role: 'toggleDevTools', label: 'Inspecter' }
+    ]);
+    menu.popup(mainWindow);
+  };
+
   // Keep target=_blank and window.open inside BlueFox as a new tab, never a popup.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => routeNewWindowToTab(url));
 
@@ -355,6 +378,7 @@ function createWindow() {
 
   mainWindow.webContents.on('did-attach-webview', (_event, guestContents) => {
     guestContents.setWindowOpenHandler(({ url }) => routeNewWindowToTab(url));
+    guestContents.on('context-menu', (_event, params) => showContextMenu(guestContents, params));
     guestContents.on('before-input-event', (event, input) => {
       handleAltHistoryShortcut(event, input, guestContents);
     });
@@ -410,29 +434,8 @@ function createWindow() {
   ipcMain.on('app-force-close', () => app.quit());
 
   // Context Menu Implementation
-  mainWindow.webContents.on('context-menu', (e, params) => {
-    const menu = Menu.buildFromTemplate([
-      { role: 'undo', label: 'Annuler' },
-      { role: 'redo', label: 'Rétablir' },
-      { type: 'separator' },
-      { role: 'cut', label: 'Couper' },
-      { role: 'copy', label: 'Copier' },
-      { role: 'paste', label: 'Coller' },
-      { role: 'selectAll', label: 'Tout sélectionner' },
-      { type: 'separator' },
-      { 
-        label: 'Rechercher avec Google', 
-        visible: params.selectionText.trim().length > 0, 
-        click: () => {
-          shell.openExternal(`https://google.com/search?q=${encodeURIComponent(params.selectionText)}`);
-        }
-      },
-      { type: 'separator' },
-      { role: 'reload', label: 'Actualiser' },
-      { role: 'forceReload', label: 'Forcer l\'actualisation' },
-      { role: 'toggleDevTools', label: 'Inspecter' }
-    ]);
-    menu.popup(mainWindow);
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    showContextMenu(mainWindow.webContents, params);
   });
 }
 

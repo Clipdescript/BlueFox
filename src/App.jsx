@@ -324,9 +324,13 @@ function App() {
               });
               
               webview.addEventListener('page-title-updated', updateState);
-              webview.addEventListener('did-navigate', (e) => {
-                   setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, url: e.url } : t));
-              });
+              const updateNavigatedUrl = (event) => {
+                   setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, url: event.url, isLoading: false } : t));
+              };
+
+              webview.addEventListener('did-navigate', updateNavigatedUrl);
+              // YouTube playlists often change through SPA in-page navigation.
+              webview.addEventListener('did-navigate-in-page', updateNavigatedUrl);
               
               webview.addEventListener('page-favicon-updated', (e) => {
                   if (e.favicons && e.favicons.length > 0) {
