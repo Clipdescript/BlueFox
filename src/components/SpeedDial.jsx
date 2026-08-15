@@ -12,7 +12,17 @@ const NEWS_SOURCES = [
   { name: 'Euronews', feed: 'https://fr.euronews.com/rss?format=mrss', domain: 'fr.euronews.com' },
   { name: "L'Équipe", feed: 'https://dwh.lequipe.fr/api/edito/rss?path=/', domain: 'lequipe.fr' },
   { name: 'Ouest-France', feed: 'https://www.ouest-france.fr/rss/une', domain: 'ouest-france.fr' },
-  { name: "L'Obs", feed: 'https://www.nouvelobs.com/rss.xml', domain: 'nouvelobs.com' }
+  { name: "L'Obs", feed: 'https://www.nouvelobs.com/rss.xml', domain: 'nouvelobs.com' },
+  { name: 'Le Monde', feed: 'https://www.lemonde.fr/rss/tag/actualites.xml', domain: 'lemonde.fr' },
+  { name: 'Libération', feed: 'https://www.liberation.fr/arc/outboundfeeds/rss-all/?outputType=xml', domain: 'liberation.fr' },
+  { name: 'Le Figaro', feed: 'https://www.lefigaro.fr/rss/figaro_actualites.xml', domain: 'lefigaro.fr' },
+  { name: 'BFMTV', feed: 'https://www.bfmtv.com/rss/news-24-7/', domain: 'bfmtv.com' },
+  { name: 'Les Échos', feed: 'https://www.lesechos.fr/rss/rss_une.xml', domain: 'lesechos.fr' },
+  { name: 'Numerama', feed: 'https://www.numerama.com/feed/', domain: 'numerama.com' },
+  { name: 'Futura', feed: 'https://www.futura-sciences.com/rss/actualites.xml', domain: 'futura-sciences.com' },
+  { name: 'Les Numériques', feed: 'https://www.lesnumeriques.com/rss.xml', domain: 'lesnumeriques.com' },
+  { name: 'Journal du Geek', feed: 'https://www.journaldugeek.com/feed/', domain: 'journaldugeek.com' },
+  { name: 'RTL', feed: 'https://www.rtl.fr/rss.xml', domain: 'rtl.fr' }
 ];
 
 const SHORTCUTS = [
@@ -90,7 +100,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
       if (!response.ok) throw new Error(`${source.name} RSS unavailable`);
       const data = await response.json();
       if (data.status !== 'ok') throw new Error(`${source.name} RSS invalid`);
-      return (data.items || []).slice(0, 3).map((item) => ({
+      return (data.items || []).slice(0, 5).map((item) => ({
         id: `${source.name}-${item.guid || item.link}`,
         title: stripHtml(item.title),
         link: item.link,
@@ -102,13 +112,16 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
     }));
 
     const loadedArticles = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
-    setArticles(loadedArticles);
-    setNewsError(loadedArticles.length === 0);
+    const uniqueArticles = Array.from(
+      new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
+    ).sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
+    setArticles(uniqueArticles);
+    setNewsError(uniqueArticles.length === 0);
     const isFirstLoad = !hasLoadedNews.current;
     hasLoadedNews.current = true;
     setArticleOffset((currentOffset) => {
-      if (!loadedArticles.length || isFirstLoad) return 0;
-      return (currentOffset + 3) % loadedArticles.length;
+      if (!uniqueArticles.length || isFirstLoad) return 0;
+      return (currentOffset + 6) % uniqueArticles.length;
     });
     setNewsLoading(false);
   };
@@ -124,7 +137,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
   }, []);
 
   const visibleSuggestions = articles.length > 0
-    ? Array.from({ length: Math.min(6, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
+    ? Array.from({ length: Math.min(18, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
     : [];
 
   return (
@@ -169,8 +182,8 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
         </section>
 
         <section>
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Suggestions de Foxy</h2>
-          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
+          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Actualités françaises</h2>
+          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 18 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}
           {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">Les suggestions ne sont pas disponibles pour le moment.</div>}
         </section>
