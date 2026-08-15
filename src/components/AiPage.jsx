@@ -31,6 +31,8 @@ import {
   MdThumbUp,
 } from 'react-icons/md';
 
+const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
+
 const MARKDOWN_COMPONENTS = {
   h1: ({ children }) => <h1 className="mb-3 mt-5 text-2xl font-semibold tracking-tight text-[#202124] first:mt-0">{children}</h1>,
   h2: ({ children }) => <h2 className="mb-2 mt-5 text-xl font-semibold tracking-tight text-[#202124] first:mt-0">{children}</h2>,
@@ -61,7 +63,7 @@ const getFaviconUrl = (url) => {
   try {
     return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`;
   } catch {
-    return '/Logo.ico';
+    return BLUEFOX_LOGO;
   }
 };
 
@@ -306,7 +308,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       <aside className="hidden">
         <div className="flex h-16 items-center justify-between border-b border-[#e7e6e3] px-5">
           <div className="flex items-center gap-2 text-[15px] font-semibold">
-            <img src="/Logo.ico" alt="BlueFox" className="h-7 w-7 object-contain" />
+            <img src={BLUEFOX_LOGO} alt="BlueFox" className="h-7 w-7 object-contain" />
             <span>Foxy</span>
           </div>
           <button type="button" className="flex h-8 w-8 items-center justify-center rounded-md text-[#6f7073] hover:bg-[#ecebe8]" aria-label="Réduire le menu">

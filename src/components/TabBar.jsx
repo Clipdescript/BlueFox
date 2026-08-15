@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdClose } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
+const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const CLOSE_ANIMATION_MS = 180;
 
 const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab }) => {
@@ -93,7 +94,7 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
                 {tab.url && tab.favicon ? (
                   <img src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
                 ) : (
-                  <img src="/Logo.ico" alt="" className="h-full w-full object-contain" />
+                  <img src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />
                 )}
                 {tab.isLoading && <span className="absolute inset-0 animate-spin rounded-full border border-transparent border-r-[#66676b] border-t-[#66676b]" />}
               </div>

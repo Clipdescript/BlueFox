@@ -100,7 +100,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
       if (!response.ok) throw new Error(`${source.name} RSS unavailable`);
       const data = await response.json();
       if (data.status !== 'ok') throw new Error(`${source.name} RSS invalid`);
-      return (data.items || []).slice(0, 5).map((item) => ({
+      return (data.items || []).slice(0, 3).map((item) => ({
         id: `${source.name}-${item.guid || item.link}`,
         title: stripHtml(item.title),
         link: item.link,
@@ -131,13 +131,27 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
   }, []);
 
   useEffect(() => {
-    loadNews();
-    const refreshTimer = setInterval(loadNews, 5 * 60 * 1000);
-    return () => clearInterval(refreshTimer);
+    let refreshTimer;
+    const loadWhenIdle = () => {
+      loadNews();
+      refreshTimer = setInterval(loadNews, 5 * 60 * 1000);
+    };
+    const idleHandle = typeof window.requestIdleCallback === 'function'
+      ? window.requestIdleCallback(loadWhenIdle, { timeout: 1500 })
+      : window.setTimeout(loadWhenIdle, 250);
+
+    return () => {
+      if (typeof window.cancelIdleCallback === 'function' && typeof idleHandle === 'number') {
+        window.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
+      if (refreshTimer) clearInterval(refreshTimer);
+    };
   }, []);
 
   const visibleSuggestions = articles.length > 0
-    ? Array.from({ length: Math.min(18, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
+    ? Array.from({ length: Math.min(6, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
     : [];
 
   return (
@@ -183,7 +197,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
 
         <section>
           <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Actualités françaises</h2>
-          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 18 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
+          {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}
           {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">Les suggestions ne sont pas disponibles pour le moment.</div>}
         </section>

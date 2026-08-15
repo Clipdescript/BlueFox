@@ -9,18 +9,35 @@ import { MdSearch, MdClose } from 'react-icons/md';
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 
+const createHomeTab = () => ({
+  id: Date.now(),
+  title: 'Accès rapide',
+  url: '',
+  isSearching: false,
+  isAi: false,
+  favicon: '',
+  isLoading: false
+});
+
 function App() {
   const hasCleanStartup = localStorage.getItem('bluefox_clean_startup_v1') === 'true';
   const savedTabs = hasCleanStartup ? localStorage.getItem('bluefox_tabs') : null;
   const savedActiveId = hasCleanStartup ? localStorage.getItem('bluefox_active_tab_id') : null;
-
-  const [tabs, setTabs] = useState(() => savedTabs
+  const restoredTabs = savedTabs
     ? JSON.parse(savedTabs).map((tab) => ({
         ...tab,
         isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA'))
       }))
-    : []);
-  const [activeTabId, setActiveTabId] = useState(savedActiveId ? parseInt(savedActiveId, 10) : null);
+    : [];
+  const initialTabs = restoredTabs.length > 0 ? restoredTabs : [createHomeTab()];
+  const restoredActiveId = savedActiveId ? parseInt(savedActiveId, 10) : null;
+
+  const [tabs, setTabs] = useState(() => initialTabs);
+  const [activeTabId, setActiveTabId] = useState(() => (
+    restoredActiveId && initialTabs.some((tab) => tab.id === restoredActiveId)
+      ? restoredActiveId
+      : initialTabs[0]?.id ?? null
+  ));
   const [isAiMode, setIsAiMode] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState('');
   const [isSpotifyOpen, setIsSpotifyOpen] = useState(false);
@@ -187,9 +204,10 @@ function App() {
     setTabs(prev => {
         const newTabs = prev.filter(t => t.id !== id);
         if (newTabs.length === 0) {
+             const replacementTab = createHomeTab();
              setIsAiMode(false);
-             setActiveTabId(null);
-             return [];
+             setActiveTabId(replacementTab.id);
+             return [replacementTab];
         }
         if (id === activeTabId) {
              const nextActiveTab = newTabs[newTabs.length - 1];
@@ -744,18 +762,6 @@ function App() {
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
           style={{ marginRight: isAiSidebarOpen ? 'min(560px, 100vw)' : '0px' }}
         >
-           {tabs.length === 0 && (
-             <div className="flex h-full w-full flex-col items-center justify-center bg-[#f7f7f9] text-[#73737d]">
-               <p className="text-lg font-medium mb-3">Aucun onglet ouvert</p>
-               <button
-                 onClick={handleNewTab}
-                 className="rounded bg-[#0060df] px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-[#0050bd]"
-               >
-                 Nouvel onglet
-               </button>
-             </div>
-           )}
-
            {tabs.map(tab => (
                <div 
                 key={tab.id} 
@@ -844,9 +850,11 @@ function App() {
         </main>
       </div>
 
-      <Suspense fallback={null}>
-        <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
-      </Suspense>
+      {isAiSidebarOpen && (
+        <Suspense fallback={null}>
+          <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
