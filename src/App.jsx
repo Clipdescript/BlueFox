@@ -345,9 +345,12 @@ function App() {
               webview.addEventListener('dom-ready', () => {
                   updateState();
                   setLoading(false);
-                  try {
-                    webview.executeJavaScript(turboScript);
-                  } catch(e) {}
+                  const pageUrl = webview.getURL() || tab.url || '';
+                  if (!/youtube\.com|youtu\.be/i.test(pageUrl)) {
+                    try {
+                      webview.executeJavaScript(turboScript);
+                    } catch(e) {}
+                  }
               });
               webview.addEventListener('did-start-loading', () => setLoading(true));
               webview.addEventListener('did-stop-loading', () => setLoading(false));

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdMusicNote, MdSecurity } from 'react-icons/md';
+import { FaDiscord } from 'react-icons/fa';
+import { MdLanguage, MdMusicNote, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
@@ -159,8 +160,26 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange }) => {
       <button type="button" className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Audio et musique" title="Audio et musique">
         <MdMusicNote className="text-[21px]" />
       </button>
-      <div className="absolute left-5 top-4 z-20">
+      <div className="absolute left-5 top-4 z-20 flex items-center gap-2">
         <ThemeToggle />
+        <a
+          href="https://discord.gg/z3bUt3hCya"
+          onClick={(event) => { event.preventDefault(); onNavigate('https://discord.gg/z3bUt3hCya'); }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#5865f2] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#eef0ff]"
+          aria-label="Rejoindre le serveur Discord BlueFox"
+          title="Discord BlueFox"
+        >
+          <FaDiscord className="text-[18px]" />
+        </a>
+        <a
+          href="https://bluefoxbrowser.pages.dev/"
+          onClick={(event) => { event.preventDefault(); onNavigate('https://bluefoxbrowser.pages.dev/'); }}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#137b8b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#e8f5f7]"
+          aria-label="Ouvrir le site BlueFox"
+          title="Site BlueFox"
+        >
+          <MdLanguage className="text-[19px]" />
+        </a>
       </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         <div className="absolute right-5 top-4 z-20">
