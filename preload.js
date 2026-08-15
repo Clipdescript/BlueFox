@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld('electron', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
+  getProductionLogs: () => ipcRenderer.invoke('get-production-logs'),
+  onProductionLog: (callback) => {
+    const subscription = (_event, entry) => callback(entry);
+    ipcRenderer.on('production-log', subscription);
+    return () => ipcRenderer.removeListener('production-log', subscription);
+  },
   onCloseRequest: (callback) => {
     // Wrap callback to ensure it's called safely
     const subscription = (event, ...args) => callback(...args);

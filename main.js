@@ -4,23 +4,34 @@ const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
-function loadLocalEnv() {
-  const envPath = path.join(__dirname, '.env');
-  if (!fs.existsSync(envPath)) return;
+function loadLocalEnv(extraPaths = []) {
+  const envPaths = [
+    path.join(__dirname, '.env'),
+    process.resourcesPath ? path.join(process.resourcesPath, '.env') : null,
+    path.join(path.dirname(process.execPath), '.env'),
+    ...extraPaths
+  ].filter(Boolean);
 
-  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const separatorIndex = trimmed.indexOf('=');
-    if (separatorIndex <= 0) continue;
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const rawValue = trimmed.slice(separatorIndex + 1).trim();
-    const value = rawValue.replace(/^['\"]|['\"]$/g, '');
-    if (!process.env[key]) process.env[key] = value;
+  for (const envPath of [...new Set(envPaths)]) {
+    if (!fs.existsSync(envPath)) continue;
+
+    for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const separatorIndex = trimmed.indexOf('=');
+      if (separatorIndex <= 0) continue;
+      const key = trimmed.slice(0, separatorIndex).trim();
+      const rawValue = trimmed.slice(separatorIndex + 1).trim();
+      const value = rawValue.replace(/^['\"]|['\"]$/g, '');
+      if (!process.env[key]) process.env[key] = value;
+    }
+    return envPath;
   }
+
+  return null;
 }
 
-loadLocalEnv();
+let loadedEnvPath = loadLocalEnv();
 
 // Configure logging for auto-updater
 log.transports.file.level = 'info';
@@ -29,10 +40,32 @@ autoUpdater.verifyUpdateCodeSignature = false; // Important pour les applis non 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
+let mainWindow = null;
 let updateCheckInProgress = false;
 let updateDialogOpen = false;
+const productionLogBuffer = [];
 
-const logUpdate = (message) => log.info(`[UPDATE] ${message}`);
+const logProduction = (level, message) => {
+  const entry = {
+    level,
+    message,
+    timestamp: new Date().toISOString()
+  };
+  productionLogBuffer.push(entry);
+  if (productionLogBuffer.length > 100) productionLogBuffer.shift();
+
+  if (level === 'error') log.error(message);
+  else if (level === 'warn') log.warn(message);
+  else log.info(message);
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('production-log', entry);
+  }
+};
+
+const logUpdate = (message, level = 'info') => logProduction(level, `[UPDATE] ${message}`);
+
+ipcMain.handle('get-production-logs', () => productionLogBuffer);
 
 // Check for updates only in an installed build and never overlap requests.
 async function checkForUpdates() {
@@ -61,7 +94,7 @@ autoUpdater.on('update-not-available', (info) => {
   logUpdate(`No update available; current version: ${info.version}`);
 });
 autoUpdater.on('error', (err) => {
-  log.error(`[UPDATE] Error: ${err.stack || err.message || err}`);
+  logUpdate(`Error: ${err.stack || err.message || err}`, 'error');
 });
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = "Download speed: " + progressObj.bytesPerSecond;
@@ -158,7 +191,7 @@ ipcMain.handle('ask-ai', async (event, rawPrompt) => {
   if (!exaApiKey || !mistralApiKey) {
     return {
       ok: false,
-      error: 'Les clés EXA_API_KEY et MISTRAL_API_KEY ne sont pas configurées dans BlueFox.'
+      error: 'Les clés EXA_API_KEY et MISTRAL_API_KEY ne sont pas configurées. Ajoute un fichier .env à côté de BlueFox Browser.exe ou dans le dossier de données indiqué dans les DevTools.'
     };
   }
 
@@ -270,7 +303,7 @@ const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT
 
 function createWindow() {
   const initialWindowColors = nativeTheme.shouldUseDarkColors ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     titleBarStyle: 'hidden',
@@ -389,7 +422,15 @@ if (!isDev) {
 }
 
 app.whenReady().then(() => {
-  log.info(`[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
+  const userDataEnvPath = path.join(app.getPath('userData'), '.env');
+  if (!loadedEnvPath) loadedEnvPath = loadLocalEnv([userDataEnvPath]);
+
+  logProduction('info', `[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
+  if (loadedEnvPath) {
+    logProduction('info', `[AI] Environment loaded from ${loadedEnvPath}; secret values hidden`);
+  } else {
+    logProduction('warn', `[AI] No .env file found. Configure EXA_API_KEY and MISTRAL_API_KEY in ${userDataEnvPath} or beside the executable`);
+  }
   if (app.isPackaged) {
     try {
       logUpdate(`Log file: ${log.transports.file.getFile().path}`);

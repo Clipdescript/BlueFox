@@ -69,6 +69,28 @@ function App() {
      }
   }, [hasCleanStartup]);
 
+  // Mirror production update logs in DevTools, including logs emitted before the UI mounted.
+  useEffect(() => {
+    const printProductionLog = ({ level = 'info', message = '' } = {}) => {
+      const output = `[BlueFox production] ${message}`;
+      if (level === 'error') console.error(output);
+      else if (level === 'warn') console.warn(output);
+      else console.info(output);
+    };
+
+    const unsubscribe = window.electron?.onProductionLog?.(printProductionLog);
+    const logsPromise = window.electron?.getProductionLogs?.();
+    let cancelled = false;
+    logsPromise?.then((entries) => {
+      if (!cancelled) entries.forEach(printProductionLog);
+    }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, []);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
