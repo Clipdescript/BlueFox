@@ -5,7 +5,6 @@ import ThemeToggle from './ThemeToggle';
 import {
   MdAdd,
   MdArrowForward,
-  MdArrowUpward,
   MdAutoAwesome,
   MdCheck,
   MdCheckCircle,
@@ -24,6 +23,7 @@ import {
   MdPsychology,
   MdReply,
   MdSearch,
+  MdSend,
   MdSettings,
   MdShare,
   MdThumbDown,
@@ -60,7 +60,7 @@ const getFaviconUrl = (url) => {
   try {
     return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`;
   } catch {
-    return './Logo.ico';
+    return '/Logo.ico';
   }
 };
 
@@ -305,7 +305,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
       <aside className="hidden">
         <div className="flex h-16 items-center justify-between border-b border-[#e7e6e3] px-5">
           <div className="flex items-center gap-2 text-[15px] font-semibold">
-            <img src="./Logo.ico" alt="BlueFox" className="h-7 w-7 object-contain" />
+            <img src="/Logo.ico" alt="BlueFox" className="h-7 w-7 object-contain" />
             <span>Foxy</span>
           </div>
           <button type="button" className="flex h-8 w-8 items-center justify-center rounded-md text-[#6f7073] hover:bg-[#ecebe8]" aria-label="Réduire le menu">
@@ -501,7 +501,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs'} aria-label="Question à Foxy" />
             <div className="flex items-center justify-between pt-1.5">
               <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button><span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span><span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
-              <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bluefox-ai-send-button' : 'bluefox-ai-audio-button'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? <MdArrowUpward className="text-lg" /> : <MdGraphicEq className="text-[19px]" />}</button></div>
+              <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bg-[#292929] text-white' : 'bluefox-ai-audio-button'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? (hasConversation ? <MdArrowForward className="text-lg" /> : <MdSend className="text-lg" />) : <MdGraphicEq className="text-[19px]" />}</button></div>
             </div>
           </form></div>}
 

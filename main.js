@@ -4,60 +4,23 @@ const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
-const AI_ENV_TEMPLATE = `# BlueFox Foxy AI configuration
-# Add your own keys, then restart BlueFox.
-EXA_API_KEY=
-MISTRAL_API_KEY=
-MISTRAL_MODEL=mistral-small-latest
-`;
+function loadLocalEnv() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
 
-function loadLocalEnv(extraPaths = []) {
-  const envPaths = [
-    process.env.BLUEFOX_ENV_FILE,
-    path.join(__dirname, '.env'),
-    process.resourcesPath ? path.join(process.resourcesPath, '.env') : null,
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', '.env') : null,
-    path.join(path.dirname(process.execPath), '.env'),
-    path.join(path.dirname(process.execPath), 'resources', '.env'),
-    ...extraPaths
-  ].filter(Boolean);
-
-  for (const envPath of [...new Set(envPaths)]) {
-    if (!fs.existsSync(envPath)) continue;
-
-    let loadedAnyValue = false;
-    for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const separatorIndex = trimmed.indexOf('=');
-      if (separatorIndex <= 0) continue;
-      const key = trimmed.slice(0, separatorIndex).trim();
-      const rawValue = trimmed.slice(separatorIndex + 1).trim();
-      const value = rawValue.replace(/^['\"]|['\"]$/g, '');
-      if (value && !process.env[key]) {
-        process.env[key] = value;
-        loadedAnyValue = true;
-      }
-    }
-    if (loadedAnyValue) return envPath;
-  }
-
-  return null;
-}
-
-const getMissingAiKeys = () => ['EXA_API_KEY', 'MISTRAL_API_KEY']
-  .filter((key) => !String(process.env[key] || '').trim());
-
-function ensureAiEnvTemplate(templatePath) {
-  try {
-    if (!fs.existsSync(templatePath)) fs.writeFileSync(templatePath, AI_ENV_TEMPLATE, { encoding: 'utf8', flag: 'wx' });
-    return true;
-  } catch {
-    return false;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex <= 0) continue;
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    const value = rawValue.replace(/^['\"]|['\"]$/g, '');
+    if (!process.env[key]) process.env[key] = value;
   }
 }
 
-let loadedEnvPath = loadLocalEnv();
+loadLocalEnv();
 
 // Configure logging for auto-updater
 log.transports.file.level = 'info';
@@ -66,32 +29,10 @@ autoUpdater.verifyUpdateCodeSignature = false; // Important pour les applis non 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
-let mainWindow = null;
 let updateCheckInProgress = false;
 let updateDialogOpen = false;
-const productionLogBuffer = [];
 
-const logProduction = (level, message) => {
-  const entry = {
-    level,
-    message,
-    timestamp: new Date().toISOString()
-  };
-  productionLogBuffer.push(entry);
-  if (productionLogBuffer.length > 100) productionLogBuffer.shift();
-
-  if (level === 'error') log.error(message);
-  else if (level === 'warn') log.warn(message);
-  else log.info(message);
-
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('production-log', entry);
-  }
-};
-
-const logUpdate = (message, level = 'info') => logProduction(level, `[UPDATE] ${message}`);
-
-ipcMain.handle('get-production-logs', () => productionLogBuffer);
+const logUpdate = (message) => log.info(`[UPDATE] ${message}`);
 
 // Check for updates only in an installed build and never overlap requests.
 async function checkForUpdates() {
@@ -120,7 +61,7 @@ autoUpdater.on('update-not-available', (info) => {
   logUpdate(`No update available; current version: ${info.version}`);
 });
 autoUpdater.on('error', (err) => {
-  logUpdate(`Error: ${err.stack || err.message || err}`, 'error');
+  log.error(`[UPDATE] Error: ${err.stack || err.message || err}`);
 });
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = "Download speed: " + progressObj.bytesPerSecond;
@@ -214,11 +155,10 @@ ipcMain.handle('ask-ai', async (event, rawPrompt) => {
   const mistralApiKey = process.env.MISTRAL_API_KEY;
 
   if (!prompt) return { ok: false, error: 'Écris une question pour Foxy.' };
-  const missingAiKeys = getMissingAiKeys();
-  if (missingAiKeys.length > 0) {
+  if (!exaApiKey || !mistralApiKey) {
     return {
       ok: false,
-      error: `Clés IA manquantes : ${missingAiKeys.join(' et ')}. Configure le fichier .env indiqué dans les DevTools, puis redémarre BlueFox.`
+      error: 'Les clés EXA_API_KEY et MISTRAL_API_KEY ne sont pas configurées dans BlueFox.'
     };
   }
 
@@ -330,7 +270,7 @@ const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT
 
 function createWindow() {
   const initialWindowColors = nativeTheme.shouldUseDarkColors ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
-  mainWindow = new BrowserWindow({
+  const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     titleBarStyle: 'hidden',
@@ -375,8 +315,49 @@ function createWindow() {
 
   // Keep target=_blank and window.open inside BlueFox as a new tab, never a popup.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => routeNewWindowToTab(url));
+
+  const sendBrowserNavigation = (direction) => {
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send('browser-navigation', direction);
+  };
+
+  const handleAltHistoryShortcut = (event, input, targetContents = null) => {
+    if (input.type !== 'keyDown' || !input.alt || input.control || input.meta || input.shift) return;
+
+    const key = input.key || input.keyCode;
+    const direction = key === 'ArrowLeft' || key === 'Left'
+      ? 'back'
+      : key === 'ArrowRight' || key === 'Right'
+        ? 'forward'
+        : null;
+    if (!direction) return;
+
+    event.preventDefault();
+    if (targetContents && !targetContents.isDestroyed()) {
+      if (direction === 'back' && targetContents.canGoBack()) targetContents.goBack();
+      if (direction === 'forward' && targetContents.canGoForward()) targetContents.goForward();
+      return;
+    }
+
+    sendBrowserNavigation(direction);
+  };
+
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    handleAltHistoryShortcut(event, input);
+  });
+
+  // Windows exposes mouse buttons 4 and 5 as browser app commands. Forward
+  // them to the active tab and cancel Electron's automatic window navigation.
+  mainWindow.on('app-command', (event, command) => {
+    if (command !== 'browser-backward' && command !== 'browser-forward') return;
+    event.preventDefault();
+    sendBrowserNavigation(command === 'browser-backward' ? 'back' : 'forward');
+  });
+
   mainWindow.webContents.on('did-attach-webview', (_event, guestContents) => {
     guestContents.setWindowOpenHandler(({ url }) => routeNewWindowToTab(url));
+    guestContents.on('before-input-event', (event, input) => {
+      handleAltHistoryShortcut(event, input, guestContents);
+    });
   });
 
   mainWindow.loadURL(startUrl);
@@ -392,13 +373,6 @@ function createWindow() {
       mainWindow.unmaximize();
     } else {
       mainWindow.maximize();
-    }
-  });
-  ipcMain.on('window-close', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.close();
-    } else {
-      app.quit();
     }
   });
   ipcMain.on('window-theme', (_event, theme) => {
@@ -456,19 +430,7 @@ if (!isDev) {
 }
 
 app.whenReady().then(() => {
-  const userDataEnvPath = path.join(app.getPath('userData'), '.env');
-  const appDataEnvPath = path.join(app.getPath('appData'), 'BlueFox Browser', '.env');
-  if (!loadedEnvPath) loadedEnvPath = loadLocalEnv([userDataEnvPath, appDataEnvPath]);
-
-  logProduction('info', `[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
-  const missingAiKeys = getMissingAiKeys();
-  if (missingAiKeys.length === 0) {
-    logProduction('info', `[AI] Configuration loaded${loadedEnvPath ? ` from ${loadedEnvPath}` : ' from Windows environment'}; secret values hidden`);
-  } else {
-    const templatePath = `${userDataEnvPath}.example`;
-    const templateCreated = ensureAiEnvTemplate(templatePath);
-    logProduction('warn', `[AI] Missing ${missingAiKeys.join(' and ')}. Configure ${userDataEnvPath}; template${templateCreated ? ' created' : ''}: ${templatePath}`);
-  }
+  log.info(`[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
   if (app.isPackaged) {
     try {
       logUpdate(`Log file: ${log.transports.file.getFile().path}`);

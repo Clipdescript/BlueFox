@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.6",
+  "version": "2.0.1",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -21,7 +21,7 @@
     "@fortawesome/react-fontawesome": "^3.5.0",
     "electron-is-dev": "^3.0.1",
     "electron-log": "^5.4.3",
-    "electron-updater": "^6.8.9",
+    "electron-updater": "^6.8.3",
     "fetch-jsonp": "^1.4.0",
     "fs-extra": "^11.3.3",
     "react": "^19.2.4",
@@ -41,7 +41,7 @@
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^43.4.0",
-    "electron-builder": "^26.15.7",
+    "electron-builder": "^25.1.8",
     "electron-packager": "^17.1.2",
     "eslint": "^9.21.0",
     "eslint-plugin-react": "^7.37.4",
@@ -72,22 +72,15 @@
       "package.json",
       "splash.html"
     ],
-    "extraResources": [
-      {
-        "from": ".env",
-        "to": ".env"
-      }
-    ],
     "directories": {
       "buildResources": "assets",
-      "output": "release-206"
+      "output": "release-201"
     },
     "win": {
       "target": "nsis",
       "icon": "public/Logo.ico"
     },
     "nsis": {
-      "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
