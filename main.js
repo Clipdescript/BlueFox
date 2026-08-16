@@ -442,6 +442,35 @@ function createWindow({ privateMode = false } = {}) {
     },
   });
 
+  let currentTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  const guestContentsSet = new Set();
+  const guestSelectionCssKeys = new Map();
+
+  const applyGuestSelectionTheme = async (guestContents) => {
+    if (!guestContents || guestContents.isDestroyed()) return;
+    const previousKey = guestSelectionCssKeys.get(guestContents);
+    if (previousKey) {
+      try { await guestContents.removeInsertedCSS(previousKey); } catch { /* already removed */ }
+    }
+
+    const selectionColor = currentTheme === 'dark' ? '#8b5cf6' : '#0078d4';
+    try {
+      const key = await guestContents.insertCSS(`
+        ::selection {
+          background: ${selectionColor} !important;
+          color: #ffffff !important;
+        }
+        ::-moz-selection {
+          background: ${selectionColor} !important;
+          color: #ffffff !important;
+        }
+      `);
+      if (!guestContents.isDestroyed()) guestSelectionCssKeys.set(guestContents, key);
+    } catch {
+      // Protected pages may reject style insertion; leave their native selection intact.
+    }
+  };
+
   const startUrl = isDev
     ? 'http://localhost:5173'
     : `file://${path.join(__dirname, 'dist-react/index.html')}`;
@@ -520,7 +549,13 @@ function createWindow({ privateMode = false } = {}) {
   });
 
   mainWindow.webContents.on('did-attach-webview', (_event, guestContents) => {
+    guestContentsSet.add(guestContents);
     guestContents.setWindowOpenHandler(({ url }) => routeNewWindowToTab(url));
+    guestContents.on('dom-ready', () => { void applyGuestSelectionTheme(guestContents); });
+    guestContents.on('destroyed', () => {
+      guestContentsSet.delete(guestContents);
+      guestSelectionCssKeys.delete(guestContents);
+    });
     guestContents.on('context-menu', (_event, params) => showContextMenu(guestContents, params));
     guestContents.on('before-input-event', (event, input) => {
       handleAltHistoryShortcut(event, input, guestContents);
@@ -567,6 +602,8 @@ function createWindow({ privateMode = false } = {}) {
       });
     }
     targetWindow.setBackgroundColor(windowColors.background);
+    currentTheme = theme === 'dark' ? 'dark' : 'light';
+    guestContentsSet.forEach((guestContents) => { void applyGuestSelectionTheme(guestContents); });
   });
   
   // Close immediately with the native Windows close control; no confirmation popup.

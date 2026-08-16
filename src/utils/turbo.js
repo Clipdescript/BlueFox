@@ -5,6 +5,26 @@ export const turboScript = `
   // 0. Injection CSS pour blocage instantané (évite le Reflow/Layout Thrashing)
   const style = document.createElement('style');
   style.textContent = \`
+    /* BlueFox text selection: Windows blue in light mode, violet in dark system mode. */
+    ::selection {
+      background: #0078d4 !important;
+      color: #ffffff !important;
+    }
+    ::-moz-selection {
+      background: #0078d4 !important;
+      color: #ffffff !important;
+    }
+    @media (prefers-color-scheme: dark) {
+      ::selection {
+        background: #8b5cf6 !important;
+        color: #ffffff !important;
+      }
+      ::-moz-selection {
+        background: #8b5cf6 !important;
+        color: #ffffff !important;
+      }
+    }
+
     /* Standard Chromium scrollbar styling: thin and transparent without forcing a classic width. */
     *, *::before, *::after {
       scrollbar-width: thin;

@@ -68,6 +68,22 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+::selection {
+  background: #0078d4 !important;
+  color: #ffffff !important;
+}
+
+::-moz-selection {
+  background: #0078d4 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] ::selection,
+:root[data-theme='dark'] ::-moz-selection {
+  background: #8b5cf6 !important;
+  color: #ffffff !important;
+}
+
 @keyframes bluefox-logo-enter {
   from {
     opacity: 0;
