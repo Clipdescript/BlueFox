@@ -19,8 +19,6 @@ import {
 } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
 
-const SETTINGS_URL = 'bluefox://parametres';
-
 const THEME_OPTIONS = [
   { value: 'light', label: 'Clair', description: 'Une interface lumineuse.', icon: MdLightMode },
   { value: 'dark', label: 'Sombre', description: 'Réduit la luminosité.', icon: MdDarkMode },
@@ -91,7 +89,6 @@ const SettingsPage = ({ onClose }) => {
           <SectionShell icon={MdSecurity} title="Confidentialité et sécurité" description="Gardez le contrôle de vos données dans BlueFox.">
             <div className="divide-y divide-[var(--theme-border)] rounded-xl border border-[var(--theme-border)]">
               <SettingRow title="Historique de navigation" description="BlueFox n’enregistre pas votre historique de navigation."><StatusPill>Protégé</StatusPill></SettingRow>
-              <SettingRow title="Adresse interne des paramètres" description="Utilisez bluefox://parametres dans la barre d’adresse pour revenir ici."><code className="rounded-md bg-[var(--theme-surface-muted)] px-2 py-1 text-xs">bluefox://parametres</code></SettingRow>
             </div>
           </SectionShell>
         );
@@ -115,7 +112,6 @@ const SettingsPage = ({ onClose }) => {
           <SectionShell icon={MdTune} title="BlueFox et vous" description="Gérez les réglages principaux de votre navigateur.">
             <div className="divide-y divide-[var(--theme-border)] rounded-xl border border-[var(--theme-border)]">
               <SettingRow title="Navigation privée par défaut" description="BlueFox ne conserve pas votre historique de navigation."><StatusPill>Activé</StatusPill></SettingRow>
-              <SettingRow title="Adresse de cette page" description="Saisissez cette adresse dans la barre d’adresse pour ouvrir les paramètres."><code className="rounded-md bg-[var(--theme-surface-muted)] px-2 py-1 text-xs">{SETTINGS_URL}</code></SettingRow>
             </div>
           </SectionShell>
         );
