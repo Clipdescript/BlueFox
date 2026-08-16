@@ -140,6 +140,22 @@ async function fetchUnusedNatureImage() {
   return imageUrl;
 }
 
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('check-for-updates', async () => {
+  const currentVersion = app.getVersion();
+  if (!app.isPackaged) return { status: 'development', currentVersion };
+
+  const result = await checkForUpdates();
+  if (!result) return { status: 'error', currentVersion };
+
+  const availableVersion = result.updateInfo?.version || '';
+  if (!availableVersion || availableVersion === currentVersion) {
+    return { status: 'latest', currentVersion };
+  }
+  return { status: 'available', currentVersion, availableVersion };
+});
+
 ipcMain.handle('fetch-nature-background', async () => {
   try {
     return await fetchUnusedNatureImage();

@@ -23,7 +23,11 @@ const NEWS_SOURCES = [
   { name: 'Futura', feed: 'https://www.futura-sciences.com/rss/actualites.xml', domain: 'futura-sciences.com' },
   { name: 'Les Numériques', feed: 'https://www.lesnumeriques.com/rss.xml', domain: 'lesnumeriques.com' },
   { name: 'Journal du Geek', feed: 'https://www.journaldugeek.com/feed/', domain: 'journaldugeek.com' },
-  { name: 'RTL', feed: 'https://www.rtl.fr/rss.xml', domain: 'rtl.fr' }
+  { name: 'RTL', feed: 'https://www.rtl.fr/rss.xml', domain: 'rtl.fr' },
+  { name: 'France Culture', feed: 'https://www.radiofrance.fr/franceculture/rss', domain: 'radiofrance.fr' },
+  { name: 'La Croix', feed: 'https://www.la-croix.com/RSS/UNES', domain: 'la-croix.com' },
+  { name: 'Paris Match', feed: 'https://www.parismatch.com/rss.xml', domain: 'parismatch.com' },
+  { name: '01net', feed: 'https://www.01net.com/rss/actualites/', domain: '01net.com' }
 ];
 
 const SHORTCUTS = [
@@ -34,7 +38,7 @@ const SHORTCUTS = [
   ['Google Maps', 'https://maps.google.com'],
   ['Amazon', 'https://www.amazon.fr'],
   ['Netflix', 'https://www.netflix.com'],
-  ['Nookup', 'https://nookup.me/', 'https://nookup.me/assets/favicon.png'],
+  ['Nookup', 'https://nookup.me/', 'https://nookup.me/assets/favicon.png', true],
   ['Météo-France', 'https://meteofrance.com']
 ];
 
@@ -50,16 +54,22 @@ const stripHtml = (value = '') => {
 
 const getArticleImage = (item) => item.thumbnail || item.enclosure?.thumbnail || item.enclosure?.link || '';
 
-const FavoriteTile = ({ title, url, iconUrl, onNavigate }) => {
+const hideArticleCard = (event) => {
+  const card = event.currentTarget.closest('.bluefox-article-card');
+  if (card) card.hidden = true;
+};
+
+const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
   const logo = iconUrl || getFaviconUrl(url);
   const domain = title;
 
   return (
-    <button type="button" onClick={() => onNavigate(url)} className="group flex min-w-0 flex-col items-center gap-2 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
+    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
       <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
+      {isSponsored && <span className="rounded-full bg-[#e6f1fb] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#137b8b]">Sponsorisé</span>}
     </button>
   );
 };
@@ -69,8 +79,6 @@ const SuggestionCard = ({ article }) => (
     href={article.link}
     target="_blank"
     rel="noreferrer"
-    onMouseEnter={(event) => event.currentTarget.querySelectorAll('.bluefox-article-title, .bluefox-article-source').forEach((element) => element.style.setProperty('color', '#137b8b', 'important'))}
-    onMouseLeave={(event) => event.currentTarget.querySelectorAll('.bluefox-article-title, .bluefox-article-source').forEach((element) => element.style.setProperty('color', '#292a2d', 'important'))}
     className="group bluefox-article-card relative flex h-[96px] min-w-0 items-center overflow-hidden rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-3.5 text-left text-[#202124] shadow-none transition-colors duration-200 hover:bg-[#f0f0f1]">
     <div className="min-w-0 flex-1 pr-16">
       <p className="bluefox-article-title line-clamp-2 text-[13px] font-medium leading-[1.35] text-[#292a2d] transition-colors duration-200 group-hover:text-[#137b8b]">{article.title}</p>
@@ -80,7 +88,7 @@ const SuggestionCard = ({ article }) => (
       </span>
     </div>
     <div className="absolute right-2.5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[6px] border border-[#e1e1e4] bg-white p-1.5">
-      {article.image ? <img src={article.image} alt="" loading="lazy" className="h-full w-full rounded-[4px] object-cover" /> : <img src={article.logo} alt="" className="h-9 w-9 object-contain" />}
+      <img src={article.image} alt="" loading="lazy" onError={hideArticleCard} className="h-full w-full rounded-[4px] object-cover" />
     </div>
   </a>
 );
@@ -101,7 +109,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
       if (!response.ok) throw new Error(`${source.name} RSS unavailable`);
       const data = await response.json();
       if (data.status !== 'ok') throw new Error(`${source.name} RSS invalid`);
-      return (data.items || []).slice(0, 3).map((item) => ({
+      return (data.items || []).slice(0, 5).map((item) => ({
         id: `${source.name}-${item.guid || item.link}`,
         title: stripHtml(item.title),
         link: item.link,
@@ -114,8 +122,9 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
 
     const loadedArticles = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
     const uniqueArticles = Array.from(
-      new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
-    ).sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
+      new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])    ).values()
+    ).filter((article) => article.image)
+    .sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
     setArticles(uniqueArticles);
     setNewsError(uniqueArticles.length === 0);
     const isFirstLoad = !hasLoadedNews.current;
@@ -152,7 +161,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
   }, []);
 
   const visibleSuggestions = articles.length > 0
-    ? Array.from({ length: Math.min(6, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
+    ? Array.from({ length: Math.min(9, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
     : [];
 
   return (
@@ -201,7 +210,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
         <section className="mb-12">
           <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">
-            {SHORTCUTS.map(([title, url, iconUrl]) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} onNavigate={onNavigate} />)}
+            {SHORTCUTS.map(([title, url, iconUrl, isSponsored]) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} isSponsored={isSponsored} onNavigate={onNavigate} />)}
           </div>
         </section>
 

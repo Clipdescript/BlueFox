@@ -512,9 +512,12 @@ button {
   filter: brightness(0) saturate(100%) invert(41%) sepia(38%) saturate(1047%) hue-rotate(139deg) brightness(89%) contrast(88%);
 }
 
-:root[data-theme='light'] .bluefox-app .bluefox-article-title,
-:root[data-theme='dark'] .bluefox-app .bluefox-article-title {
+:root[data-theme='light'] .bluefox-app .bluefox-article-title {
   color: #292a2d !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-article-title {
+  color: #ffffff !important;
 }
 
 :root[data-theme='light'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title,

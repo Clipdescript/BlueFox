@@ -32,6 +32,19 @@ import fetchJsonp from 'fetch-jsonp';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
+const GOOGLE_FAVICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
+
+const formatCompactAddress = (url) => {
+  if (!url) return '';
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol === 'bluefox:') return url;
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) return url.replace(/^[a-z]+:\/\//i, '');
+    return `${parsedUrl.hostname.replace(/^www\./i, '')}${parsedUrl.port ? `:${parsedUrl.port}` : ''}`;
+  } catch {
+    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  }
+};
 
 const MenuLogo = ({ className = '' }) => <img src={BLUEFOX_LOGO} alt="" className={`h-4 w-4 object-contain ${className}`} />;
 
@@ -43,8 +56,10 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, currentFavicon, onAssistant, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+  const addressIcon = isAiMode || isSettingsOpen ? BLUEFOX_LOGO : (currentFavicon || GOOGLE_FAVICON);
   const [inputVal, setInputVal] = useState('');
+  const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -125,17 +140,34 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
 
       <div className="relative min-w-0 flex-1">
         <div className="flex h-9 items-center rounded-[9px] border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3]">
-          <img src={currentFavicon || BLUEFOX_LOGO} alt="" className="mr-2 h-[18px] w-[18px] object-contain" />
+          {isSettingsOpen ? (
+            <MdSettings className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
+          ) : (
+            <img
+              src={addressIcon}
+              alt={isAiMode ? 'BlueFox' : 'Google'}
+              className="mr-2 h-[18px] w-[18px] object-contain"
+              onError={(event) => {
+                if (!isAiMode && event.currentTarget.src !== GOOGLE_FAVICON) event.currentTarget.src = GOOGLE_FAVICON;
+              }}
+            />
+          )}
           <input
             type="text"
             className="w-full bg-transparent text-[13px] text-[#292929] outline-none placeholder:text-[#77787b]"
             placeholder="Rechercher ou saisir une adresse"
-            value={inputVal}
+            value={isAddressFocused ? inputVal : formatCompactAddress(currentUrl)}
             onChange={(event) => setInputVal(event.target.value)}
             onClick={(event) => event.currentTarget.select()}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            onFocus={() => inputVal.length > 1 && setShowSuggestions(true)}
+            onBlur={() => {
+              setIsAddressFocused(false);
+              setTimeout(() => setShowSuggestions(false), 200);
+            }}
+            onFocus={() => {
+              setIsAddressFocused(true);
+              if (inputVal.length > 1) setShowSuggestions(true);
+            }}
           />
           <button type="button" onClick={() => onSearch(inputVal)} className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Rechercher"><MdSearch className="text-[17px]" /></button>
           <button type="button" className={`ml-0.5 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Recherche vocale"><MdMic className="text-[17px]" /></button>
@@ -203,7 +235,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, onReload, onBack, onForward, 
 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
-              <MenuRow icon={MdSettings}>Paramètres</MenuRow>
+              <MenuRow icon={MdSettings} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
               <MenuRow icon={MdExitToApp} onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
             </div>
           )}

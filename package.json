@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.12",
+  "version": "2.0.14",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -69,12 +69,13 @@
       "public/**/*",
       "main.js",
       "preload.js",
+      ".env",
       "package.json",
       "splash.html"
     ],
     "directories": {
       "buildResources": "assets",
-      "output": "release-212"
+      "output": "release-214"
     },
     "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
     "win": {

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdSettings } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const CLOSE_ANIMATION_MS = 180;
 
-const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab }) => {
+const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab, isSettingsOpen = false }) => {
   const [closingTabs, setClosingTabs] = useState(() => new Set());
   const tabStripRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -91,7 +91,9 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
                   : 'text-[#68686b] hover:bg-[#e8e7e4] hover:text-[#252525]'
               }`}
             >                <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
-                {tab.isMusic ? (
+                {isSettingsOpen && isActive ? (
+                  <MdSettings className="h-full w-full text-[#137b8b]" aria-hidden="true" />
+                ) : tab.isMusic ? (
                   <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
                 ) : tab.url && tab.favicon ? (
                   <img src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
@@ -102,7 +104,9 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
               </div>
 
               <span className="flex-1 truncate text-[12px] font-normal">
-                {tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
+                {isSettingsOpen && isActive
+                  ? 'Paramètres'
+                  : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
               </span>
 
               <button

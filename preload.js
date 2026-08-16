@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('electron', {
   newWindow: () => ipcRenderer.send('window-new'),
   print: () => ipcRenderer.send('window-print'),
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   onCloseRequest: (callback) => {
     // Wrap callback to ensure it's called safely
     const subscription = (event, ...args) => callback(...args);

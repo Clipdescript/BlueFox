@@ -4,11 +4,13 @@ import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
 import MusicPage from './components/MusicPage';
+import SettingsPage from './components/SettingsPage';
 import { turboScript } from './utils/turbo';
 import { MdSearch, MdClose } from 'react-icons/md';
 
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
+const SETTINGS_URL = 'bluefox://parametres';
 
 const createHomeTab = () => ({
   id: Date.now(),
@@ -59,6 +61,7 @@ function App() {
   const ytWebviewRef = useRef(null);
   const waWebviewRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // BlueFox never stores browsing history.
   const [history] = useState([]);
   const [zoomFactor, setZoomFactor] = useState(1);
@@ -111,6 +114,7 @@ function App() {
   }, [activeTabId]);
 
   const handleTabClick = useCallback((id) => {
+    setIsSettingsOpen(false);
     const nextTab = tabs.find((tab) => tab.id === id);
     setActiveTabId(id);
     setIsAiMode(Boolean(nextTab?.isAi));
@@ -165,6 +169,7 @@ function App() {
   }, [activeTabId]);
 
   const handleNewTab = useCallback(() => {
+    setIsSettingsOpen(false);
     setIsAiMode(false);
     const newId = Date.now();
     setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, isAi: false, isMusic: false, favicon: '', isLoading: false }]);
@@ -172,6 +177,7 @@ function App() {
   }, []);
 
   const handleMusicTab = useCallback(() => {
+    setIsSettingsOpen(false);
     const newId = Date.now();
     setIsAiMode(false);
     setTabs(prev => [...prev, { id: newId, title: 'BlueMusic', url: '', isSearching: false, isAi: false, isMusic: true, favicon: '', isLoading: false }]);
@@ -229,7 +235,16 @@ function App() {
   }, [activeTabId, tabs]);
 
   const handleSearch = useCallback((query) => {
-    let url = query.trim();
+    const requestedUrl = query.trim();
+    const isSettingsQuery = /^(bluefox:\/\/)?param(?:e|è)tres\/?$|^(bluefox:\/\/)?settings\/?$/i.test(requestedUrl);
+    if (isSettingsQuery) {
+      setIsSettingsOpen(true);
+      setIsAiMode(false);
+      return;
+    }
+
+    setIsSettingsOpen(false);
+    let url = requestedUrl;
     const isSearchQuery = !url.includes('.') || url.includes(' ');
     if (isAiMode && isSearchQuery) {
       setAiInitialPrompt(url);
@@ -447,6 +462,7 @@ function App() {
   const handleChatToggle = useCallback(() => toggleSidebarApp('chatgpt', isChatOpen, setIsChatOpen), [isChatOpen]);
   const handleAddSiteToggle = useCallback(() => setIsAddSiteOpen(prev => !prev), []);
   const handleMenuToggle = useCallback(() => setIsMenuOpen(prev => !prev), []);
+  const handleSettingsOpen = useCallback(() => setIsSettingsOpen(true), []);
 
   const handleZoomIn = useCallback(() => {
     setZoomFactor(prev => {
@@ -750,17 +766,21 @@ function App() {
             onTabClick={handleTabClick}
             onTabClose={handleCloseTab}
             onNewTab={handleNewTab}
+            isSettingsOpen={isSettingsOpen}
         />
 
         <TopBar 
             onSearch={handleSearch}
             onAssistant={handleAssistantToggle}
+            onSettings={handleSettingsOpen}
             isAssistantActive={isAiSidebarOpen}
-            currentUrl={activeTab?.url || ''} 
+            currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.url || ''}
+            currentFavicon={activeTab?.favicon || ''}
+            isAiMode={isAiMode}
+            isSettingsOpen={isSettingsOpen}
             onReload={handleReload}
             onBack={handleBack}
             onForward={handleForward}
-            currentFavicon={activeTab?.favicon || ''}
             onNewTab={handleNewTab}
             onPrint={handlePrint}
             onNewWindow={handleNewWindow}
@@ -773,7 +793,9 @@ function App() {
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
           style={{ marginRight: isAiSidebarOpen ? 'min(560px, 100vw)' : '0px' }}
         >
-           {tabs.map(tab => (
+           {isSettingsOpen ? (
+             <SettingsPage onClose={() => setIsSettingsOpen(false)} />
+           ) : tabs.map(tab => (
                <div 
                 key={tab.id} 
                 className={`absolute inset-0 w-full h-full ${tab.id === activeTabId ? 'z-10 visible' : 'z-0 invisible'}`}
@@ -811,7 +833,7 @@ function App() {
            ))}
 
            {/* Floating Mini YouTube Player */}
-           {isYouTubeOpen && showMiniPlayer && miniSrc && (
+           {!isSettingsOpen && isYouTubeOpen && showMiniPlayer && miniSrc && (
              <div 
                className="absolute z-50 w-[360px] h-[220px] bg-black rounded shadow-lg border border-gray-700 overflow-hidden select-none"
                style={{ left: `${miniPos.x}px`, top: `${miniPos.y}px` }}
@@ -844,7 +866,7 @@ function App() {
            )}
 
            {/* Drag movement listeners */}
-           {dragging && (
+           {!isSettingsOpen && dragging && (
              <div
                className="absolute inset-0 z-40"
                onMouseMove={(e) => {
