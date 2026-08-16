@@ -508,7 +508,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
               <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button><span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span><span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
               <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bluefox-ai-send-button' : 'bluefox-ai-audio-button'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? <MdArrowUpward className="text-lg" /> : <MdGraphicEq className="text-[19px]" />}</button></div>
             </div>
-          </form></div>}
+          </form><p className="mt-2 px-2 text-center text-[10px] leading-4 text-[#85868a]">Les réponses de Foxy peuvent contenir des erreurs ou être incomplètes. Vérifiez les informations importantes avant de les utiliser.</p></div>}
 
           {!hasConversation && (
             <>

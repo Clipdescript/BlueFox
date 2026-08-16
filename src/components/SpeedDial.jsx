@@ -3,48 +3,107 @@ import { FaDiscord } from 'react-icons/fa';
 import { MdLanguage, MdMusicNote, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
-const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
-const NEWS_CACHE_KEY = 'bluefox_news_cache_v1';
+const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
+const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
 const NEWS_CACHE_MAX_AGE = 15 * 60 * 1000;
-const NEWS_BATCH_SIZE = 4;
-const RSS_REQUEST_DELAY = 450;
+const NEWS_MAX_AGE = 36 * 60 * 60 * 1000;
+const GDELT_QUERY = 'sourcelang:french';
+const GDELT_MAX_RECORDS = 250;
 
-const NEWS_SOURCES = [
-  { name: 'France 24', feed: 'https://www.france24.com/fr/rss', domain: 'france24.com' },
-  { name: 'RFI', feed: 'https://www.rfi.fr/fr/rss', domain: 'rfi.fr' },
-  { name: 'Franceinfo', feed: 'https://www.francetvinfo.fr/titres.rss', domain: 'francetvinfo.fr' },
-  { name: '20 Minutes', feed: 'https://www.20minutes.fr/feeds/rss-une.xml', domain: '20minutes.fr' },
-  { name: 'Euronews', feed: 'https://fr.euronews.com/rss?format=mrss', domain: 'fr.euronews.com' },
-  { name: "L'Équipe", feed: 'https://dwh.lequipe.fr/api/edito/rss?path=/', domain: 'lequipe.fr' },
-  { name: 'Ouest-France', feed: 'https://www.ouest-france.fr/rss/une', domain: 'ouest-france.fr' },
-  { name: "L'Obs", feed: 'https://www.nouvelobs.com/rss.xml', domain: 'nouvelobs.com' },
-  { name: 'Le Monde', feed: 'https://www.lemonde.fr/rss/tag/actualites.xml', domain: 'lemonde.fr' },
-  { name: 'Libération', feed: 'https://www.liberation.fr/arc/outboundfeeds/rss-all/?outputType=xml', domain: 'liberation.fr' },
-  { name: 'Le Figaro', feed: 'https://www.lefigaro.fr/rss/figaro_actualites.xml', domain: 'lefigaro.fr' },
-  { name: 'BFMTV', feed: 'https://www.bfmtv.com/rss/news-24-7/', domain: 'bfmtv.com' },
-  { name: 'Les Échos', feed: 'https://www.lesechos.fr/rss/rss_une.xml', domain: 'lesechos.fr' },
-  { name: 'Numerama', feed: 'https://www.numerama.com/feed/', domain: 'numerama.com' },
-  { name: 'Futura', feed: 'https://www.futura-sciences.com/rss/actualites.xml', domain: 'futura-sciences.com' },
-  { name: 'Les Numériques', feed: 'https://www.lesnumeriques.com/rss.xml', domain: 'lesnumeriques.com' },
-  { name: 'Journal du Geek', feed: 'https://www.journaldugeek.com/feed/', domain: 'journaldugeek.com' },
-  { name: 'RTL', feed: 'https://www.rtl.fr/rss.xml', domain: 'rtl.fr' },
-  { name: 'France Culture', feed: 'https://www.radiofrance.fr/franceculture/rss', domain: 'radiofrance.fr' },
-  { name: 'La Croix', feed: 'https://www.la-croix.com/RSS/UNES', domain: 'la-croix.com' },
-  { name: 'Paris Match', feed: 'https://www.parismatch.com/rss.xml', domain: 'parismatch.com' },
-  { name: '01net', feed: 'https://www.01net.com/rss/actualites/', domain: '01net.com' }
+// Only show established editorial sources instead of arbitrary sites surfaced by GDELT.
+const TRUSTED_NEWS_SOURCES = [
+  ['leparisien.fr', 'Le Parisien'],
+  ['lachainemeteo.com', 'La Chaîne Météo'],
+  ['france24.com', 'France 24'],
+  ['rfi.fr', 'RFI'],
+  ['francetvinfo.fr', 'franceinfo'],
+  ['20minutes.fr', '20 Minutes'],
+  ['lemonde.fr', 'Le Monde'],
+  ['lefigaro.fr', 'Le Figaro'],
+  ['liberation.fr', 'Libération'],
+  ['bfmtv.com', 'BFMTV'],
+  ['lesechos.fr', 'Les Échos'],
+  ['ouest-france.fr', 'Ouest-France'],
+  ['sudouest.fr', 'Sud Ouest'],
+  ['ladepeche.fr', 'La Dépêche'],
+  ['lavoixdunord.fr', 'La Voix du Nord'],
+  ['leprogres.fr', 'Le Progrès'],
+  ['actu.fr', 'Actu.fr'],
+  ['rtl.fr', 'RTL'],
+  ['radiofrance.fr', 'Radio France'],
+  ['francebleu.fr', 'France Bleu'],
+  ['europe1.fr', 'Europe 1'],
+  ['courrierinternational.com', 'Courrier international'],
+  ['lexpress.fr', "L'Express"],
+  ['lepoint.fr', 'Le Point'],
+  ['marianne.net', 'Marianne'],
+  ['numerama.com', 'Numerama'],
+  ['futura-sciences.com', 'Futura'],
+  ['lesnumeriques.com', 'Les Numériques'],
+  ['01net.com', '01net'],
+  ['frandroid.com', 'Frandroid'],
+  ['euronews.com', 'Euronews']
 ];
 
-const SHORTCUTS = [
-  ['Google', 'https://www.google.com'],
-  ['YouTube', 'https://www.youtube.com'],
-  ['Yahoo Mail', 'https://mail.yahoo.com'],
-  ['Facebook', 'https://www.facebook.com'],
-  ['Google Maps', 'https://maps.google.com'],
-  ['Amazon', 'https://www.amazon.fr'],
-  ['Netflix', 'https://www.netflix.com'],
-  ['Nookup', 'https://nookup.me/', 'https://nookup.me/assets/favicon.png', true],
-  ['Météo-France', 'https://meteofrance.com']
+const getTrustedNewsSource = (domain = '') => {
+  const normalizedDomain = domain.toLowerCase();
+  return TRUSTED_NEWS_SOURCES.find(([trustedDomain]) => (
+    normalizedDomain === trustedDomain || normalizedDomain.endsWith(`.${trustedDomain}`)
+  ));
+};
+
+const hasUsableArticleTitle = (title, link = '') => {
+  const normalizedTitle = stripHtml(title);
+  const normalizedLink = link.toLowerCase();
+  const titleKey = normalizedTitle.toLowerCase().replace(/[\\W_]+/g, '');
+  const linkKey = normalizedLink.replace(/[\\W_]+/g, '');
+  const genericTitle = /^(article|actualite|actualites|news|sans titre|untitled)$/i.test(normalizedTitle);
+
+  return normalizedTitle.length >= 20
+    && /[a-zà-ÿ]{4}/i.test(normalizedTitle)
+    && !genericTitle
+    && !linkKey.endsWith(titleKey);
+};
+
+const DEFAULT_SHORTCUTS = [
+  { title: 'Google', url: 'https://www.google.com' },
+  { title: 'YouTube', url: 'https://www.youtube.com' },
+  { title: 'Yahoo Mail', url: 'https://mail.yahoo.com' },
+  { title: 'Facebook', url: 'https://www.facebook.com' },
+  { title: 'Google Maps', url: 'https://maps.google.com' },
+  { title: 'Amazon', url: 'https://www.amazon.fr' },
+  { title: 'Netflix', url: 'https://www.netflix.com' },
+  { title: 'Nookup', url: 'https://nookup.me/', iconUrl: 'https://nookup.me/assets/favicon.png', isSponsored: true },
+  { title: 'Météo-France', url: 'https://meteofrance.com' }
 ];
+const HOME_SHORTCUTS_KEY = 'bluefox_home_shortcuts_v1';
+
+const normalizeHomeShortcut = (shortcut) => {
+  const candidate = Array.isArray(shortcut)
+    ? { title: shortcut[0], url: shortcut[1], iconUrl: shortcut[2], isSponsored: shortcut[3] }
+    : shortcut;
+  const title = String(candidate?.title || '').trim().slice(0, 80);
+  const url = String(candidate?.url || '').trim();
+  if (!title || !/^https?:\/\//i.test(url)) return null;
+  return {
+    title,
+    url,
+    iconUrl: String(candidate?.iconUrl || '').trim(),
+    isSponsored: Boolean(candidate?.isSponsored)
+  };
+};
+
+const readHomeShortcuts = () => {
+  try {
+    const stored = localStorage.getItem(HOME_SHORTCUTS_KEY);
+    if (stored === null) return DEFAULT_SHORTCUTS;
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return DEFAULT_SHORTCUTS;
+    return parsed.map(normalizeHomeShortcut).filter(Boolean);
+  } catch {
+    return DEFAULT_SHORTCUTS;
+  }
+};
 
 const getFaviconUrl = (url) => {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`; } catch { return ''; }
@@ -56,11 +115,44 @@ const stripHtml = (value = '') => {
   return (element.textContent || '').replace(/\s+/g, ' ').trim();
 };
 
-const getArticleImage = (item) => item.thumbnail || item.enclosure?.thumbnail || item.enclosure?.link || '';
+const getArticleImage = (item) => item.socialimage || item.image || item.thumbnail || item.enclosure?.thumbnail || item.enclosure?.link || '';
 
-const hideArticleCard = (event) => {
-  const card = event.currentTarget.closest('.bluefox-article-card');
-  if (card) card.hidden = true;
+const parseGdeltDate = (value) => {
+  const match = String(value || '').match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
+  if (match) return Date.parse(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`);
+  const parsed = Date.parse(value || '');
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const getArticleDomain = (url, fallback = 'Source inconnue') => {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return fallback; }
+};
+
+const diversifyArticles = (loadedArticles) => {
+  const articlesByDomain = new Map();
+  loadedArticles.forEach((article) => {
+    const domain = article.domain || getArticleDomain(article.link);
+    const domainArticles = articlesByDomain.get(domain) || [];
+    domainArticles.push({ ...article, domain });
+    articlesByDomain.set(domain, domainArticles);
+  });
+
+  const diversified = [];
+  for (let index = 0; ; index += 1) {
+    let addedArticle = false;
+    articlesByDomain.forEach((domainArticles) => {
+      if (domainArticles[index]) {
+        diversified.push(domainArticles[index]);
+        addedArticle = true;
+      }
+    });
+    if (!addedArticle) break;
+  }
+  return diversified;
+};
+
+const hideArticleImage = (event) => {
+  event.currentTarget.style.display = 'none';
 };
 
 const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
@@ -92,24 +184,55 @@ const SuggestionCard = ({ article }) => (
       </span>
     </div>
     <div className="absolute right-2.5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[6px] border border-[#e1e1e4] bg-white p-1.5">
-      <img src={article.image} alt="" loading="lazy" onError={hideArticleCard} className="h-full w-full rounded-[4px] object-cover" />
+      {article.image ? <img src={article.image} alt="" loading="lazy" onError={hideArticleImage} className="h-full w-full rounded-[4px] object-cover" /> : <span className="text-xl font-semibold text-[#9b9ca1]">{article.source?.charAt(0).toUpperCase()}</span>}
     </div>
   </a>
 );
 
 const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
-  const privacyIconRef = useRef(null);
+  const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
   const [articleOffset, setArticleOffset] = useState(0);
-  const sourceCursor = useRef(0);
   const requestInFlight = useRef(false);
 
-  const normalizeArticles = (loadedArticles) => Array.from(
-    new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
-  ).filter((article) => article.image)
-    .sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
+  useEffect(() => {
+    const publishShortcuts = () => {
+      localStorage.setItem(HOME_SHORTCUTS_KEY, JSON.stringify(shortcuts));
+      window.electron?.updateHomeShortcuts?.(shortcuts);
+    };
+    publishShortcuts();
+  }, [shortcuts]);
+
+  useEffect(() => {
+    const refreshShortcuts = () => setShortcuts(readHomeShortcuts());
+    window.addEventListener('storage', refreshShortcuts);
+    window.addEventListener('bluefox-home-shortcuts-changed', refreshShortcuts);
+    return () => {
+      window.removeEventListener('storage', refreshShortcuts);
+      window.removeEventListener('bluefox-home-shortcuts-changed', refreshShortcuts);
+    };
+  }, []);
+
+  const normalizeArticles = (loadedArticles) => {
+    const uniqueArticles = Array.from(
+      new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
+    ).filter((article) => {
+      const age = Date.now() - (article.date || 0);
+      const trustedSource = getTrustedNewsSource(article.domain || getArticleDomain(article.link, ''));
+      return trustedSource
+        && hasUsableArticleTitle(article.title, article.link)
+        && article.language?.toLowerCase() === 'french'
+        && age >= 0
+        && age <= NEWS_MAX_AGE;
+    }).map((article) => ({
+      ...article,
+      source: getTrustedNewsSource(article.domain || getArticleDomain(article.link, ''))[1]
+    })).sort((first, second) => second.date - first.date);
+
+    return diversifyArticles(uniqueArticles);
+  };
 
   const readNewsCache = () => {
     try {
@@ -133,7 +256,8 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     const cached = readNewsCache();
-    const cachedArticles = cached?.articles || [];
+    const cachedArticles = normalizeArticles(cached?.articles || []);
+
     if (cachedArticles.length) {
       setArticles(cachedArticles);
       setNewsLoading(false);
@@ -143,57 +267,53 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
       setNewsError(false);
     }
 
-    const sources = Array.from({ length: Math.min(NEWS_BATCH_SIZE, NEWS_SOURCES.length) }, (_, index) => (
-      NEWS_SOURCES[(sourceCursor.current + index) % NEWS_SOURCES.length]
-    ));
-    sourceCursor.current = (sourceCursor.current + NEWS_BATCH_SIZE) % NEWS_SOURCES.length;
+    try {
+      // GDELT is free/open data; the language query and 24h window keep results recent and French.
+      if (cached && cachedArticles.length && Date.now() - cached.savedAt < NEWS_CACHE_MAX_AGE) return;
 
-    // Persisted cache avoids a burst of RSS calls every time the homepage opens.
-    if (cached && Date.now() - cached.savedAt < NEWS_CACHE_MAX_AGE) {
-      requestInFlight.current = false;
-      return;
-    }
+      const params = new URLSearchParams({
+        query: GDELT_QUERY,
+        mode: 'artlist',
+        format: 'json',
+        maxrecords: String(GDELT_MAX_RECORDS),
+        sort: 'datedesc',
+        timespan: '24h'
+      });
+      const response = await fetch(`${GDELT_API}?${params.toString()}`);
+      if (!response.ok) throw new Error(`GDELT request failed: ${response.status}`);
 
-    const loadedArticles = [];
-    for (const [index, source] of sources.entries()) {
-      if (index > 0) await new Promise((resolve) => window.setTimeout(resolve, RSS_REQUEST_DELAY));
-      try {
-        const response = await fetch(`${RSS_API}${encodeURIComponent(source.feed)}`);
-        // rss2json rate-limits bursts. Skip that source and keep cached/other feeds usable.
-        if (response.status === 429) continue;
-        if (!response.ok) continue;
-        const data = await response.json();
-        if (data.status !== 'ok') continue;
-        loadedArticles.push(...(data.items || []).slice(0, 5).map((item) => ({
-          id: `${source.name}-${item.guid || item.link}`,
+      const data = await response.json();
+      const loadedArticles = (data.articles || []).map((item) => {
+        const link = item.url || item.url_mobile || '';
+        const domain = getArticleDomain(link, item.domain);
+        const trustedSource = getTrustedNewsSource(domain);
+        return {
+          id: `${domain}-${link}`,
           title: stripHtml(item.title),
-          link: item.link,
+          link,
           image: getArticleImage(item),
-          source: source.name,
-          logo: data.feed?.image || getFaviconUrl(source.feed),
-          date: item.pubDate
-        })));
-      } catch {
-        // A single unavailable RSS feed must not break the homepage.
-      }
-    }
+          source: trustedSource?.[1] || domain,
+          domain,
+          logo: getFaviconUrl(link),
+          language: item.language,
+          date: parseGdeltDate(item.seendate || item.date)
+        };
+      });
+      const uniqueArticles = normalizeArticles([...cachedArticles, ...loadedArticles]);
 
-    const uniqueArticles = normalizeArticles([...cachedArticles, ...loadedArticles]);
-    if (uniqueArticles.length) {
+      if (!uniqueArticles.length) throw new Error('No French articles returned by GDELT');
       setArticles(uniqueArticles);
       saveNewsCache(uniqueArticles);
       setNewsError(false);
-      setArticleOffset((currentOffset) => uniqueArticles.length ? currentOffset % uniqueArticles.length : 0);
-    } else {
-      setNewsError(true);
+      setArticleOffset((currentOffset) => currentOffset % uniqueArticles.length);
+    } catch {
+      // Cached articles remain visible when GDELT is temporarily unavailable.
+      setNewsError(!cachedArticles.length);
+    } finally {
+      setNewsLoading(false);
+      requestInFlight.current = false;
     }
-    setNewsLoading(false);
-    requestInFlight.current = false;
   };
-
-  useEffect(() => {
-    privacyIconRef.current?.style.setProperty('color', '#164e86', 'important');
-  }, []);
 
   useEffect(() => {
     let refreshTimer;
@@ -265,14 +385,14 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
         <section className="mb-12">
           <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">
-            {SHORTCUTS.map(([title, url, iconUrl, isSponsored]) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} isSponsored={isSponsored} onNavigate={onNavigate} />)}
+            {shortcuts.map(({ title, url, iconUrl, isSponsored }) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} isSponsored={isSponsored} onNavigate={onNavigate} />)}
           </div>
         </section>
 
         <section className="mb-10">
           <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Rapport de confidentialité</h2>
           <div className="flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
-            <MdSecurity ref={privacyIconRef} className="bluefox-privacy-icon shrink-0 text-lg text-[#164e86]" />
+            <MdSecurity className="bluefox-privacy-icon shrink-0 text-lg text-[#164e86]" />
             <span className="text-lg font-semibold">0</span>
             <span className="text-[12px] text-[#66676c]">BlueFox n’enregistre pas votre historique de navigation.</span>
           </div>

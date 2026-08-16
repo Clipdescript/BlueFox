@@ -1,0 +1,36 @@
+/* Theme-specific colors that must override utility classes and the global neutral text rule. */
+:root[data-theme='light'] .bluefox-app .bluefox-privacy-icon {
+  color: #164e86 !important;
+  filter: none;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-privacy-icon {
+  color: #8fc8ff !important;
+  filter: none;
+}
+
+:root[data-theme='light'] .bluefox-sponsored-badge {
+  background-color: #e6f1fb !important;
+  color: #164e86 !important;
+}
+
+:root[data-theme='dark'] .bluefox-sponsored-badge {
+  background-color: #263e56 !important;
+  color: #b7d8ff !important;
+}
+
+/* Dark mode accent: use violet for article hover and Foxy action controls. */
+:root[data-theme='dark'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title {
+  color: #c084fc !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-audio-button,
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-send-button {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-audio-button svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-send-button svg {
+  color: #ffffff !important;
+}

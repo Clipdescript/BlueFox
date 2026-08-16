@@ -93,6 +93,125 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 const isDev = !app.isPackaged;
+const APP_USER_MODEL_ID = 'com.bluefox.browser';
+if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+const initialJumpListArgs = process.argv;
+
+const JUMP_LIST_ICON = path.join(__dirname, 'public/Logo.ico');
+
+const sanitizeHomeShortcuts = (shortcuts) => (Array.isArray(shortcuts) ? shortcuts : [])
+  .map((shortcut) => ({
+    title: String(shortcut?.title || '').trim().slice(0, 80),
+    url: String(shortcut?.url || '').trim(),
+    iconUrl: String(shortcut?.iconUrl || '').trim()
+  }))
+  .filter((shortcut) => shortcut.title && /^https?:\/\//i.test(shortcut.url))
+  .slice(0, 20);
+
+const createJumpListTask = (title, args) => ({
+  type: 'task',
+  title,
+  program: process.execPath,
+  args: isDev ? `${JSON.stringify(path.join(__dirname, 'main.js'))} ${args}` : args,
+  iconPath: JUMP_LIST_ICON,
+  iconIndex: 0
+});
+
+const updateJumpList = (shortcuts = []) => {
+  if (process.platform !== 'win32' || typeof app.setJumpList !== 'function') return;
+
+  const tasks = [
+    createJumpListTask('Ouvrir', '--bluefox-action=open'),
+    createJumpListTask('Nouvel onglet', '--bluefox-action=new-tab'),
+    createJumpListTask('Nouvelle fenêtre', '--bluefox-action=new-window'),
+    createJumpListTask('Nouvelle fenêtre privée', '--bluefox-action=private-window')
+  ];
+  const shortcutItems = sanitizeHomeShortcuts(shortcuts).map((shortcut) => createJumpListTask(
+    shortcut.title,
+    `--bluefox-action=shortcut --bluefox-url=${encodeURIComponent(shortcut.url)}`
+  ));
+
+  try {
+    app.setJumpList([
+      { type: 'tasks', name: 'BlueFox', items: tasks },
+      { type: 'custom', name: 'Accès rapide', items: shortcutItems }
+    ]);
+  } catch (error) {
+    log.warn(`[JUMP_LIST] Unable to update Windows taskbar menu: ${error.message}`);
+  }
+};
+
+const parseJumpListAction = (commandLine = []) => {
+  const actionArgument = commandLine.find((argument) => argument.startsWith('--bluefox-action='));
+  if (!actionArgument) return null;
+
+  const action = actionArgument.slice('--bluefox-action='.length);
+  const urlArgument = commandLine.find((argument) => argument.startsWith('--bluefox-url='));
+  const url = urlArgument ? decodeURIComponent(urlArgument.slice('--bluefox-url='.length)) : '';
+  return { action, url };
+};
+
+const sendJumpListAction = (action) => {
+  const targetWindow = BrowserWindow.getAllWindows()[0];
+  if (!targetWindow || targetWindow.isDestroyed()) return;
+
+  const deliver = () => {
+    if (!targetWindow.isDestroyed()) targetWindow.webContents.send('jump-list-action', action);
+  };
+  if (targetWindow.webContents.isLoading()) {
+    targetWindow.webContents.once('did-finish-load', deliver);
+  } else {
+    deliver();
+  }
+};
+
+const focusMainWindow = () => {
+  const targetWindow = BrowserWindow.getAllWindows()[0];
+  if (!targetWindow || targetWindow.isDestroyed()) return;
+  if (targetWindow.isMinimized()) targetWindow.restore();
+  targetWindow.show();
+  targetWindow.focus();
+};
+
+function handleJumpListAction(commandLine) {
+  const action = parseJumpListAction(commandLine);
+  if (!action) return;
+
+  if (action.action === 'open') {
+    focusMainWindow();
+  } else if (action.action === 'new-tab') {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    sendJumpListAction({ type: 'new-tab' });
+  } else if (action.action === 'new-window') {
+    createWindow();
+  } else if (action.action === 'private-window') {
+    createWindow({ privateMode: true });
+  } else if (action.action === 'shortcut' && action.url) {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    sendJumpListAction({ type: 'open-shortcut', url: action.url });
+  }
+}
+
+if (hasSingleInstanceLock) {
+  app.on('second-instance', (_event, commandLine) => {
+    const action = parseJumpListAction(commandLine);
+    if (action?.action === 'new-window') {
+      createWindow();
+      return;
+    }
+    if (action?.action === 'private-window') {
+      createWindow({ privateMode: true });
+      return;
+    }
+    focusMainWindow();
+    handleJumpListAction(commandLine);
+  });
+} else {
+  app.quit();
+}
+
 // Bing Wallpaper's official daily archive. It provides real places and nature
 // photography selected by Microsoft, without relying on a preselected local list.
 const NATURE_API = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=8&mkt=fr-FR';
@@ -141,6 +260,10 @@ async function fetchUnusedNatureImage() {
 }
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.on('update-home-shortcuts', (_event, shortcuts) => {
+  updateJumpList(sanitizeHomeShortcuts(shortcuts));
+});
 
 ipcMain.handle('check-for-updates', async () => {
   const currentVersion = app.getVersion();
@@ -284,7 +407,7 @@ const DARK_WINDOW_COLORS = {
 
 const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
 
-function createWindow() {
+function createWindow({ privateMode = false } = {}) {
   const initialWindowColors = nativeTheme.shouldUseDarkColors ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -297,9 +420,10 @@ function createWindow() {
     },
     backgroundColor: initialWindowColors.background,
     icon: path.join(__dirname, 'public/Logo.ico'),
-    show: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+    show: true,      webPreferences: {
+        ...(privateMode ? { partition: `bluefox-private-${Date.now()}` } : {}),
+        preload: path.join(__dirname, 'preload.js'),
+
       nodeIntegration: false,
       contextIsolation: true,
       webviewTag: true,
@@ -466,6 +590,8 @@ if (!isDev) {
 }
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
+
   log.info(`[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
   if (app.isPackaged) {
     try {
@@ -483,7 +609,12 @@ app.whenReady().then(() => {
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
 
-  createWindow();
+  const initialAction = parseJumpListAction(initialJumpListArgs);
+  createWindow({ privateMode: initialAction?.action === 'private-window' });
+  updateJumpList();
+  if (initialAction?.action !== 'new-window' && initialAction?.action !== 'private-window') {
+    handleJumpListAction(initialJumpListArgs);
+  }
 
   // Check for updates (only in production)
   if (!isDev) {

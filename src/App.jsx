@@ -12,6 +12,10 @@ const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 const SETTINGS_URL = 'bluefox://parametres';
 
+// Local development servers commonly omit a domain suffix (for example,
+// "localhost:3000"). Treat them as addresses rather than search queries.
+const isLocalDevelopmentAddress = (value) => /^(?:https?:\/\/)?(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\])(?::\d{1,5})?(?:[/?#].*)?$/i.test(value);
+
 const createSettingsTab = () => ({
   id: Date.now(),
   title: 'Paramètres',
@@ -263,7 +267,8 @@ function App() {
 
     setIsSettingsOpen(false);
     let url = requestedUrl;
-    const isSearchQuery = !url.includes('.') || url.includes(' ');
+    const isLocalAddress = isLocalDevelopmentAddress(url);
+    const isSearchQuery = (!url.includes('.') && !isLocalAddress) || url.includes(' ');
     if (isAiMode && isSearchQuery) {
       setAiInitialPrompt(url);
       if (activeTabId === null) handleNewTab();
@@ -271,8 +276,9 @@ function App() {
     }
     if (isSearchQuery) {
       url = `https://www.google.com/search?q=${encodeURIComponent(url)}&safe=active`;
-    } else if (!url.startsWith('http')) {
-      url = `https://${url}`;
+    } else if (!/^https?:\/\//i.test(url)) {
+      // Dev servers generally expose HTTP, whereas public hosts default to HTTPS.
+      url = `${isLocalAddress ? 'http' : 'https'}://${url}`;
     }
 
     const tab = { id: Date.now(), title: query, url, isSearching: true, favicon: '', isLoading: true };
@@ -312,6 +318,18 @@ function App() {
     const unsubscribe = window.electron?.onOpenUrlInNewTab?.(openUrlInNewTab);
     return () => unsubscribe?.();
   }, [openUrlInNewTab]);
+
+  useEffect(() => {
+    const unsubscribe = window.electron?.onJumpListAction?.((action) => {
+      if (action?.type === 'new-tab') {
+        handleNewTab();
+      }
+      if (action?.type === 'open-shortcut' && action.url) {
+        openUrlInNewTab(action.url);
+      }
+    });
+    return () => unsubscribe?.();
+  }, [handleNewTab, openUrlInNewTab]);
 
   const goHome = useCallback(() => {
      setTabs(prev => prev.map(t => 

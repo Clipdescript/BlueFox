@@ -9,6 +9,12 @@ contextBridge.exposeInMainWorld('electron', {
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  updateHomeShortcuts: (shortcuts) => ipcRenderer.send('update-home-shortcuts', shortcuts),
+  onJumpListAction: (callback) => {
+    const subscription = (_event, action) => callback(action);
+    ipcRenderer.on('jump-list-action', subscription);
+    return () => ipcRenderer.removeListener('jump-list-action', subscription);
+  },
   onCloseRequest: (callback) => {
     // Wrap callback to ensure it's called safely
     const subscription = (event, ...args) => callback(...args);
