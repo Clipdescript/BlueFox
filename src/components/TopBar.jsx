@@ -187,7 +187,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
       <div className="flex shrink-0 items-center gap-0.5">
         <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdChatBubbleOutline className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
-        <div ref={menuRef} className="relative">
+        <div ref={menuRef} className={`relative ${isSettingsOpen ? 'hidden' : ''}`}>
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}

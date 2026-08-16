@@ -155,7 +155,6 @@ const SettingsPage = ({ onClose }) => {
         </header>
 
         <main className="mx-auto max-w-[900px] px-5 py-7 sm:px-8 sm:py-9">
-          <div className="mb-6 flex items-center gap-3"><MdTune className="text-2xl text-[#137b8b]" /><div><p className="font-semibold uppercase tracking-[0.14em] text-[11px] text-[var(--theme-text-muted)]">{SETTINGS_URL}</p><h2 className="text-2xl font-semibold tracking-tight">Paramètres</h2></div></div>
           {filteredNavItems.some(({ id }) => id === activeSection) ? renderSection() : <InfoCard title="Aucun résultat" text="Aucune section ne correspond à votre recherche." />}
         </main>
       </div>
@@ -164,7 +163,7 @@ const SettingsPage = ({ onClose }) => {
 };
 
 const SectionShell = ({ icon: Icon, title, description, children }) => (
-  <section className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-5 shadow-sm sm:p-6"><div className="mb-5 flex items-start gap-3"><Icon className="mt-0.5 text-2xl text-[#137b8b]" /><div><h3 className="text-lg font-semibold">{title}</h3><p className="mt-1 text-sm text-[var(--theme-text-muted)]">{description}</p></div></div>{children}</section>
+  <section className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-5 shadow-sm sm:p-6"><div className="mb-5 flex items-start gap-3"><Icon className="mt-0.5 text-2xl text-[var(--theme-text-muted)]" /><div><h3 className="text-lg font-semibold">{title}</h3><p className="mt-1 text-sm text-[var(--theme-text-muted)]">{description}</p></div></div>{children}</section>
 );
 
 const SettingRow = ({ title, description, children }) => <div className="flex items-center justify-between gap-4 px-4 py-4"><div><p className="font-medium">{title}</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">{description}</p></div><div className="shrink-0">{children}</div></div>;
