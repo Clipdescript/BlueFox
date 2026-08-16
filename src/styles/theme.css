@@ -34,3 +34,26 @@
 :root[data-theme='dark'] .bluefox-app .bluefox-ai-send-button svg {
   color: #ffffff !important;
 }
+
+/* Accent borders for the two primary search inputs. */
+:root[data-theme='light'] .bluefox-app .bluefox-address-bar,
+:root[data-theme='light'] .bluefox-app .bluefox-ai-prompt-bar {
+  border-color: #a9d5dd !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-address-bar:focus-within,
+:root[data-theme='light'] .bluefox-app .bluefox-ai-prompt-bar:focus-within {
+  border-color: #16899b !important;
+  --tw-ring-color: #d9f0f3 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-bar,
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-prompt-bar {
+  border-color: #8b5cf6 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-bar:focus-within,
+:root[data-theme='dark'] .bluefox-app .bluefox-ai-prompt-bar:focus-within {
+  border-color: #a78bfa !important;
+  --tw-ring-color: rgba(139, 92, 246, 0.28) !important;
+}

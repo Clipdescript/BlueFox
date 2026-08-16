@@ -497,6 +497,33 @@ function App() {
   const handleChatToggle = useCallback(() => toggleSidebarApp('chatgpt', isChatOpen, setIsChatOpen), [isChatOpen]);
   const handleAddSiteToggle = useCallback(() => setIsAddSiteOpen(prev => !prev), []);
   const handleMenuToggle = useCallback(() => setIsMenuOpen(prev => !prev), []);
+  const handleAskFoxySelection = useCallback((selection) => {
+    const prompt = String(selection || '').trim().slice(0, 4000);
+    if (!prompt) return;
+
+    const aiTab = {
+      id: Date.now(),
+      title: 'Foxy IA',
+      url: '',
+      isSearching: false,
+      isAi: true,
+      isSettings: false,
+      isMusic: false,
+      favicon: '',
+      isLoading: false
+    };
+    setAiInitialPrompt(prompt);
+    setIsSettingsOpen(false);
+    setIsAiMode(true);
+    setTabs((currentTabs) => [...currentTabs, aiTab]);
+    setActiveTabId(aiTab.id);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = window.electron?.onAskFoxySelection?.(handleAskFoxySelection);
+    return () => unsubscribe?.();
+  }, [handleAskFoxySelection]);
+
   const handleSettingsOpen = useCallback(() => {
     const existingSettingsTab = tabs.find((tab) => tab.isSettings);
     if (existingSettingsTab) {

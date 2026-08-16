@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('open-url-in-new-tab', subscription);
     return () => ipcRenderer.removeListener('open-url-in-new-tab', subscription);
   },
+  onAskFoxySelection: (callback) => {
+    const subscription = (_event, selection) => callback(selection);
+    ipcRenderer.on('ask-foxy-selection', subscription);
+    return () => ipcRenderer.removeListener('ask-foxy-selection', subscription);
+  },
   onBrowserNavigation: (callback) => {
     const subscription = (_event, direction) => callback(direction);
     ipcRenderer.on('browser-navigation', subscription);

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, Menu, shell, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -464,9 +464,12 @@ function createWindow({ privateMode = false } = {}) {
       { role: 'selectAll', label: 'Tout sélectionner' },
       { type: 'separator' },
       {
-        label: 'Rechercher avec Google',
+        label: 'Demander à Foxy',
         visible: params.selectionText.trim().length > 0,
-        click: () => shell.openExternal(`https://google.com/search?q=${encodeURIComponent(params.selectionText)}`)
+        click: () => {
+          const selection = params.selectionText.trim().slice(0, 4000);
+          if (selection && !mainWindow.isDestroyed()) mainWindow.webContents.send('ask-foxy-selection', selection);
+        }
       },
       { type: 'separator' },
       { role: 'reload', label: 'Actualiser' },
