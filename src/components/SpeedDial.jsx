@@ -73,7 +73,7 @@ const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
-      {isSponsored && <span className="rounded-full bg-[#e6f1fb] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#137b8b]">Sponsorisé</span>}
+      {isSponsored && <span className="bluefox-sponsored-badge rounded-full bg-[#e6f1fb] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#137b8b]">Sponsorisé</span>}
     </button>
   );
 };
@@ -85,7 +85,7 @@ const SuggestionCard = ({ article }) => (
     rel="noreferrer"
     className="group bluefox-article-card relative flex h-[96px] min-w-0 items-center overflow-hidden rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-3.5 text-left text-[#202124] shadow-none transition-colors duration-200 hover:bg-[#f0f0f1]">
     <div className="min-w-0 flex-1 pr-16">
-      <p className="bluefox-article-title line-clamp-2 text-[13px] font-medium leading-[1.35] text-[#292a2d] transition-colors duration-200 group-hover:text-[#137b8b]">{article.title}</p>
+      <p className="bluefox-article-title line-clamp-2 text-[13px] font-medium leading-[1.35] text-[#292a2d] transition-colors duration-200 group-hover:text-[#164e86]">{article.title}</p>
       <span className="bluefox-article-source mt-2 flex items-center gap-1.5 truncate text-[11px] text-[#77787c]">
         <img src={article.logo || getFaviconUrl(article.link)} alt="" className="h-4 w-4 shrink-0 rounded-[3px] object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
         <span className="truncate">{article.source}</span>
@@ -192,7 +192,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
   };
 
   useEffect(() => {
-    privacyIconRef.current?.style.setProperty('color', '#137b8b', 'important');
+    privacyIconRef.current?.style.setProperty('color', '#164e86', 'important');
   }, []);
 
   useEffect(() => {
@@ -272,14 +272,14 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
         <section className="mb-10">
           <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Rapport de confidentialité</h2>
           <div className="flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
-            <MdSecurity ref={privacyIconRef} className="bluefox-privacy-icon shrink-0 text-lg text-[#137b8b]" />
+            <MdSecurity ref={privacyIconRef} className="bluefox-privacy-icon shrink-0 text-lg text-[#164e86]" />
             <span className="text-lg font-semibold">0</span>
             <span className="text-[12px] text-[#66676c]">BlueFox n’enregistre pas votre historique de navigation.</span>
           </div>
         </section>
 
         <section>
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Actualités françaises</h2>
+          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Suggestions Foxy IA</h2>
           {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}
           {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">Les suggestions ne sont pas disponibles pour le moment.</div>}

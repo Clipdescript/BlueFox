@@ -508,8 +508,8 @@ button {
 
 :root[data-theme='light'] .bluefox-app .bluefox-privacy-icon,
 :root[data-theme='dark'] .bluefox-app .bluefox-privacy-icon {
-  color: #137b8b !important;
-  filter: brightness(0) saturate(100%) invert(41%) sepia(38%) saturate(1047%) hue-rotate(139deg) brightness(89%) contrast(88%);
+  color: #164e86 !important;
+  filter: none;
 }
 
 :root[data-theme='light'] .bluefox-app .bluefox-article-title {
@@ -521,10 +521,18 @@ button {
 }
 
 :root[data-theme='light'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title,
-:root[data-theme='dark'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title,
+:root[data-theme='dark'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title {
+  color: #164e86 !important;
+}
+
 :root[data-theme='light'] .bluefox-app .bluefox-article-card:hover .bluefox-article-source,
 :root[data-theme='dark'] .bluefox-app .bluefox-article-card:hover .bluefox-article-source {
   color: #137b8b !important;
+}
+
+.bluefox-sponsored-badge {
+  background-color: #e6f1fb !important;
+  color: #164e86 !important;
 }
 
 .bluefox-music-page {
