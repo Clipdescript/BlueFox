@@ -10,7 +10,6 @@ import {
   MdLanguage,
   MdLightMode,
   MdContrast,
-  MdLock,
   MdPalette,
   MdSearch,
   MdSecurity,
@@ -36,6 +35,7 @@ const NAV_ITEMS = [
   { id: 'search', label: 'Moteur de recherche', icon: MdSearch },
   { id: 'downloads', label: 'Téléchargements', icon: MdDownload },
   { id: 'languages', label: 'Langues', icon: MdLanguage },
+  { id: 'updates', label: 'Mise à jour', icon: MdUpdate },
 ];
 
 const SettingsPage = ({ onClose }) => {
@@ -93,6 +93,11 @@ const SettingsPage = ({ onClose }) => {
               <SettingRow title="Historique de navigation" description="BlueFox n’enregistre pas votre historique de navigation."><StatusPill>Protégé</StatusPill></SettingRow>
               <SettingRow title="Adresse interne des paramètres" description="Utilisez bluefox://parametres dans la barre d’adresse pour revenir ici."><code className="rounded-md bg-[var(--theme-surface-muted)] px-2 py-1 text-xs">bluefox://parametres</code></SettingRow>
             </div>
+          </SectionShell>
+        );
+      case 'updates':
+        return (
+          <SectionShell icon={MdUpdate} title="Mise à jour" description="Vérifiez si une nouvelle version de BlueFox est disponible.">
             <VersionCard version={version} updateState={updateState} onCheck={checkForUpdates} />
           </SectionShell>
         );
@@ -126,10 +131,19 @@ const SettingsPage = ({ onClose }) => {
         </div>
         <nav aria-label="Catégories des paramètres" className="space-y-1">
           {filteredNavItems.map(({ id, label, icon: Icon }) => (
-            <button type="button" key={id} onClick={() => setActiveSection(id)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${activeSection === id ? 'bg-[#e8f5f7] font-semibold text-[#137b8b]' : 'text-[var(--theme-text)] hover:bg-[var(--theme-surface-hover)]'}`} aria-current={activeSection === id ? 'page' : undefined}><Icon className="shrink-0 text-[19px]" /><span>{label}</span></button>
+            <button
+              type="button"
+              key={id}
+              onClick={() => setActiveSection(id)}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${activeSection === id ? 'font-semibold' : 'text-[var(--theme-text)] hover:bg-[var(--theme-surface-hover)]'}`}
+              style={activeSection === id ? { backgroundColor: resolvedTheme === 'dark' ? '#303640' : '#eeeeee' } : undefined}
+              aria-current={activeSection === id ? 'page' : undefined}
+            >
+              <Icon className="shrink-0 text-[19px]" style={activeSection === id ? { color: '#137b8b' } : undefined} />
+              <span>{label}</span>
+            </button>
           ))}
         </nav>
-        <div className="mt-6 border-t border-[var(--theme-border)] pt-4"><div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] text-[var(--theme-text-muted)]"><MdLock className="text-[19px]" /><span>Confidentialité BlueFox</span></div></div>
       </aside>
 
       <div className="min-w-0 flex-1 overflow-y-auto">
