@@ -68,18 +68,26 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+*::selection,
 ::selection {
   background: #0078d4 !important;
   color: #ffffff !important;
 }
 
+*::-moz-selection,
 ::-moz-selection {
   background: #0078d4 !important;
   color: #ffffff !important;
 }
 
-:root[data-theme='dark'] ::selection,
-:root[data-theme='dark'] ::-moz-selection {
+html[data-theme='dark'] *::selection,
+html[data-theme='dark'] ::selection {
+  background: #8b5cf6 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] *::-moz-selection,
+html[data-theme='dark'] ::-moz-selection {
   background: #8b5cf6 !important;
   color: #ffffff !important;
 }

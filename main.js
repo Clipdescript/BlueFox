@@ -456,10 +456,12 @@ function createWindow({ privateMode = false } = {}) {
     const selectionColor = currentTheme === 'dark' ? '#8b5cf6' : '#0078d4';
     try {
       const key = await guestContents.insertCSS(`
+        *::selection,
         ::selection {
           background: ${selectionColor} !important;
           color: #ffffff !important;
         }
+        *::-moz-selection,
         ::-moz-selection {
           background: ${selectionColor} !important;
           color: #ffffff !important;
