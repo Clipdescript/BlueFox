@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdSettings } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdSettingsSuggest } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
@@ -91,8 +91,8 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
                   : 'text-[#68686b] hover:bg-[#e8e7e4] hover:text-[#252525]'
               }`}
             >                <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
-                {isSettingsOpen && isActive ? (
-                  <MdSettings className="h-full w-full text-[#137b8b]" aria-hidden="true" />
+                {tab.isSettings ? (
+                  <MdSettingsSuggest className="h-full w-full text-[#137b8b]" aria-hidden="true" />
                 ) : tab.isMusic ? (
                   <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
                 ) : tab.url && tab.favicon ? (
@@ -104,7 +104,7 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
               </div>
 
               <span className="flex-1 truncate text-[12px] font-normal">
-                {isSettingsOpen && isActive
+                {tab.isSettings
                   ? 'Paramètres'
                   : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
               </span>

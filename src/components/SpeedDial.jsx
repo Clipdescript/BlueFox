@@ -4,6 +4,10 @@ import { MdLanguage, MdMusicNote, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const NEWS_CACHE_KEY = 'bluefox_news_cache_v1';
+const NEWS_CACHE_MAX_AGE = 15 * 60 * 1000;
+const NEWS_BATCH_SIZE = 4;
+const RSS_REQUEST_DELAY = 450;
 
 const NEWS_SOURCES = [
   { name: 'France 24', feed: 'https://www.france24.com/fr/rss', domain: 'france24.com' },
@@ -99,41 +103,92 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
   const [articleOffset, setArticleOffset] = useState(0);
-  const hasLoadedNews = useRef(false);
+  const sourceCursor = useRef(0);
+  const requestInFlight = useRef(false);
+
+  const normalizeArticles = (loadedArticles) => Array.from(
+    new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
+  ).filter((article) => article.image)
+    .sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
+
+  const readNewsCache = () => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY) || 'null');
+      if (!cached?.articles?.length) return null;
+      return cached;
+    } catch {
+      return null;
+    }
+  };
+
+  const saveNewsCache = (nextArticles) => {
+    try {
+      localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), articles: nextArticles.slice(0, 120) }));
+    } catch {
+      // News remain available for the current session when storage is unavailable.
+    }
+  };
 
   const loadNews = async () => {
-    setNewsLoading(true);
-    setNewsError(false);
-    const results = await Promise.allSettled(NEWS_SOURCES.map(async (source) => {
-      const response = await fetch(`${RSS_API}${encodeURIComponent(source.feed)}`);
-      if (!response.ok) throw new Error(`${source.name} RSS unavailable`);
-      const data = await response.json();
-      if (data.status !== 'ok') throw new Error(`${source.name} RSS invalid`);
-      return (data.items || []).slice(0, 5).map((item) => ({
-        id: `${source.name}-${item.guid || item.link}`,
-        title: stripHtml(item.title),
-        link: item.link,
-        image: getArticleImage(item),
-        source: source.name,
-        logo: data.feed?.image || getFaviconUrl(source.feed),
-        date: item.pubDate
-      }));
-    }));
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    const cached = readNewsCache();
+    const cachedArticles = cached?.articles || [];
+    if (cachedArticles.length) {
+      setArticles(cachedArticles);
+      setNewsLoading(false);
+      setNewsError(false);
+    } else {
+      setNewsLoading(true);
+      setNewsError(false);
+    }
 
-    const loadedArticles = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
-    const uniqueArticles = Array.from(
-      new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])    ).values()
-    ).filter((article) => article.image)
-    .sort((first, second) => new Date(second.date || 0) - new Date(first.date || 0));
-    setArticles(uniqueArticles);
-    setNewsError(uniqueArticles.length === 0);
-    const isFirstLoad = !hasLoadedNews.current;
-    hasLoadedNews.current = true;
-    setArticleOffset((currentOffset) => {
-      if (!uniqueArticles.length || isFirstLoad) return 0;
-      return (currentOffset + 6) % uniqueArticles.length;
-    });
+    const sources = Array.from({ length: Math.min(NEWS_BATCH_SIZE, NEWS_SOURCES.length) }, (_, index) => (
+      NEWS_SOURCES[(sourceCursor.current + index) % NEWS_SOURCES.length]
+    ));
+    sourceCursor.current = (sourceCursor.current + NEWS_BATCH_SIZE) % NEWS_SOURCES.length;
+
+    // Persisted cache avoids a burst of RSS calls every time the homepage opens.
+    if (cached && Date.now() - cached.savedAt < NEWS_CACHE_MAX_AGE) {
+      requestInFlight.current = false;
+      return;
+    }
+
+    const loadedArticles = [];
+    for (const [index, source] of sources.entries()) {
+      if (index > 0) await new Promise((resolve) => window.setTimeout(resolve, RSS_REQUEST_DELAY));
+      try {
+        const response = await fetch(`${RSS_API}${encodeURIComponent(source.feed)}`);
+        // rss2json rate-limits bursts. Skip that source and keep cached/other feeds usable.
+        if (response.status === 429) continue;
+        if (!response.ok) continue;
+        const data = await response.json();
+        if (data.status !== 'ok') continue;
+        loadedArticles.push(...(data.items || []).slice(0, 5).map((item) => ({
+          id: `${source.name}-${item.guid || item.link}`,
+          title: stripHtml(item.title),
+          link: item.link,
+          image: getArticleImage(item),
+          source: source.name,
+          logo: data.feed?.image || getFaviconUrl(source.feed),
+          date: item.pubDate
+        })));
+      } catch {
+        // A single unavailable RSS feed must not break the homepage.
+      }
+    }
+
+    const uniqueArticles = normalizeArticles([...cachedArticles, ...loadedArticles]);
+    if (uniqueArticles.length) {
+      setArticles(uniqueArticles);
+      saveNewsCache(uniqueArticles);
+      setNewsError(false);
+      setArticleOffset((currentOffset) => uniqueArticles.length ? currentOffset % uniqueArticles.length : 0);
+    } else {
+      setNewsError(true);
+    }
     setNewsLoading(false);
+    requestInFlight.current = false;
   };
 
   useEffect(() => {
@@ -143,8 +198,8 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
   useEffect(() => {
     let refreshTimer;
     const loadWhenIdle = () => {
-      loadNews();
-      refreshTimer = setInterval(loadNews, 5 * 60 * 1000);
+      void loadNews();
+      refreshTimer = setInterval(() => { void loadNews(); }, NEWS_CACHE_MAX_AGE);
     };
     const idleHandle = typeof window.requestIdleCallback === 'function'
       ? window.requestIdleCallback(loadWhenIdle, { timeout: 1500 })

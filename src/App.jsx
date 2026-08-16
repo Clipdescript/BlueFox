@@ -12,6 +12,18 @@ const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 const SETTINGS_URL = 'bluefox://parametres';
 
+const createSettingsTab = () => ({
+  id: Date.now(),
+  title: 'Paramètres',
+  url: SETTINGS_URL,
+  isSearching: false,
+  isAi: false,
+  isSettings: true,
+  isMusic: false,
+  favicon: '',
+  isLoading: false
+});
+
 const createHomeTab = () => ({
   id: Date.now(),
   title: 'Accès rapide',
@@ -29,7 +41,8 @@ function App() {
   const restoredTabs = savedTabs
     ? JSON.parse(savedTabs).map((tab) => ({
         ...tab,
-        isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA'))
+        isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA')),
+        isSettings: Boolean(tab.isSettings || tab.url === SETTINGS_URL || tab.title === 'Paramètres')
       }))
     : [];
   const initialTabs = restoredTabs.length > 0 ? restoredTabs : [createHomeTab()];
@@ -61,7 +74,7 @@ function App() {
   const ytWebviewRef = useRef(null);
   const waWebviewRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(() => Boolean(initialTabs.find((tab) => tab.id === activeTabId)?.isSettings));
   // BlueFox never stores browsing history.
   const [history] = useState([]);
   const [zoomFactor, setZoomFactor] = useState(1);
@@ -114,9 +127,9 @@ function App() {
   }, [activeTabId]);
 
   const handleTabClick = useCallback((id) => {
-    setIsSettingsOpen(false);
     const nextTab = tabs.find((tab) => tab.id === id);
     setActiveTabId(id);
+    setIsSettingsOpen(Boolean(nextTab?.isSettings));
     setIsAiMode(Boolean(nextTab?.isAi));
   }, [tabs]);
 
@@ -148,8 +161,8 @@ function App() {
         localStorage.removeItem('bluefox_active_tab_id');
         return;
     }
-    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isMusic }) => ({
-        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isMusic: Boolean(isMusic), isLoading: false
+    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isSettings, isMusic }) => ({
+        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isSettings: Boolean(isSettings), isMusic: Boolean(isMusic), isLoading: false
     }));
     localStorage.setItem('bluefox_tabs', JSON.stringify(tabsToSave));
     if (activeTabId !== null) {
@@ -219,6 +232,7 @@ function App() {
         const newTabs = prev.filter(t => t.id !== id);
         if (newTabs.length === 0) {
              const replacementTab = createHomeTab();
+             setIsSettingsOpen(false);
              setIsAiMode(false);
              setActiveTabId(replacementTab.id);
              return [replacementTab];
@@ -226,6 +240,7 @@ function App() {
         if (id === activeTabId) {
              const nextActiveTab = newTabs[newTabs.length - 1];
              setActiveTabId(nextActiveTab.id);
+             setIsSettingsOpen(Boolean(nextActiveTab.isSettings));
              setIsAiMode(Boolean(nextActiveTab.isAi));
         }
         return newTabs;
@@ -238,6 +253,9 @@ function App() {
     const requestedUrl = query.trim();
     const isSettingsQuery = /^(bluefox:\/\/)?param(?:e|è)tres\/?$|^(bluefox:\/\/)?settings\/?$/i.test(requestedUrl);
     if (isSettingsQuery) {
+      const settingsTab = tabs.find((tab) => tab.isSettings) || createSettingsTab();
+      if (!tabs.some((tab) => tab.id === settingsTab.id)) setTabs((currentTabs) => [...currentTabs, settingsTab]);
+      setActiveTabId(settingsTab.id);
       setIsSettingsOpen(true);
       setIsAiMode(false);
       return;
@@ -265,11 +283,10 @@ function App() {
     }
 
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId 
-        ? { ...t, url: url, isSearching: true, isMusic: false, title: query, favicon: '', isLoading: true }
+      t.id === activeTabId          ? { ...t, url: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true }
         : t
     ));
-  }, [activeTabId, isAiMode]);
+  }, [activeTabId, isAiMode, tabs]);
 
   const handleAssistantToggle = useCallback(() => {
     setIsAiSidebarOpen((isOpen) => !isOpen);
@@ -299,7 +316,7 @@ function App() {
   const goHome = useCallback(() => {
      setTabs(prev => prev.map(t => 
         t.id === activeTabId 
-          ? { ...t, url: '', isSearching: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
+          ? { ...t, url: '', isSearching: false, isSettings: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
           : t
       ));
   }, [activeTabId]);
@@ -462,7 +479,34 @@ function App() {
   const handleChatToggle = useCallback(() => toggleSidebarApp('chatgpt', isChatOpen, setIsChatOpen), [isChatOpen]);
   const handleAddSiteToggle = useCallback(() => setIsAddSiteOpen(prev => !prev), []);
   const handleMenuToggle = useCallback(() => setIsMenuOpen(prev => !prev), []);
-  const handleSettingsOpen = useCallback(() => setIsSettingsOpen(true), []);
+  const handleSettingsOpen = useCallback(() => {
+    const existingSettingsTab = tabs.find((tab) => tab.isSettings);
+    if (existingSettingsTab) {
+      setActiveTabId(existingSettingsTab.id);
+      setIsSettingsOpen(true);
+      return;
+    }
+    const settingsTab = createSettingsTab();
+    setTabs((currentTabs) => [...currentTabs, settingsTab]);
+    setActiveTabId(settingsTab.id);
+    setIsSettingsOpen(true);
+  }, [tabs]);
+
+  const handleSettingsClose = useCallback(() => {
+    const nextTab = tabs.find((tab) => !tab.isSettings);
+    if (nextTab) {
+      setActiveTabId(nextTab.id);
+      setIsSettingsOpen(false);
+      setIsAiMode(Boolean(nextTab.isAi));
+      return;
+    }
+
+    const replacementTab = createHomeTab();
+    setTabs([replacementTab]);
+    setActiveTabId(replacementTab.id);
+    setIsSettingsOpen(false);
+    setIsAiMode(false);
+  }, [tabs]);
 
   const handleZoomIn = useCallback(() => {
     setZoomFactor(prev => {
@@ -773,6 +817,8 @@ function App() {
             onSearch={handleSearch}
             onAssistant={handleAssistantToggle}
             onSettings={handleSettingsOpen}
+            showHomeButton={Boolean(activeTab?.isSearching) && !isAiMode && !isSettingsOpen}
+            onHome={goHome}
             isAssistantActive={isAiSidebarOpen}
             currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
@@ -793,15 +839,15 @@ function App() {
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
           style={{ marginRight: isAiSidebarOpen ? 'min(560px, 100vw)' : '0px' }}
         >
-           {isSettingsOpen ? (
-             <SettingsPage onClose={() => setIsSettingsOpen(false)} />
-           ) : tabs.map(tab => (
+           {tabs.map(tab => (
                <div 
                 key={tab.id} 
                 className={`absolute inset-0 w-full h-full ${tab.id === activeTabId ? 'z-10 visible' : 'z-0 invisible'}`}
                 style={{ visibility: tab.id === activeTabId ? 'visible' : 'hidden' }}
                >
-                   {tab.isSearching ? (
+                   {tab.isSettings ? (
+                       <SettingsPage onClose={handleSettingsClose} />
+                   ) : tab.isSearching ? (
                         !tab.hibernated ? (
                             <webview 
                                 ref={el => {

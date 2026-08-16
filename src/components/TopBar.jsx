@@ -15,6 +15,7 @@ import {
   MdFavoriteBorder,
   MdHelpOutline,
   MdHistory,
+  MdHomeFilled,
   MdKey,
   MdLock,
   MdMic,
@@ -22,7 +23,7 @@ import {
   MdRefresh,
   MdSearch,
   MdSecurity,
-  MdSettings,
+  MdSettingsSuggest,
   MdMenu,
   MdViewSidebar,
   MdWindow,
@@ -56,7 +57,7 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
   const addressIcon = isAiMode || isSettingsOpen ? BLUEFOX_LOGO : (currentFavicon || GOOGLE_FAVICON);
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
@@ -136,12 +137,13 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
         <button type="button" onClick={onBack} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page précédente"><MdArrowBack className="text-[19px]" /></button>
         <button type="button" onClick={onForward} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page suivante"><MdArrowForward className="text-[19px]" /></button>
         <button type="button" onClick={onReload} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Actualiser"><MdRefresh className="text-[19px]" /></button>
+        {showHomeButton && <button type="button" onClick={onHome} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Accueil" title="Accueil"><MdHomeFilled className="text-[19px]" /></button>}
       </div>
 
       <div className="relative min-w-0 flex-1">
         <div className="flex h-9 items-center rounded-[9px] border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3]">
           {isSettingsOpen ? (
-            <MdSettings className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
+            <MdSettingsSuggest className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
           ) : (
             <img
               src={addressIcon}
@@ -235,7 +237,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
-              <MenuRow icon={MdSettings} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
+              <MenuRow icon={MdSettingsSuggest} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
               <MenuRow icon={MdExitToApp} onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
             </div>
           )}
