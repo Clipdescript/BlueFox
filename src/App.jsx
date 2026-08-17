@@ -310,15 +310,15 @@ function App() {
       url = `${isLocalAddress ? 'http' : 'https'}://${url}`;
     }
 
-    const tab = { id: Date.now(), title: query, url, isSearching: true, favicon: '', isLoading: true };
+    const tab = { id: Date.now(), title: query, url, isSearching: true, favicon: '', isLoading: true, loadCount: 0 };
     if (activeTabId === null) {
       setTabs([tab]);
       setActiveTabId(tab.id);
       return;
     }
-
+    
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId          ? { ...t, url: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true }
+      t.id === activeTabId          ? { ...t, url: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
         : t
     ));
   }, [activeTabId, isAiMode, tabs]);
@@ -400,6 +400,8 @@ function App() {
     return () => unsubscribe?.();
   }, [handleBack, handleForward]);
 
+  const lastUpdateRef = useRef({});
+
   useEffect(() => {
       tabs.forEach(tab => {
           const webview = webviewRefs.current[tab.id];
@@ -407,12 +409,18 @@ function App() {
               webview.dataset.listening = "true";
               
               const updateState = () => {
+                  const now = Date.now();
+                  const lastUpdate = lastUpdateRef.current[tab.id] || 0;
+                  
+                  // Throttle updates to once every 1000ms to prevent flickering during AI generation
+                  if (now - lastUpdate < 1000) return;
+                  lastUpdateRef.current[tab.id] = now;
+
                   setTabs(prev => prev.map(t => {
                       if (t.id === tab.id) {
                           const newTitle = webview.getTitle();
                           const newUrl = webview.getURL();
-                          // Browsing history is intentionally disabled.
-                          // Only update if something changed to avoid unnecessary re-renders
+                          
                           if (t.title !== newTitle || t.url !== newUrl) {
                               return { 
                                   ...t, 
@@ -665,10 +673,9 @@ function App() {
       <SidebarPanel title="ChatGPT" isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
          {(isChatOpen || activeSidebarApps.has('chatgpt')) && (
            <webview 
-              src="https://chat.openai.com"
+              src="https://chatgpt.com"
               className="w-full h-full"
               useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-              
            />
          )}
       </SidebarPanel>
@@ -924,12 +931,12 @@ function App() {
                    ) : tab.isSearching ? (
                         !tab.hibernated ? (
                             <webview 
+                                key={`${tab.id}-${tab.loadCount || 0}`}
                                 ref={el => {
                                   webviewRefs.current[tab.id] = el;
                                 }}
                                 src={tab.url} 
                                 className="w-full h-full"
-                                
                                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                             />
                         ) : (
