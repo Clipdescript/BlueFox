@@ -218,7 +218,7 @@ function App() {
     setIsSettingsOpen(false);
     setIsAiMode(false);
     const newId = Date.now();
-    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', isSearching: false, isAi: false, isMusic: false, favicon: '', isLoading: false }]);
+    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', initialUrl: '', isSearching: false, isAi: false, isMusic: false, favicon: '', isLoading: false }]);
     setActiveTabId(newId);
   }, []);
 
@@ -226,7 +226,7 @@ function App() {
     setIsSettingsOpen(false);
     const newId = Date.now();
     setIsAiMode(false);
-    setTabs(prev => [...prev, { id: newId, title: 'BlueMusic', url: '', isSearching: false, isAi: false, isMusic: true, favicon: '', isLoading: false }]);
+    setTabs(prev => [...prev, { id: newId, title: 'BlueMusic', url: '', initialUrl: '', isSearching: false, isAi: false, isMusic: true, favicon: '', isLoading: false }]);
     setActiveTabId(newId);
   }, []);
 
@@ -310,7 +310,7 @@ function App() {
       url = `${isLocalAddress ? 'http' : 'https'}://${url}`;
     }
 
-    const tab = { id: Date.now(), title: query, url, isSearching: true, favicon: '', isLoading: true, loadCount: 0 };
+    const tab = { id: Date.now(), title: query, url, initialUrl: url, isSearching: true, favicon: '', isLoading: true, loadCount: 0 };
     if (activeTabId === null) {
       setTabs([tab]);
       setActiveTabId(tab.id);
@@ -318,7 +318,7 @@ function App() {
     }
     
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId          ? { ...t, url: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
+      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
         : t
     ));
   }, [activeTabId, isAiMode, tabs]);
@@ -935,7 +935,7 @@ function App() {
                                 ref={el => {
                                   webviewRefs.current[tab.id] = el;
                                 }}
-                                src={tab.url} 
+                                src={tab.initialUrl} 
                                 className="w-full h-full"
                                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                             />
