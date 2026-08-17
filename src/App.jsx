@@ -144,6 +144,18 @@ function App() {
     setIsAiMode(Boolean(nextTab?.isAi));
   }, [tabs]);
 
+  const handleTabsReorder = useCallback((draggedId, targetIndex) => {
+    setTabs((currentTabs) => {
+      const currentIndex = currentTabs.findIndex((tab) => tab.id === draggedId);
+      if (currentIndex < 0 || currentIndex === targetIndex) return currentTabs;
+
+      const nextTabs = [...currentTabs];
+      const [draggedTab] = nextTabs.splice(currentIndex, 1);
+      nextTabs.splice(Math.max(0, Math.min(targetIndex, nextTabs.length)), 0, draggedTab);
+      return nextTabs;
+    });
+  }, []);
+
   // Tab Hibernation Logic - OPTIMIZED FOR SPEED
   useEffect(() => {
     const interval = setInterval(() => {
@@ -905,6 +917,7 @@ function App() {
             onTabClick={handleTabClick}
             onTabClose={handleCloseTab}
             onNewTab={handleNewTab}
+            onTabsReorder={handleTabsReorder}
             isSettingsOpen={isSettingsOpen}
             tabColor={tabColor}
         />

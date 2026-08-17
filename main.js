@@ -489,6 +489,8 @@ function createWindow({ privateMode = false } = {}) {
     }
 
     const selectionColor = currentTheme === 'dark' ? '#8b5cf6' : '#0078d4';
+    const scrollbarThumb = currentTheme === 'dark' ? 'rgba(255, 255, 255, .30)' : 'rgba(70, 78, 95, .28)';
+    const scrollbarThumbHover = currentTheme === 'dark' ? 'rgba(255, 255, 255, .48)' : 'rgba(70, 78, 95, .46)';
     try {
       const key = await guestContents.insertCSS(`
         *::selection,
@@ -500,6 +502,31 @@ function createWindow({ privateMode = false } = {}) {
         ::-moz-selection {
           background: ${selectionColor} !important;
           color: #ffffff !important;
+        }
+        html {
+          scrollbar-width: thin !important;
+          scrollbar-color: ${scrollbarThumb} transparent !important;
+        }
+        *::-webkit-scrollbar {
+          width: 7px !important;
+          height: 7px !important;
+        }
+        *::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        *::-webkit-scrollbar-thumb {
+          min-height: 28px !important;
+          border: 2px solid transparent !important;
+          border-radius: 999px !important;
+          background: ${scrollbarThumb} !important;
+          background-clip: padding-box !important;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+          background: ${scrollbarThumbHover} !important;
+          background-clip: padding-box !important;
+        }
+        *::-webkit-scrollbar-corner {
+          background: transparent !important;
         }
       `);
       if (!guestContents.isDestroyed()) guestSelectionCssKeys.set(guestContents, key);

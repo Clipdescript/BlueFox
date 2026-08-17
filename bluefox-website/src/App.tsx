@@ -8,6 +8,7 @@ import {
   MdDownload,
   MdArrowUpward,
   MdLightMode,
+  MdLock,
   MdNorthEast,
   MdAutorenew,
   MdPayment,
@@ -197,6 +198,50 @@ function App() {
           </div>
         </section>
 
+        <section className="france-section section-shell reveal" aria-labelledby="france-title">
+          <div className="france-copy">
+            <p className="section-label">Confidentialité européenne</p>
+            <h2 id="france-title">Un navigateur français, pensé pour vous.</h2>
+            <p>BlueFox est pensé pour respecter les principes du RGPD et une vision européenne de la confidentialité. Votre navigation reste un espace où vous gardez la main.</p>
+            <p>Nous expliquons ce qui est utilisé, pourquoi, et nous privilégions une expérience française, claire et sans collecte inutile.</p>
+          </div>
+          <div className="france-values" aria-label="Les valeurs de BlueFox">
+            <article className="france-value-card">
+              <span className="france-value-number">01</span>
+              <div className="france-pixel-icon" aria-hidden="true"><MdShield /></div>
+              <h3>Votre espace</h3>
+              <p>Une interface qui vous laisse décider ce qui compte pour vous.</p>
+              <ul className="france-value-list">
+                <li>Onglets clairs</li>
+                <li>Réglages faciles à retrouver</li>
+                <li>Vous gardez la main</li>
+              </ul>
+            </article>
+            <article className="france-value-card">
+              <span className="france-value-number">02</span>
+              <div className="france-pixel-icon blue-pixel-icon" aria-hidden="true"><MdCheckCircle /></div>
+              <h3>Des choix clairs</h3>
+              <p>Des fonctions expliquées simplement, sans vous perdre dans les détails.</p>
+              <ul className="france-value-list">
+                <li>Foxy reste facultatif</li>
+                <li>Pas de réglage caché</li>
+                <li>Une interface lisible</li>
+              </ul>
+            </article>
+            <article className="france-value-card">
+              <span className="france-value-number">03</span>
+              <div className="france-pixel-icon blue-pixel-icon" aria-hidden="true"><MdLock /></div>
+              <h3>Confidentialité européenne</h3>
+              <p>Pensé pour respecter le RGPD et vos choix.</p>
+              <ul className="france-value-list">
+                <li>Vos choix restent lisibles</li>
+                <li>Collecte limitée</li>
+                <li>Une approche transparente</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
         <section className="feature-grid section-shell fl-do-it-all" id="features">
           <div className="feature-grid-heading">
             <p className="section-label">Tout faire avec BlueFox</p>
@@ -343,7 +388,7 @@ function App() {
               <p className="footer-tagline">Plus d'autonomie, moins de pistage, et une IA qui sait rester facultative.</p>
               <div className="footer-socials">
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer"><FaGithub /></a>
-                <a href="https://discord.gg/z3bUt3hCya" target="_blank" rel="noreferrer"><FaDiscord /></a>
+                <a href="https://discord.gg/SctXs4FHCB" target="_blank" rel="noreferrer"><FaDiscord /></a>
               </div>
             </div>
             
@@ -358,7 +403,7 @@ function App() {
               <div className="footer-column">
                 <h4>Ressources</h4>
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer">Open Source</a>
-                <a href="https://discord.gg/z3bUt3hCya" target="_blank" rel="noreferrer">Support Discord</a>
+                <a href="https://discord.gg/SctXs4FHCB" target="_blank" rel="noreferrer">Support Discord</a>
                 <a href="#privacy">Confidentialité</a>
               </div>
             </div>
