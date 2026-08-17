@@ -6,7 +6,6 @@ import SpeedDial from './components/SpeedDial';
 import MusicPage from './components/MusicPage';
 import SettingsPage from './components/SettingsPage';
 import PersonalizationPanel from './components/PersonalizationPanel';
-import { turboScript } from './utils/turbo';
 import { MdSearch, MdClose } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
 
@@ -433,12 +432,6 @@ function App() {
               webview.addEventListener('dom-ready', () => {
                   updateState();
                   setLoading(false);
-                  const pageUrl = webview.getURL() || tab.url || '';
-                  if (!/youtube\.com|youtu\.be/i.test(pageUrl)) {
-                    try {
-                      webview.executeJavaScript(turboScript);
-                    } catch(e) {}
-                  }
               });
               webview.addEventListener('did-start-loading', () => setLoading(true));
               webview.addEventListener('did-stop-loading', () => setLoading(false));
@@ -452,7 +445,12 @@ function App() {
               
               webview.addEventListener('page-title-updated', updateState);
               const updateNavigatedUrl = (event) => {
-                   setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, url: event.url, isLoading: false } : t));
+                   setTabs(prev => prev.map(t => {
+                       if (t.id === tab.id && t.url !== event.url) {
+                           return { ...t, url: event.url, isLoading: false };
+                       }
+                       return t;
+                   }));
               };
 
               webview.addEventListener('did-navigate', updateNavigatedUrl);
@@ -621,7 +619,7 @@ function App() {
            <webview 
               src="https://open.spotify.com"
               className="w-full h-full"
-              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
               
            />
          )}
@@ -644,7 +642,7 @@ function App() {
               }}
               src="https://www.youtube.com"
               className="w-full h-full"
-              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
               
            />
          )}
@@ -657,7 +655,7 @@ function App() {
               ref={el => waWebviewRef.current = el}
               src="https://web.whatsapp.com"
               className="w-full h-full"
-              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
               
            />
          )}
@@ -669,7 +667,7 @@ function App() {
            <webview 
               src="https://chat.openai.com"
               className="w-full h-full"
-              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
               
            />
          )}
@@ -717,7 +715,7 @@ function App() {
              <webview 
                 src={site.url}
                 className="w-full h-full"
-                useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+                useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                 
              />
            )}
@@ -932,7 +930,7 @@ function App() {
                                 src={tab.url} 
                                 className="w-full h-full"
                                 
-                                useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+                                useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                             />
                         ) : (
                             <div className="flex h-full w-full flex-col items-center justify-center bg-[#f4f4f6] text-[#73737d]">
@@ -982,7 +980,7 @@ function App() {
                  src={miniSrc}
                  className="w-full h-[calc(100%-32px)]"
                  
-                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.224 Safari/537.36"
+                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                />
              </div>
            )}
