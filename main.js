@@ -406,9 +406,28 @@ const DARK_WINDOW_COLORS = {
 };
 
 const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
+const isValidWindowColor = (value) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+
+// Dark mode keeps the user's accent as a tint while preserving a readable
+// surface for the native Windows controls and the tab labels.
+const getWindowSurfaceColor = (theme, color) => {
+  if (theme !== 'dark' || !isValidWindowColor(color)) return color;
+  const channels = color.slice(1).match(/.{2}/g).map((channel) => parseInt(channel, 16));
+  const darkSurface = [0x1d, 0x20, 0x26];
+  const mixed = channels.map((channel, index) => Math.round(channel * 0.34 + darkSurface[index] * 0.66));
+  return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+};
+
+const getWindowSymbolColor = (color) => {
+  if (!isValidWindowColor(color)) return '#ffffff';
+  const channels = color.slice(1).match(/.{2}/g).map((channel) => parseInt(channel, 16));
+  const luminance = (channels[0] * 299 + channels[1] * 587 + channels[2] * 114) / 1000;
+  return luminance > 155 ? '#000000' : '#ffffff';
+};
 
 function createWindow({ privateMode = false } = {}) {
   const initialWindowColors = nativeTheme.shouldUseDarkColors ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
+  let currentTabColor = initialWindowColors.titleBar;
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -590,6 +609,17 @@ function createWindow({ privateMode = false } = {}) {
       printBackground: true
     });
   });
+  ipcMain.on('window-tab-color', (event, color) => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+    if (!targetWindow || !isValidWindowColor(color) || typeof targetWindow.setTitleBarOverlay !== 'function') return;
+    currentTabColor = color;
+    const titleBarColor = getWindowSurfaceColor(currentTheme, color);
+    targetWindow.setTitleBarOverlay({
+      color: titleBarColor,
+      symbolColor: getWindowSymbolColor(titleBarColor),
+      height: WINDOW_TITLE_BAR_HEIGHT
+    });
+  });
   ipcMain.on('window-theme', (event, theme) => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender);
     if (!targetWindow) return;
@@ -597,9 +627,11 @@ function createWindow({ privateMode = false } = {}) {
     if (typeof targetWindow.setTitleBarOverlay === 'function') {
       // Electron owns these controls. Matching the TabBar surface keeps the
       // native area continuous; Windows supplies the hover highlight itself.
+      currentTabColor = currentTabColor || windowColors.titleBar;
+      const titleBarColor = getWindowSurfaceColor(theme, currentTabColor);
       targetWindow.setTitleBarOverlay({
-        color: windowColors.titleBar,
-        symbolColor: windowColors.symbol,
+        color: titleBarColor,
+        symbolColor: getWindowSymbolColor(titleBarColor),
         height: WINDOW_TITLE_BAR_HEIGHT
       });
     }

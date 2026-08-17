@@ -1,0 +1,262 @@
+.bluefox-personalization-panel {
+  position: absolute;
+  inset: 96px 0 0 auto;
+  z-index: 40;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  transition: width 300ms ease-out, visibility 0s linear 300ms;
+}
+
+.bluefox-personalization-panel.is-open {
+  width: min(560px, 100vw);
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.bluefox-personalization-panel.is-closed { width: 0; }
+
+.bluefox-personalization-sidebar {
+  display: flex;
+  width: min(560px, 100vw);
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid #e1e0dd;
+  background: #ffffff;
+  color: #292929;
+  box-shadow: -8px 0 28px rgba(32, 33, 36, 0.12);
+}
+
+.bluefox-personalization-header {
+  display: flex;
+  min-height: 48px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e7e6e3;
+  padding: 0 16px;
+}
+
+.bluefox-personalization-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: #292929;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.bluefox-personalization-heading > svg { color: #62656a; font-size: 18px; }
+
+.bluefox-personalization-back,
+.bluefox-personalization-close {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6d6e72;
+  cursor: pointer;
+}
+
+.bluefox-personalization-back:hover,
+.bluefox-personalization-close:hover {
+  background: #e5e6e8;
+  color: #292929;
+}
+
+.bluefox-personalization-content {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90, 90, 90, 0.38) transparent;
+}
+
+.bluefox-personalization-content::-webkit-scrollbar { width: 8px; }
+.bluefox-personalization-content::-webkit-scrollbar-thumb { border-radius: 8px; background: rgba(90, 90, 90, 0.38); }
+.bluefox-personalization-content::-webkit-scrollbar-track { background: transparent; }
+
+.bluefox-personalization-title {
+  margin: 0;
+  color: #202124;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.bluefox-personalization-intro {
+  margin: 7px 0 20px;
+  color: #73757a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bluefox-personalization-tabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e4e3e0;
+}
+
+.bluefox-personalization-tabs button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #73757a;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bluefox-personalization-tabs button:hover { color: #252525; }
+.bluefox-personalization-tabs button.is-active { border-bottom-color: #2563eb; color: #174ea6; }
+.bluefox-personalization-tabs svg { font-size: 17px; }
+
+.bluefox-personalization-section {
+  border: 1px solid #e3e2df;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.bluefox-section-heading h2,
+.bluefox-gallery-heading h2 { margin: 0; color: #252525; font-size: 17px; font-weight: 600; letter-spacing: -0.025em; }
+.bluefox-section-heading p,
+.bluefox-gallery-heading p { margin: 5px 0 16px; color: #77787c; font-size: 12px; line-height: 1.45; }
+
+.bluefox-tab-style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bluefox-tab-style-choice {
+  position: relative;
+  min-width: 0;
+  border: 1px solid #e0e1e3;
+  border-radius: 12px;
+  background: #fafafa;
+  padding: 7px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.bluefox-tab-style-choice:hover { border-color: #9bbdf5; transform: translateY(-1px); }
+.bluefox-tab-style-choice.is-selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16); }
+
+.bluefox-tab-style-browser { overflow: hidden; border: 1px solid #d9dce1; border-radius: 8px; background: var(--preview-surface, #f7f8fa); }
+.bluefox-tab-style-strip { display: flex; height: 30px; align-items: center; gap: 3px; padding: 3px; background: var(--preview-tab-color); }
+.bluefox-mini-tab { display: flex; min-width: 0; height: 24px; align-items: center; gap: 3px; border-radius: 5px 5px 0 0; padding: 0 5px; color: #67696d; font-size: 7px; white-space: nowrap; }
+.bluefox-mini-tab.is-active { background: color-mix(in srgb, var(--preview-tab-color) 75%, #ffffff 25%); box-shadow: inset 0 -2px var(--preview-accent); color: #252525; }
+.bluefox-mini-tab i { width: 6px; height: 6px; border-radius: 50%; background: var(--preview-accent); }
+.bluefox-mini-tab b { font-size: 9px; font-weight: 400; }
+.bluefox-tab-style-strip strong { color: #66686c; font-size: 14px; font-weight: 400; }
+.bluefox-tab-style-address { height: 16px; margin: 6px; border-radius: 99px; background: #e9edf2; }
+.bluefox-tab-style-label { display: block; padding: 7px 2px 2px; color: #55565b; font-size: 11px; text-align: center; }
+.bluefox-tab-style-check { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: #2563eb; color: #ffffff; }
+
+.bluefox-reset-control { display: block; margin: 14px auto 0; border: 0; background: transparent; color: #77787c; cursor: pointer; font-size: 12px; }
+.bluefox-reset-control:hover { color: #174ea6; text-decoration: underline; }
+
+.bluefox-category-grid,
+.bluefox-gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.bluefox-category-choice { min-width: 0; border: 0; background: transparent; cursor: pointer; text-align: center; }
+.bluefox-category-cover { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 13px; background-position: center; background-size: cover; transition: transform 160ms ease, box-shadow 160ms ease; }
+.bluefox-category-choice:hover .bluefox-category-cover { transform: translateY(-2px); box-shadow: 0 7px 15px rgba(32, 33, 36, 0.15); }
+.bluefox-category-label { display: block; min-height: 32px; padding: 6px 2px 0; color: #333438; font-size: 11px; line-height: 1.25; }
+
+.bluefox-import-background {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  border: 1px dashed #b9bdc3;
+  border-radius: 10px;
+  color: #44464a;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bluefox-import-background:hover {
+  border-color: #aeb3ba;
+  background: #e5e6e8;
+  color: #292929;
+}
+.bluefox-import-background input { display: none; }
+
+.bluefox-gallery-heading { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.bluefox-gallery-heading p { margin-bottom: 0; }
+.bluefox-gallery-toggle { display: inline-flex; width: 32px; height: 19px; align-items: center; padding: 2px; border: 1px solid #aaa; border-radius: 99px; background: #f0efed; }
+.bluefox-gallery-toggle i { width: 13px; height: 13px; border-radius: 50%; background: #777; }
+.bluefox-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bluefox-gallery-choice { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border: 2px solid transparent; border-radius: 13px; background: transparent; cursor: pointer; }
+.bluefox-gallery-choice > span { display: block; width: 100%; height: 100%; background-position: center; background-size: cover; transition: transform 180ms ease; }
+.bluefox-gallery-choice:hover > span { transform: scale(1.04); }
+.bluefox-gallery-choice.is-selected { border-color: #a85c22; box-shadow: 0 0 0 2px rgba(168, 92, 34, 0.2); }
+.bluefox-gallery-choice > svg { position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; padding: 3px; border-radius: 50%; background: #a85c22; color: #ffffff; }
+
+:root[data-theme='dark'] .bluefox-personalization-sidebar { border-color: #363c48; background: #1d2026; color: #ffffff; }
+:root[data-theme='dark'] .bluefox-personalization-header,
+:root[data-theme='dark'] .bluefox-personalization-tabs,
+:root[data-theme='dark'] .bluefox-personalization-section { border-color: #363c48; }
+:root[data-theme='dark'] .bluefox-personalization-title,
+:root[data-theme='dark'] .bluefox-section-heading h2,
+:root[data-theme='dark'] .bluefox-gallery-heading h2 { color: #ffffff; }
+:root[data-theme='dark'] .bluefox-personalization-intro,
+:root[data-theme='dark'] .bluefox-section-heading p,
+:root[data-theme='dark'] .bluefox-gallery-heading p,
+:root[data-theme='dark'] .bluefox-category-label { color: #c9cbd1; }
+:root[data-theme='dark'] .bluefox-personalization-section { background: #252932; }
+:root[data-theme='dark'] .bluefox-personalization-tabs button.is-active { border-bottom-color: #a78bfa; color: #c4b5fd; }
+:root[data-theme='dark'] .bluefox-personalization-back:hover,
+:root[data-theme='dark'] .bluefox-personalization-close:hover,
+:root[data-theme='dark'] .bluefox-import-background:hover {
+  background: #4b5059;
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .bluefox-import-background:hover { border-color: #737b88; }
+
+@media (max-width: 640px) {
+  .bluefox-personalization-panel.is-open { width: 100%; }
+  .bluefox-personalization-panel.is-closed { width: 0; }
+  .bluefox-personalization-content { padding: 18px 14px; }
+  .bluefox-personalization-title { font-size: 21px; }
+  .bluefox-tab-style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 380px) {
+  .bluefox-personalization-content { padding: 15px 10px; }
+  .bluefox-personalization-tabs { gap: 8px; }
+  .bluefox-personalization-tabs button { font-size: 11px; }
+  .bluefox-category-grid,
+  .bluefox-gallery-grid { gap: 7px; }
+  .bluefox-category-label { font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-personalization-panel,
+  .bluefox-tab-style-choice,
+  .bluefox-category-cover,
+  .bluefox-gallery-choice > span,
+  .bluefox-personalization-close { transition: none; }
+}

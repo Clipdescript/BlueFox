@@ -5,8 +5,10 @@ import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
 import MusicPage from './components/MusicPage';
 import SettingsPage from './components/SettingsPage';
+import PersonalizationPanel from './components/PersonalizationPanel';
 import { turboScript } from './utils/turbo';
 import { MdSearch, MdClose } from 'react-icons/md';
+import { useTheme } from './utils/theme.js';
 
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
@@ -39,6 +41,7 @@ const createHomeTab = () => ({
 });
 
 function App() {
+  const { resolvedTheme } = useTheme();
   const hasCleanStartup = localStorage.getItem('bluefox_clean_startup_v1') === 'true';
   const savedTabs = hasCleanStartup ? localStorage.getItem('bluefox_tabs') : null;
   const savedActiveId = hasCleanStartup ? localStorage.getItem('bluefox_active_tab_id') : null;
@@ -65,6 +68,9 @@ function App() {
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
+  const [isCompactLayout, setIsCompactLayout] = useState(() => window.innerWidth <= 640);
+  const [homeBackground, setHomeBackground] = useState(() => localStorage.getItem('bluefox_home_background_v1') || '');
   const [isAddSiteOpen, setIsAddSiteOpen] = useState(false);
   const [customSites, setCustomSites] = useState([]);
   const [openCustomSiteId, setOpenCustomSiteId] = useState(null);
@@ -83,6 +89,7 @@ function App() {
   const [history] = useState([]);
   const [zoomFactor, setZoomFactor] = useState(1);
   const [activeSidebarApps, setActiveSidebarApps] = useState(new Set());
+  const [tabColor, setTabColor] = useState(() => localStorage.getItem('bluefox_home_tab_color_v1') || (resolvedTheme === 'dark' ? '#1d2026' : '#f3f2f0'));
   // Clear legacy history and ignore previously saved tabs on the first clean startup.
   useEffect(() => {
      localStorage.removeItem('bluefox_history');
@@ -153,6 +160,29 @@ function App() {
     }, 300000); // Check every 5 minutes instead of 1 minute
     return () => clearInterval(interval);
   }, [activeTabId]);
+
+  useEffect(() => {
+    localStorage.setItem('bluefox_home_tab_color_v1', tabColor);
+    window.electron?.setTabColor?.(tabColor);
+  }, [tabColor]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('bluefox_home_tab_color_v1')) {
+      setTabColor(resolvedTheme === 'dark' ? '#1d2026' : '#f3f2f0');
+    }
+    window.electron?.setTabColor?.(tabColor);
+  }, [resolvedTheme]);
+
+  useEffect(() => {
+    const updateCompactLayout = () => setIsCompactLayout(window.innerWidth <= 640);
+    window.addEventListener('resize', updateCompactLayout);
+    return () => window.removeEventListener('resize', updateCompactLayout);
+  }, []);
+
+  useEffect(() => {
+    if (homeBackground) localStorage.setItem('bluefox_home_background_v1', homeBackground);
+    else localStorage.removeItem('bluefox_home_background_v1');
+  }, [homeBackground]);
 
   useEffect(() => {
     // Wake up active tab
@@ -856,6 +886,7 @@ function App() {
             onTabClose={handleCloseTab}
             onNewTab={handleNewTab}
             isSettingsOpen={isSettingsOpen}
+            tabColor={tabColor}
         />
 
         <TopBar 
@@ -882,7 +913,7 @@ function App() {
 
         <main
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
-          style={{ marginRight: isAiSidebarOpen ? 'min(560px, 100vw)' : '0px' }}
+          style={{ marginRight: (isAiSidebarOpen || isPersonalizationOpen) && !isCompactLayout ? 'min(560px, 100vw)' : '0px' }}
         >
            {tabs.map(tab => (
                <div 
@@ -916,7 +947,7 @@ function App() {
                          {isAiMode ? (
                            <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} onMusicOpen={handleMusicTab} />
                          ) : (
-                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} onMusicOpen={handleMusicTab} />
+                           <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} onMusicOpen={handleMusicTab} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={isPersonalizationOpen} onPersonalizationChange={setIsPersonalizationOpen} homeBackground={homeBackground} />
                          )}
                        </Suspense>
                    )}
@@ -981,6 +1012,16 @@ function App() {
           <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
         </Suspense>
       )}
+
+      <PersonalizationPanel
+        isOpen={isPersonalizationOpen}
+        homeBackground={homeBackground}
+        setHomeBackground={setHomeBackground}
+        tabColor={tabColor}
+        onTabColorChange={setTabColor}
+        resolvedTheme={resolvedTheme}
+        onClose={() => setIsPersonalizationOpen(false)}
+      />
     </div>
   );
 }

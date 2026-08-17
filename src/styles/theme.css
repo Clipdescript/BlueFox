@@ -10,13 +10,13 @@
 }
 
 :root[data-theme='light'] .bluefox-sponsored-badge {
-  background-color: #e6f1fb !important;
-  color: #164e86 !important;
+  background-color: #164e86 !important;
+  color: #ffffff !important;
 }
 
 :root[data-theme='dark'] .bluefox-sponsored-badge {
-  background-color: #263e56 !important;
-  color: #b7d8ff !important;
+  background-color: #164e86 !important;
+  color: #ffffff !important;
 }
 
 /* Dark mode accent: use violet for article hover and Foxy action controls. */
@@ -56,4 +56,205 @@
 :root[data-theme='dark'] .bluefox-app .bluefox-ai-prompt-bar:focus-within {
   border-color: #a78bfa !important;
   --tw-ring-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+/* Homepage image backgrounds: readable white text and translucent glass surfaces. */
+.bluefox-home-customized {
+  color: #ffffff !important;
+  background-color: transparent !important;
+  background-attachment: fixed;
+}
+
+.bluefox-home-customized :where(h1, h2, h3, p, span, button, a) {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized :where(h1, h2, h3, p, span, button, a, svg),
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized :where(h1, h2, h3, p, span, button, a, svg) {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-favorite-tile,
+.bluefox-home-customized .bluefox-home-privacy-card,
+.bluefox-home-customized .bluefox-article-card,
+.bluefox-home-customized .bluefox-home-favorite-icon {
+  border-color: rgba(255, 255, 255, 0.46) !important;
+  background: rgba(20, 28, 42, 0.28) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(8, 14, 24, 0.18) !important;
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+.bluefox-home-customized .bluefox-home-favorite-tile:hover,
+.bluefox-home-customized .bluefox-article-card:hover {
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+.bluefox-home-customized .bluefox-home-favorite-icon {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.bluefox-home-customized .bluefox-article-card [class*="bg-white"] {
+  border-color: rgba(255, 255, 255, 0.48) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.bluefox-home-customized .bluefox-article-title,
+.bluefox-home-customized .bluefox-article-source,
+.bluefox-home-customized .bluefox-article-card:hover .bluefox-article-title,
+.bluefox-home-customized .bluefox-article-card:hover .bluefox-article-source,
+.bluefox-home-customized .bluefox-home-privacy-card,
+.bluefox-home-customized .bluefox-home-privacy-card span,
+.bluefox-home-customized .bluefox-sponsored-badge {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-sponsored-badge {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: #164e86 !important;
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-floating-button,
+.bluefox-home-customized .bluefox-home-floating-tools > *,
+.bluefox-home-customized .bluefox-home-mode-switch {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow: 0 7px 20px rgba(8, 14, 24, 0.18) !important;
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+}
+
+.bluefox-home-customized .bluefox-home-floating-button:hover,
+.bluefox-home-customized .bluefox-home-floating-tools > *:hover,
+.bluefox-home-customized .bluefox-home-mode-switch:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.bluefox-home-customized .bluefox-home-floating-tools > * :where(button, svg),
+.bluefox-home-customized .bluefox-home-floating-button svg,
+.bluefox-home-customized .bluefox-home-mode-switch svg {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-mode-switch > span:first-child {
+  background: rgba(255, 255, 255, 0.84) !important;
+}
+
+.bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-active,
+.bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-inactive {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-active {
+  color: #1c2430 !important;
+}
+
+.bluefox-home-customized .bluefox-article-card img {
+  border-color: rgba(255, 255, 255, 0.44) !important;
+}
+
+/* White homepage controls and a fluid glass WEB/IA switch over image backgrounds. */
+.bluefox-home-control-icon {
+  color: #ffffff !important;
+  fill: currentColor !important;
+}
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized svg {
+  color: #ffffff !important;
+}
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-tools svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-tools svg,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-button svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-button svg,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-privacy-card svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-privacy-card svg {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch {
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(8, 14, 24, 0.2) !important;
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch > span:first-child,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch > span:first-child {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 0 2px 8px rgba(8, 14, 24, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-active,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-inactive,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-active,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-mode-switch .bluefox-mode-label-inactive {
+  color: #ffffff !important;
+}
+
+/* Dark mode homepage: lighter glass surfaces instead of opaque near-black cards. */
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-favorite-tile,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-favorite-icon,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-privacy-card,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-favorite-tile:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card [class*="bg-white"],
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card [class*="bg-[#f"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-title,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-source,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-privacy-card,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-privacy-card span,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) h1,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) h2,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-favorite-tile span {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-floating-button,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-floating-tools > *,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-mode-switch,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-mode-switch {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-control-icon,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-mode-label-active,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-mode-label-inactive {
+  color: #ffffff !important;
+}
+
+@media (max-width: 640px) {
+  .bluefox-home-customized .bluefox-home-floating-tools { gap: 5px; }
+  .bluefox-home-customized .bluefox-home-privacy-card { padding-right: 12px; padding-left: 12px; }
 }

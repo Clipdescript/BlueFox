@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electron', {
   newWindow: () => ipcRenderer.send('window-new'),
   print: () => ipcRenderer.send('window-print'),
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
+  setTabColor: (color) => ipcRenderer.send('window-tab-color', color),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   updateHomeShortcuts: (shortcuts) => ipcRenderer.send('update-home-shortcuts', shortcuts),

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdLanguage, MdMusicNote, MdSecurity } from 'react-icons/md';
+import { MdLanguage, MdMusicNote, MdPalette, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
@@ -77,6 +77,10 @@ const DEFAULT_SHORTCUTS = [
   { title: 'Météo-France', url: 'https://meteofrance.com' }
 ];
 const HOME_SHORTCUTS_KEY = 'bluefox_home_shortcuts_v1';
+const HOME_BACKGROUND_KEY = 'bluefox_home_background_v1';
+const DEFAULT_HOME_BACKGROUND = '';
+const HOME_TAB_COLOR_KEY = 'bluefox_home_tab_color_v1';
+const DEFAULT_HOME_TAB_COLOR = '#f3f2f0';
 
 const normalizeHomeShortcut = (shortcut) => {
   const candidate = Array.isArray(shortcut)
@@ -91,6 +95,14 @@ const normalizeHomeShortcut = (shortcut) => {
     iconUrl: String(candidate?.iconUrl || '').trim(),
     isSponsored: Boolean(candidate?.isSponsored)
   };
+};
+
+const readHomeBackground = () => {
+  try {
+    return localStorage.getItem(HOME_BACKGROUND_KEY) || DEFAULT_HOME_BACKGROUND;
+  } catch {
+    return DEFAULT_HOME_BACKGROUND;
+  }
 };
 
 const readHomeShortcuts = () => {
@@ -160,12 +172,12 @@ const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
   const domain = title;
 
   return (
-    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
-      <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
+    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="bluefox-home-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
+      <span className="bluefox-home-favorite-icon flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
-      {isSponsored && <span className="bluefox-sponsored-badge rounded-full bg-[#e6f1fb] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#137b8b]">Sponsorisé</span>}
+      {isSponsored && <span className="bluefox-sponsored-badge rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em]">Sponsorisé</span>}
     </button>
   );
 };
@@ -189,7 +201,7 @@ const SuggestionCard = ({ article }) => (
   </a>
 );
 
-const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
+const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -340,29 +352,43 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
     : [];
 
   return (
-    <div className="bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124]">
-      <button type="button" onClick={onMusicOpen} className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
-        <MdMusicNote className="text-[21px]" />
+    <div
+      className={`bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124] ${homeBackground ? 'bluefox-home-customized' : ''}`}
+      style={homeBackground ? { '--bluefox-home-background': homeBackground } : undefined}
+    >
+      <button type="button" onClick={onMusicOpen} className="bluefox-home-floating-button fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
+        <MdMusicNote className="bluefox-home-control-icon text-[21px]" />
       </button>
-      <div className="absolute left-5 top-4 z-20 flex items-center gap-2">
+
+      <button
+        type="button"
+        onClick={() => onPersonalizationChange?.(!isPersonalizationOpen)}
+        className={`bluefox-home-floating-button bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0f4ff] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
+        aria-label={isPersonalizationOpen ? 'Fermer la personnalisation' : 'Personnaliser la page d’accueil'}
+        title="Personnaliser"
+      >
+        <MdPalette className="bluefox-home-control-icon text-[21px]" />
+      </button>
+
+      <div className="bluefox-home-floating-tools absolute left-5 top-4 z-20 flex items-center gap-2">
         <ThemeToggle />
         <a
           href="https://discord.gg/z3bUt3hCya"
           onClick={(event) => { event.preventDefault(); onNavigate('https://discord.gg/z3bUt3hCya'); }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#5865f2] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#eef0ff]"
+          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#5865f2] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#eef0ff]"
           aria-label="Rejoindre le serveur Discord BlueFox"
           title="Discord BlueFox"
         >
-          <FaDiscord className="text-[18px]" />
+          <FaDiscord className="bluefox-home-control-icon text-[18px]" />
         </a>
         <a
           href="https://bluefoxbrowser.pages.dev/"
           onClick={(event) => { event.preventDefault(); onNavigate('https://bluefoxbrowser.pages.dev/'); }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#137b8b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#e8f5f7]"
+          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#137b8b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#e8f5f7]"
           aria-label="Ouvrir le site BlueFox"
           title="Site BlueFox"
         >
-          <MdLanguage className="text-[19px]" />
+          <MdLanguage className="bluefox-home-control-icon text-[19px]" />
         </a>
       </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
@@ -374,7 +400,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
             aria-label="Basculer entre le mode web et le mode IA"
             title={isAiMode ? 'Mode IA' : 'Mode normal'}
             onClick={() => onModeChange(!isAiMode)}
-            className={`bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
+            className={`bluefox-home-mode-switch bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
           >
             <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
             <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
@@ -391,7 +417,7 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen }) => {
 
         <section className="mb-10">
           <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Rapport de confidentialité</h2>
-          <div className="flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
+          <div className="bluefox-home-privacy-card flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
             <MdSecurity className="bluefox-privacy-icon shrink-0 text-lg text-[#164e86]" />
             <span className="text-lg font-semibold">0</span>
             <span className="text-[12px] text-[#66676c]">BlueFox n’enregistre pas votre historique de navigation.</span>

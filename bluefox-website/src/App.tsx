@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FaDiscord, FaGithub, FaGlobe } from 'react-icons/fa6';
+﻿import { useEffect, useState } from 'react';
+import { FaDiscord, FaGithub, FaGlobe, FaUsers } from 'react-icons/fa6';
 import {
   MdAutoAwesome,
   MdCheckCircle,
@@ -15,8 +15,12 @@ import {
   MdSpeed,
 } from 'react-icons/md';
 import logoUrl from './assets/Logo.ico';
-import captureUrl from './assets/capture.png';
-import darkCaptureUrl from './assets/capture2.png';
+import captureUrl from './assets/captureclair1.png';
+import darkCaptureUrl from './assets/capturesombre1.png';
+import parametreUrl from './assets/parametreclair.png';
+import darkParametreUrl from './assets/parametresombre.png';
+import iaClairUrl from '../public/iaclair.png';
+import iaSombreUrl from '../public/iasombre.png';
 
 type ReleaseAsset = {
   name: string;
@@ -151,6 +155,14 @@ function App() {
       
       <div className="top-branding section-shell">
         <Brand />
+        <button
+          className="top-theme-toggle"
+          type="button"
+          onClick={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')}
+          aria-label={`Passer en mode ${theme === 'dark' ? 'clair' : 'sombre'}`}
+        >
+          {theme === 'dark' ? <MdLightMode /> : <MdDarkMode />}
+        </button>
       </div>
 
       <main id="top" className="download-page fl26-content">
@@ -206,12 +218,12 @@ function App() {
         <section className="feature-stories section-shell fl-split-page-lower" aria-label="Points forts de BlueFox">
           <article className="feature-story reveal">
             <div className="feature-story-copy">
-              <p className="section-label">Une navigation plus calme</p>
-              <h2>Tout ce dont vous avez besoin, sans le bruit autour.</h2>
-              <p>Onglets, raccourcis, recherche et réglages restent réunis dans une interface pensée pour aller droit au but.</p>
+              <p className="section-label">Contrôle total</p>
+              <h2>Des paramètres clairs, un contrôle complet.</h2>
+              <p>Personnalisez votre expérience en quelques clics. Confidentialité, apparence, fonctionnalités : tous les réglages sont accessibles et transparents.</p>
               <a className="text-link" href="#features">Voir les fonctionnalités <MdNorthEast aria-hidden="true" /></a>
             </div>
-            <div className="feature-story-media"><img src={captureUrl} alt="Page d’accueil de BlueFox Browser" /></div>
+            <div className="feature-story-media"><img src={theme === 'dark' ? darkParametreUrl : parametreUrl} alt="Page des paramètres de BlueFox Browser" /></div>
           </article>
           <article className="feature-story feature-story-reverse reveal">
             <div className="feature-story-copy">
@@ -220,7 +232,7 @@ function App() {
               <p>Le mode IA accompagne votre navigation quand vous en avez besoin, tout en restant désactivable quand vous préférez une expérience classique.</p>
               <a className="text-link" href="#download">Télécharger BlueFox <MdNorthEast aria-hidden="true" /></a>
             </div>
-            <div className="feature-story-media"><img src={darkCaptureUrl} alt="Mode IA de BlueFox Browser" /></div>
+            <div className="feature-story-media"><img src={theme === 'dark' ? iaSombreUrl : iaClairUrl} alt="Mode IA de BlueFox Browser" /></div>
           </article>
         </section>
 
@@ -287,6 +299,36 @@ function App() {
           </div>
         </section>
 
+        <section className="comments-section section-shell reveal" id="comments" aria-labelledby="comments-title">
+          <div className="content-heading comments-heading">
+            <p className="section-label">Ils parlent de BlueFox</p>
+            <h2 id="comments-title">Commentaires</h2>
+          </div>
+          <article className="comment-card">
+            <header className="comment-header">
+              <div className="comment-avatar" aria-hidden="true">𝖅</div>
+              <div>
+                <h3>𝖅𝖔𝖚𝖟𝖟</h3>
+                <p className="comment-subtitle">Fondateur de GetHost</p>
+                <div className="comment-rating" aria-label="5 étoiles">⭐️⭐️⭐️⭐️⭐️</div>
+              </div>
+            </header>
+            <div className="comment-body">
+              <p>́Bluefox est extrêmement simple à prendre en main, tout en offrant des outils poussés et une personnalisation avancée pour les utilisateurs plus exigeants.</p>
+              <p>L'intégration de l'IA apporte un vrai plus au quotidien.</p>
+              <p>Le point fort reste le service client : ultra réactif, à l'écoute et capable de corriger les bugs signalés rapidement !<br />Le fondateur est très accessible et sympathique.</p>
+              <p>De nouvelles fonctionnalités, interfaces et améliorations sont ajoutées régulièrement. Le service est continu, fluide et d'une latence irréprochable.</p>
+              <p>Un immense merci à Bluefox d'exister et de m'accompagner dans mes recherches au quotidien. ❤️</p>
+              <p>Je recommande !</p>
+            </div>
+            <nav className="comment-links" aria-label="Liens de 𝖅𝖔𝖚𝖟𝖟">
+              <a href="https://discord.com/users/1521079154135666699" target="_blank" rel="noreferrer" aria-label="Ajouter 𝖅𝖔𝖚𝖟𝖟 sur Discord" title="Profil Discord de 𝖅𝖔𝖚𝖟𝖟"><FaDiscord aria-hidden="true" /></a>
+              <a href="https://gethost.cloud/" target="_blank" rel="noreferrer" aria-label="Visiter GetHost" title="Site GetHost"><FaGlobe aria-hidden="true" /></a>
+              <a href="https://discord.gg/bz4Adyb95r" target="_blank" rel="noreferrer" aria-label="Rejoindre la communauté Discord de 𝖅𝖔𝖚𝖟𝖟" title="Communauté Discord de 𝖅𝖔𝖚𝖟𝖟"><FaUsers aria-hidden="true" /></a>
+            </nav>
+          </article>
+        </section>
+
         <section className="final-cta section-shell reveal">
           <h2>Le navigateur qui respecte votre espace.</h2>
           <a className="primary-button" href="#download"><MdDownload className="button-icon" aria-hidden="true" /> Télécharger BlueFox</a>
@@ -309,6 +351,7 @@ function App() {
               <div className="footer-column">
                 <h4>Produit</h4>
                 <a href="#features">Fonctionnalités</a>
+                <a href="#comments">Commentaires</a>
                 <a href="#download">Téléchargement</a>
                 <a href={RELEASES_PAGE}>Notes de version</a>
               </div>

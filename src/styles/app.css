@@ -59,6 +59,72 @@ body {
   color: var(--theme-text) !important;
 }
 
+.bluefox-home-customized {
+  background: var(--bluefox-home-background) !important;
+}
+
+.bluefox-tab-bar {
+  background-color: var(--bluefox-tab-color, #f3f2f0) !important;
+  color: #282828;
+}
+
+.bluefox-tab-control-bg {
+  background-color: var(--bluefox-tab-color, #f3f2f0) !important;
+}
+
+.bluefox-tab-bar .bluefox-tab-active {
+  background-color: var(--bluefox-tab-color-value, var(--bluefox-tab-color, #f3f2f0)) !important;
+}
+
+.bluefox-tab-bar .bluefox-tab-close:hover,
+.bluefox-tab-bar button:hover {
+  background-color: color-mix(in srgb, var(--bluefox-tab-color, #f3f2f0) 78%, #ffffff 22%) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar {
+  background-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 34%, #1d2026 66%) !important;
+  border-color: #3b414d !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-control-bg {
+  background-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 34%, #1d2026 66%) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-active {
+  background-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 46%, #2b303a 54%) !important;
+  border-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 62%, #69717e 38%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.34) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-active :where(span, svg) {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-close:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar button:hover {
+  background-color: #555b66 !important;
+  color: #ffffff !important;
+}
+
+.bluefox-customize-trigger {
+  right: 20px;
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+.bluefox-customize-trigger-open {
+  right: calc(min(560px, 100vw) + 20px);
+}
+
+@media (max-width: 640px) {
+  .bluefox-customize-trigger-open {
+    right: calc(100% - 68px);
+  }
+}
+
 button,
 input {
   font: inherit;

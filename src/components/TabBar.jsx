@@ -5,7 +5,7 @@ const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const CLOSE_ANIMATION_MS = 180;
 
-const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab, isSettingsOpen = false }) => {
+const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab, isSettingsOpen = false, tabColor = '#f3f2f0' }) => {
   const [closingTabs, setClosingTabs] = useState(() => new Set());
   const tabStripRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -65,9 +65,9 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
   };
 
   return (
-    <div className="drag-region flex h-12 items-center border-b border-[#d8d7d4] bg-[#f3f2f0] px-2 text-[#282828] select-none">
+    <div className="drag-region bluefox-tab-bar flex h-12 items-center border-b border-[#d8d7d4] px-2 text-[#282828] select-none" style={{ '--bluefox-tab-color': tabColor }}>
       <div className="relative no-drag flex h-full min-w-0 flex-1 items-center">
-        {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f2f0] text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets précédents"><MdChevronLeft className="text-xl" /></button>}
+        {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets précédents"><MdChevronLeft className="text-xl" /></button>}
       <div ref={tabStripRef} className={`no-scrollbar flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-[138px] ${canScrollLeft ? 'pl-9' : ''} ${canScrollRight ? 'pr-[176px]' : ''}`}>
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
@@ -89,8 +89,10 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
                 isActive
                   ? 'z-10 border border-[#d3d2cf] bg-white text-[#252525] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
                   : 'text-[#68686b] hover:bg-[#e8e7e4] hover:text-[#252525]'
-              }`}
-            >                <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
+              } ${isActive ? 'bluefox-tab-active' : ''}`}
+              style={{ '--bluefox-tab-color-value': tabColor }}
+            >
+                <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
                 {tab.isSettings ? (
                   <MdSettingsSuggest className="h-full w-full text-[#137b8b]" aria-hidden="true" />
                 ) : tab.isMusic ? (
@@ -126,7 +128,7 @@ const TabBar = React.memo(({ tabs, activeTabId, onTabClick, onTabClose, onNewTab
           <MdAdd className="text-base" />
         </button>
       </div>
-        {canScrollRight && <button type="button" onClick={() => scrollTabs(1)} className="absolute right-[138px] z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f2f0] text-[#66676b] shadow-[-2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets suivants"><MdChevronRight className="text-xl" /></button>}
+        {canScrollRight && <button type="button" onClick={() => scrollTabs(1)} className="absolute right-[138px] z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[-2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets suivants"><MdChevronRight className="text-xl" /></button>}
       </div>
 
       {/* Native Windows minimize, maximize, and close controls are rendered by Electron's title-bar overlay. */}
