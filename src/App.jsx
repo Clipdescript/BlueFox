@@ -47,6 +47,7 @@ function App() {
   const restoredTabs = savedTabs
     ? JSON.parse(savedTabs).map((tab) => ({
         ...tab,
+        initialUrl: tab.initialUrl || tab.url,
         isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA')),
         isSettings: Boolean(tab.isSettings || tab.url === SETTINGS_URL || tab.title === 'Paramètres')
       }))
@@ -369,8 +370,20 @@ function App() {
   }, [activeTabId]);
 
   const handleReload = useCallback(() => {
-     const webview = webviewRefs.current[activeTabId];
-     if(webview) webview.reload();
+    const webview = webviewRefs.current[activeTabId];
+    if (webview) {
+      try {
+        // Only reload if the webview is ready and attached to DOM
+        if (webview.getWebContentsId && typeof webview.getWebContentsId === 'function') {
+          webview.reload();
+        } else {
+          // Fallback: update initialUrl to force re-render if not ready
+          setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, loadCount: (t.loadCount || 0) + 1 } : t));
+        }
+      } catch (e) {
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, loadCount: (t.loadCount || 0) + 1 } : t));
+      }
+    }
   }, [activeTabId]);
 
   const handlePrint = useCallback(() => {
@@ -412,8 +425,9 @@ function App() {
                   const now = Date.now();
                   const lastUpdate = lastUpdateRef.current[tab.id] || 0;
                   
-                  // Throttle updates to once every 1000ms to prevent flickering during AI generation
-                  if (now - lastUpdate < 1000) return;
+                  // Throttle updates to once every 2000ms for title/URL state to prevent flickering
+                  // But we allow the webview to handle its own internal navigation
+                  if (now - lastUpdate < 2000) return;
                   lastUpdateRef.current[tab.id] = now;
 
                   setTabs(prev => prev.map(t => {
@@ -421,6 +435,7 @@ function App() {
                           const newTitle = webview.getTitle();
                           const newUrl = webview.getURL();
                           
+                          // CRITICAL: Only update state title/url, do NOT let this trigger a re-render of webview src
                           if (t.title !== newTitle || t.url !== newUrl) {
                               return { 
                                   ...t, 
@@ -935,7 +950,7 @@ function App() {
                                 ref={el => {
                                   webviewRefs.current[tab.id] = el;
                                 }}
-                                src={tab.initialUrl} 
+                                src={tab.initialUrl || tab.url} 
                                 className="w-full h-full"
                                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                             />
