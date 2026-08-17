@@ -79,6 +79,36 @@
       "output": "release-225"
     },
     "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
+    "protocols": [
+      {
+        "name": "HTTP URL",
+        "schemes": [
+          "http"
+        ],
+        "role": "Viewer"
+      },
+      {
+        "name": "HTTPS URL",
+        "schemes": [
+          "https"
+        ],
+        "role": "Viewer"
+      },
+      {
+        "name": "FTP URL",
+        "schemes": [
+          "ftp"
+        ],
+        "role": "Viewer"
+      },
+      {
+        "name": "BlueFox Protocol",
+        "schemes": [
+          "bluefox"
+        ],
+        "role": "Viewer"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "public/Logo.ico"
@@ -93,7 +123,9 @@
       "uninstallerIcon": "public/Logo.ico",
       "installerHeaderIcon": "public/Logo.ico",
       "deleteAppDataOnUninstall": true,
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "perMachine": false,
+      "allowElevation": true
     }
   }
 }

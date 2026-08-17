@@ -158,7 +158,14 @@ const sendJumpListAction = (action) => {
   if (!targetWindow || targetWindow.isDestroyed()) return;
 
   const deliver = () => {
-    if (!targetWindow.isDestroyed()) targetWindow.webContents.send('jump-list-action', action);
+    if (!targetWindow.isDestroyed()) {
+      // Handle URLs passed from external sources
+      if (action.type === 'open-url' && action.url) {
+        targetWindow.webContents.send('open-url-in-new-tab', action.url);
+      } else {
+        targetWindow.webContents.send('jump-list-action', action);
+      }
+    }
   };
   if (targetWindow.webContents.isLoading()) {
     targetWindow.webContents.once('did-finish-load', deliver);
@@ -196,6 +203,15 @@ function handleJumpListAction(commandLine) {
 
 if (hasSingleInstanceLock) {
   app.on('second-instance', (_event, commandLine) => {
+    // Check if there's a URL passed in the command line (from external browser link)
+    const urlArg = commandLine.find(arg => /^https?:\/\//i.test(arg));
+    if (urlArg) {
+      log.info(`[PROTOCOL] Second instance opened with URL: ${urlArg}`);
+      focusMainWindow();
+      sendJumpListAction({ type: 'open-url', url: urlArg });
+      return;
+    }
+    
     const action = parseJumpListAction(commandLine);
     if (action?.action === 'new-window') {
       createWindow();
@@ -683,10 +699,20 @@ app.whenReady().then(() => {
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
 
+  // Check if app was opened with a URL (from being set as default browser)
+  const startupUrl = initialJumpListArgs.find(arg => /^https?:\/\//i.test(arg));
+  
   const initialAction = parseJumpListAction(initialJumpListArgs);
   createWindow({ privateMode: initialAction?.action === 'private-window' });
   updateJumpList();
-  if (initialAction?.action !== 'new-window' && initialAction?.action !== 'private-window') {
+  
+  // Handle startup URL if present
+  if (startupUrl) {
+    log.info(`[PROTOCOL] App started with URL: ${startupUrl}`);
+    setTimeout(() => {
+      sendJumpListAction({ type: 'open-url', url: startupUrl });
+    }, 1000);
+  } else if (initialAction?.action !== 'new-window' && initialAction?.action !== 'private-window') {
     handleJumpListAction(initialJumpListArgs);
   }
 
