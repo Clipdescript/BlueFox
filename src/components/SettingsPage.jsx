@@ -3,13 +3,10 @@ import {
   MdArrowBack,
   MdAutorenew,
   MdCheckCircle,
-  MdDarkMode,
   MdDownload,
   MdErrorOutline,
   MdInfoOutline,
   MdLanguage,
-  MdLightMode,
-  MdContrast,
   MdPalette,
   MdSearch,
   MdSecurity,
@@ -18,12 +15,6 @@ import {
   MdUpdate,
 } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
-
-const THEME_OPTIONS = [
-  { value: 'light', label: 'Clair', description: 'Une interface lumineuse.', icon: MdLightMode },
-  { value: 'dark', label: 'Sombre', description: 'Réduit la luminosité.', icon: MdDarkMode },
-  { value: 'system', label: 'Système', description: 'Suit Windows automatiquement.', icon: MdContrast },
-];
 
 const NAV_ITEMS = [
   { id: 'general', label: 'BlueFox et vous', icon: MdTune },
@@ -37,7 +28,7 @@ const NAV_ITEMS = [
 ];
 
 const SettingsPage = ({ onClose }) => {
-  const { mode, resolvedTheme, setMode } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('general');
   const [searchQuery, setSearchQuery] = useState('');
   const [version, setVersion] = useState('—');
@@ -72,16 +63,15 @@ const SettingsPage = ({ onClose }) => {
     switch (activeSection) {
       case 'appearance':
         return (
-          <SectionShell icon={MdPalette} title="Apparence" description="Choisissez le style de BlueFox.">
-            <div className="grid gap-3 sm:grid-cols-3">
-              {THEME_OPTIONS.map(({ value, label, description, icon: Icon }) => (
-                <button type="button" key={value} onClick={() => setMode(value)} className={`rounded-xl border p-4 text-left transition-colors ${mode === value ? 'border-[#137b8b] bg-[#e8f5f7]' : 'border-[var(--theme-border)] hover:bg-[var(--theme-surface-hover)]'}`} aria-pressed={mode === value}>
-                  <span className="flex items-center gap-2 font-medium"><Icon className="text-lg" />{label}</span>
-                  <span className="mt-2 block text-xs text-[var(--theme-text-muted)]">{description}</span>
-                </button>
-              ))}
+          <SectionShell icon={MdPalette} title="Apparence" description="Une interface claire et cohérente, pensée pour BlueFox.">
+            <div className="bluefox-settings-appearance-card rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--theme-surface)] text-[#137b8b] shadow-sm"><MdPalette className="text-xl" /></span>
+                <div className="min-w-0 flex-1"><p className="font-semibold">Thème de l’interface</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">Le sélecteur clair, sombre ou système est disponible en haut à gauche de la page d’accueil.</p></div>
+                <span className="shrink-0 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--theme-text-muted)]">{resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}</span>
+              </div>
             </div>
-            <p className="mt-4 text-xs text-[var(--theme-text-muted)]">Thème actif : <strong>{resolvedTheme === 'dark' ? 'sombre' : 'clair'}</strong>.</p>
+            <div className="mt-3 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3 text-xs text-[var(--theme-text-muted)]">Les couleurs des onglets et le fond de la page d’accueil se personnalisent depuis le bouton Apparence de la page Nouvel onglet.</div>
           </SectionShell>
         );
       case 'privacy':

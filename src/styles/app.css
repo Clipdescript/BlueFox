@@ -70,8 +70,20 @@ body {
   background-color: var(--bluefox-tab-color, #f3f2f0) !important;
 }
 
+.bluefox-tab-separator {
+  width: 1px;
+  height: 12px;
+  flex: 0 0 1px;
+  margin: 0 2px;
+  border-radius: 999px;
+  background: rgba(90, 93, 99, 0.24);
+  opacity: 0.8;
+  transition: opacity 220ms ease, height 220ms ease, background-color 220ms ease;
+}
+
 .bluefox-tab-bar .bluefox-tab-active {
-  background-color: var(--bluefox-tab-color-value, var(--bluefox-tab-color, #f3f2f0)) !important;
+  background-color: color-mix(in srgb, var(--bluefox-tab-color-value, var(--bluefox-tab-color, #f3f2f0)) 58%, #ffffff 42%) !important;
+  transition: background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms ease, box-shadow 280ms ease, color 200ms ease !important;
 }
 
 .bluefox-tab-bar .bluefox-tab-close:hover,
@@ -105,6 +117,105 @@ body {
 :root[data-theme='dark'] .bluefox-app .bluefox-tab-bar button:hover {
   background-color: #555b66 !important;
   color: #ffffff !important;
+}
+
+.bluefox-home-quick-links {
+  width: min(360px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid #d8d7d4;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #202124;
+  box-shadow: 0 16px 42px rgba(32, 33, 36, 0.2), 0 2px 8px rgba(32, 33, 36, 0.08);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+  animation: bluefox-quick-links-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bluefox-home-quick-links-heading {
+  padding: 14px 18px 12px;
+  color: #202124;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.bluefox-home-quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 7px 7px;
+  padding: 12px 8px 10px;
+  border-radius: 20px;
+  background: #f5f5f6;
+}
+
+.bluefox-home-quick-link {
+  display: flex;
+  min-width: 0;
+  min-height: 96px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+  background: transparent;
+  color: #303136;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.bluefox-home-quick-link:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.bluefox-home-quick-link-icon {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 26px;
+  box-shadow: 0 3px 9px rgba(32, 33, 36, 0.1);
+}
+
+.bluefox-home-quick-link-icon.discord { background: #eef0ff; color: #5865f2; }
+.bluefox-home-quick-link-icon.download { background: #e8f5f7; color: #137b8b; }
+.bluefox-home-quick-link-icon.extensions { background: #f1edff; color: #7c3aed; }
+.bluefox-home-quick-link-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+@keyframes bluefox-quick-links-in {
+  from { opacity: 0; transform: translateY(-5px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links {
+  border-color: #3b414d;
+  background: rgba(35, 38, 45, 0.97);
+  color: #f4f5f7;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links-heading { color: #f4f5f7; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links-grid { background: #17191d; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link { color: #f4f5f7; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link:hover { background: #292d35; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28); }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.discord { background: #2d3150; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.download { background: #214247; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.extensions { background: #3b2e55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-home-quick-links { animation: none; }
 }
 
 .bluefox-customize-trigger {
@@ -177,11 +288,11 @@ html[data-theme='dark'] ::-moz-selection {
 @keyframes bluefox-tab-enter {
   from {
     opacity: 0;
-    transform: translateX(-8px) scaleX(0.96);
+    transform: translate3d(-6px, 3px, 0) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scaleX(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -197,7 +308,7 @@ html[data-theme='dark'] ::-moz-selection {
 }
 
 .bluefox-tab-enter {
-  animation: bluefox-tab-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: bluefox-tab-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: left center;
 }
 
@@ -509,6 +620,42 @@ html[data-theme='dark'] ::-moz-selection {
 
 .bluefox-app .bluefox-ai-audio-button svg {
   color: #ffffff !important;
+}
+
+.bluefox-theme-control {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-surface-muted) !important;
+  box-shadow: 0 1px 2px rgba(32, 33, 36, 0.06);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.bluefox-theme-control button:first-child {
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-theme-control button:hover {
+  background-color: var(--theme-surface-hover) !important;
+  color: var(--theme-text-strong) !important;
+}
+
+.bluefox-topbar-mode-switch {
+  border-color: var(--theme-border) !important;
+  background-color: var(--theme-surface-muted) !important;
+  color: var(--theme-text-muted) !important;
+}
+
+.bluefox-topbar-mode-switch > span:first-child {
+  background-color: var(--theme-surface) !important;
+  border: 1px solid var(--theme-border);
+}
+
+.bluefox-topbar-mode-label.is-active {
+  color: var(--theme-text-strong) !important;
+}
+
+.bluefox-topbar-mode-label.is-inactive {
+  color: var(--theme-text-muted) !important;
 }
 
 .bluefox-app .bluefox-mode-switch {
@@ -1314,6 +1461,11 @@ html[data-theme='dark'] ::-moz-selection {
   background-color: #111316 !important;
   border-color: #2d333b !important;
   color: #dbe1ea !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-separator {
+  background: rgba(220, 226, 236, 0.26);
+  opacity: 0.82;
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual {

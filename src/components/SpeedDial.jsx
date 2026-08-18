@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdLanguage, MdMusicNote, MdPalette, MdSecurity } from 'react-icons/md';
+import { MdApps, MdClose, MdDownload, MdExtension, MdPalette, MdSecurity } from 'react-icons/md';
 import ThemeToggle from './ThemeToggle';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
@@ -201,12 +201,13 @@ const SuggestionCard = ({ article }) => (
   </a>
 );
 
-const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
+const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
   const [articleOffset, setArticleOffset] = useState(0);
+  const [isQuickLinksOpen, setIsQuickLinksOpen] = useState(false);
   const requestInFlight = useRef(false);
 
   useEffect(() => {
@@ -356,10 +357,6 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen, tabColor, 
       className={`bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124] ${homeBackground ? 'bluefox-home-customized' : ''}`}
       style={homeBackground ? { '--bluefox-home-background': homeBackground } : undefined}
     >
-      <button type="button" onClick={onMusicOpen} className="bluefox-home-floating-button fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
-        <MdMusicNote className="bluefox-home-control-icon text-[21px]" />
-      </button>
-
       <button
         type="button"
         onClick={() => onPersonalizationChange?.(!isPersonalizationOpen)}
@@ -370,44 +367,43 @@ const SpeedDial = ({ onNavigate, isAiMode, onModeChange, onMusicOpen, tabColor, 
         <MdPalette className="bluefox-home-control-icon text-[21px]" />
       </button>
 
-      <div className="bluefox-home-floating-tools absolute left-5 top-4 z-20 flex items-center gap-2">
+      <div className="bluefox-home-floating-tools absolute left-5 top-4 z-20">
         <ThemeToggle />
-        <a
-          href="https://discord.gg/z3bUt3hCya"
-          onClick={(event) => { event.preventDefault(); onNavigate('https://discord.gg/z3bUt3hCya'); }}
-          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#5865f2] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#eef0ff]"
-          aria-label="Rejoindre le serveur Discord BlueFox"
-          title="Discord BlueFox"
+      </div>
+
+      <div className="absolute right-5 top-4 z-30">
+        <button
+          type="button"
+          onClick={() => setIsQuickLinksOpen((open) => !open)}
+          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#55565b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#202124]"
+          aria-label={isQuickLinksOpen ? 'Fermer les liens BlueFox' : 'Ouvrir les liens BlueFox'}
+          aria-expanded={isQuickLinksOpen}
+          title="Liens BlueFox"
         >
-          <FaDiscord className="bluefox-home-control-icon text-[18px]" />
-        </a>
-        <a
-          href="https://bluefoxbrowser.pages.dev/"
-          onClick={(event) => { event.preventDefault(); onNavigate('https://bluefoxbrowser.pages.dev/'); }}
-          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#137b8b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#e8f5f7]"
-          aria-label="Ouvrir le site BlueFox"
-          title="Site BlueFox"
-        >
-          <MdLanguage className="bluefox-home-control-icon text-[19px]" />
-        </a>
+          {isQuickLinksOpen ? <MdClose className="text-[20px]" /> : <MdApps className="text-[20px]" />}
+        </button>
+
+        {isQuickLinksOpen && (
+          <div className="bluefox-home-quick-links absolute right-0 top-11">
+            <div className="bluefox-home-quick-links-heading">Applications BlueFox</div>
+            <div className="bluefox-home-quick-links-grid">
+              <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le serveur Discord BlueFox">
+                <span className="bluefox-home-quick-link-icon discord"><FaDiscord /></span>
+                <span className="bluefox-home-quick-link-label">Discord</span>
+              </button>
+              <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le site de téléchargement BlueFox">
+                <span className="bluefox-home-quick-link-icon download"><MdDownload /></span>
+                <span className="bluefox-home-quick-link-label">Télécharger</span>
+              </button>
+              <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir les extensions BlueFox">
+                <span className="bluefox-home-quick-link-icon extensions"><MdExtension /></span>
+                <span className="bluefox-home-quick-link-label">Extensions</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
-        <div className="absolute right-5 top-4 z-20">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isAiMode}
-            aria-label="Basculer entre le mode web et le mode IA"
-            title={isAiMode ? 'Mode IA' : 'Mode normal'}
-            onClick={() => onModeChange(!isAiMode)}
-            className={`bluefox-home-mode-switch bluefox-mode-switch relative flex h-8 w-[104px] cursor-pointer items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide shadow-sm transition-colors duration-200 ${isAiMode ? 'border-[#707070] bg-[#707070] text-white' : 'border-[#707070] bg-[#707070] text-white'}`}
-          >
-            <span className={`absolute left-1 top-1 h-6 w-[48px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${isAiMode ? 'translate-x-[48px]' : 'translate-x-0'}`} />
-            <span className={`bluefox-mode-label ${!isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
-            <span className={`bluefox-mode-label ${isAiMode ? 'bluefox-mode-label-active' : 'bluefox-mode-label-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
-          </button>
-        </div>
-
         <section className="mb-12">
           <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">

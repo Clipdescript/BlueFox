@@ -14,7 +14,7 @@ const ThemeToggle = () => {
   const Icon = mode === 'system' ? MdContrast : resolvedTheme === 'dark' ? MdDarkMode : MdLightMode;
 
   return (
-    <div className="relative z-30 flex items-center rounded-full border border-[#d8d7d4] bg-white/90 p-0.5 shadow-sm backdrop-blur-sm" data-theme-control>
+    <div className="bluefox-theme-control relative z-30 flex items-center rounded-full border p-0.5" data-theme-control>
       <button
         type="button"
         onClick={toggleTheme}

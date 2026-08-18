@@ -414,9 +414,6 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
       </aside>
 
       <section onScroll={handleResultsScroll} className="foxy-interface relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-        {!hasConversation && !hideMusicToggle && <button type="button" onClick={onMusicOpen} className="fixed bottom-5 left-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#66676b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#292929]" aria-label="Ouvrir BlueMusic" title="Ouvrir BlueMusic">
-          <MdMusicNote className="text-[21px]" />
-        </button>}
         {hasConversation ? (
         <div className="flex h-14 shrink-0 items-center border-b border-[#e6e5e2] px-6 sm:px-10">
           <div className="flex h-full items-center gap-5 text-[14px] text-[#66676a]">

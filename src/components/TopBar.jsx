@@ -19,6 +19,7 @@ import {
   MdKey,
   MdLock,
   MdMic,
+  MdMusicNote,
   MdPrint,
   MdPictureAsPdf,
   MdPublic,
@@ -36,6 +37,7 @@ import fetchJsonp from 'fetch-jsonp';
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
+const SEARCH_ENGINE_ICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
 
 const formatCompactAddress = (url) => {
   if (!url) return '';
@@ -59,7 +61,7 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onMusicOpen, onModeChange, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
@@ -80,7 +82,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
   }, [suggestions]);
 
   useEffect(() => setInputVal(currentUrl || ''), [currentUrl]);
-  useEffect(() => setIsFaviconBroken(false), [currentFavicon]);
+  useEffect(() => setIsFaviconBroken(false), [currentFavicon, currentUrl, isAiMode, isSettingsOpen]);
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -156,8 +158,15 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
               className="mr-2 h-[18px] w-[18px] object-contain"
               onError={() => setIsFaviconBroken(true)}
             />
+          ) : !currentUrl && !isFaviconBroken ? (
+            <img
+              src={SEARCH_ENGINE_ICON}
+              alt="Moteur de recherche Google"
+              className="mr-2 h-[18px] w-[18px] object-contain"
+              onError={() => setIsFaviconBroken(true)}
+            />
           ) : (
-            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Site sans icône" />
+            <MdSearch className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Moteur de recherche" />
           )}
           <input
             type="text"
@@ -193,7 +202,23 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
       <div className="flex shrink-0 items-center gap-0.5">
         <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdChatBubbleOutline className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
+        <div className="hidden items-center gap-1.5 lg:flex" aria-label="Mode de navigation">
+          <button
+            type="button"
+            onClick={() => onModeChange?.(!isAiMode)}
+            className="bluefox-topbar-mode-switch relative flex h-8 w-[96px] items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide transition-colors"
+            role="switch"
+            aria-checked={isAiMode}
+            aria-label="Basculer entre le mode Web et le mode IA"
+            title={isAiMode ? 'Mode IA' : 'Mode Web'}
+          >
+            <span className="absolute left-1 top-1 h-6 w-[44px] rounded-full shadow-sm transition-transform duration-200 ease-out" style={{ transform: isAiMode ? 'translateX(44px)' : 'translateX(0)' }} />
+            <span className={`bluefox-topbar-mode-label ${isAiMode ? 'is-inactive' : 'is-active'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
+            <span className={`bluefox-topbar-mode-label ${isAiMode ? 'is-active' : 'is-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
+          </button>
+        </div>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
+        <button type="button" onClick={onMusicOpen} className="flex h-9 w-9 items-center justify-center rounded-full text-[#7c3aed] transition-colors hover:bg-[#f1edff] hover:text-[#6d28d9]" aria-label="Ouvrir BlueMusic" title="BlueMusic"><MdMusicNote className="text-[21px]" /></button>
         <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="flex h-9 w-9 items-center justify-center rounded-full text-[#137b8b] transition-colors hover:bg-[#e8f5f7] hover:text-[#0b6573]" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdExtension className="text-[21px]" /></button>
         <div ref={menuRef} className={`relative ${isSettingsOpen ? 'hidden' : ''}`}>
           <button

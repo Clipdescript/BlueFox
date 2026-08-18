@@ -346,7 +346,9 @@ const TabBar = React.memo(({
                 onDragStart={(event) => event.preventDefault()}
                 onPointerDown={(event) => beginTabDrag(event, tab.id)}
               >
-                {index > 0 && <span className="mx-0.5 h-4 w-px shrink-0 bg-[#d2d1ce]" aria-hidden="true" />}
+                {index > 0 && tabs[index - 1]?.id !== activeTabId && tab.id !== activeTabId && (
+                  <span className="bluefox-tab-separator" aria-hidden="true" />
+                )}
                 <TabVisual
                   tab={tab}
                   isActive={isActive}
