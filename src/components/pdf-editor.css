@@ -40,6 +40,7 @@
 }
 
 .pdf-editor-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -91,6 +92,26 @@
   margin: 3px 0 0;
   color: var(--pdf-muted);
   font-size: 11px;
+}
+
+.pdf-powered-by {
+  position: absolute;
+  left: 50%;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: 0;
+  transform: translateX(-50%);
+  color: var(--pdf-muted);
+  font-size: 10px;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.pdf-powered-by strong {
+  color: var(--pdf-accent);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .pdf-editor-header-actions { gap: 8px; }
@@ -353,6 +374,7 @@
 
 .pdf-annotation.is-selected { outline: 2px solid var(--pdf-accent); outline-offset: 1px; }
 .pdf-annotation-text { min-width: 24px; min-height: 18px; background: rgba(255, 255, 255, .54); }
+.pdf-annotation-cover-original { background: #fff; }
 .pdf-annotation-text textarea {
   display: block;
   width: 100%;
@@ -363,7 +385,7 @@
   overflow: auto;
   border: 0;
   outline: 0;
-  background: rgba(255, 255, 255, .68);
+  background: inherit;
   color: inherit;
   line-height: 1.18;
 }
@@ -463,7 +485,9 @@
 
 @media (max-width: 640px) {
   .pdf-editor-header { padding-inline: 10px; }
-  .pdf-editor-title-wrap h1 { max-width: 42vw; }
+  .pdf-editor-title-wrap h1 { max-width: 34vw; }
+  .pdf-powered-by { font-size: 9px; }
+  .pdf-powered-by strong { font-size: 10px; }
   .pdf-save-button { padding-inline: 8px; }
   .pdf-save-button { font-size: 0; }
   .pdf-save-button svg { font-size: 18px; }

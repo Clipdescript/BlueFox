@@ -248,7 +248,7 @@ function PdfPage({
           return (
             <div
               key={annotation.id}
-              className={`pdf-annotation pdf-annotation-${annotation.type} ${selected ? 'is-selected' : ''}`}
+              className={`pdf-annotation pdf-annotation-${annotation.type} ${annotation.coverOriginal ? 'pdf-annotation-cover-original' : ''} ${selected ? 'is-selected' : ''}`}
               style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, width: `${annotation.w * 100}%`, height: `${annotation.h * 100}%`, borderColor: annotation.color }}
               onPointerDown={(event) => {
                 event.stopPropagation();
@@ -363,7 +363,7 @@ function PdfThumbnail({ pdfDocument, pageNumber, rootRef, thumbnailRefs, isActiv
   );
 }
 
-function PdfEditor({ file }) {
+function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
   const [pdfDocument, setPdfDocument] = useState(null);
   const [sourceBytes, setSourceBytes] = useState(null);
   const [annotationsState, setAnnotationsState] = useState({ past: [], present: [], future: [] });
@@ -386,6 +386,7 @@ function PdfEditor({ file }) {
   const pageThumbnailRefs = useRef(new Map());
   const pagesScrollRef = useRef(null);
   const pagesSidebarRef = useRef(null);
+  const lastAiInsertionRef = useRef('');
   const pdfKey = `${file?.filePath || ''}:${file?.fileName || ''}`;
 
   const annotations = annotationsState.present;
@@ -509,13 +510,27 @@ function PdfEditor({ file }) {
   const extractText = useCallback(async () => {
     if (!pdfDocument) return '';
     const chunks = [];
-    for (let index = 1; index <= pdfDocument.numPages && chunks.join('\n').length < 7000; index += 1) {
+    let characterCount = 0;
+    for (let index = 1; index <= pdfDocument.numPages && characterCount < 24000; index += 1) {
       const page = await pdfDocument.getPage(index);
       const content = await page.getTextContent();
-      chunks.push(`Page ${index}: ${(content.items || []).map((item) => item.str || '').join(' ')}`);
+      const pageText = `Page ${index}: ${(content.items || []).map((item) => item.str || '').join(' ')}`;
+      chunks.push(pageText);
+      characterCount += pageText.length;
     }
-    return chunks.join('\n').slice(0, 7000);
+    return chunks.join('\n').slice(0, 24000);
   }, [pdfDocument]);
+
+  const requestFoxy = useCallback(async () => {
+    if (!pdfDocument || !onOpenFoxy) return;
+    try {
+      const text = await extractText();
+      onOpenFoxy('Résume ce document PDF. Tu peux aussi proposer une modification si je te le demande.', text);
+      setStatus('Foxy est ouvert avec le contenu du PDF.');
+    } catch (requestError) {
+      setError(`Impossible de préparer le PDF pour Foxy : ${requestError.message || 'erreur inconnue'}`);
+    }
+  }, [extractText, fileName, onOpenFoxy, pdfDocument]);
 
   const searchDocument = useCallback(async () => {
     const term = normalizeText(searchTerm).toLowerCase();
@@ -550,17 +565,29 @@ function PdfEditor({ file }) {
     }
   };
 
-  const insertAiAnswer = () => {
-    if (!aiAnswer || aiAnswer.startsWith('Erreur :')) return;
-    const cleanAnswer = aiAnswer.replace(/[#*_`]/g, '').slice(0, 1200);
+  const insertTextAnnotation = useCallback((text) => {
+    const cleanAnswer = String(text || '').replace(/[#*_`]/g, '').trim().slice(0, 1600);
+    if (!cleanAnswer) return;
     const lines = cleanAnswer.match(/.{1,70}(?:\s|$)/g) || [cleanAnswer];
-    const height = Math.min(0.55, Math.max(0.12, lines.length * 0.035));
+    const height = Math.min(0.62, Math.max(0.12, lines.length * 0.035));
     createAnnotation({
       id: makeId(), page: currentPage, type: 'text', x: 0.08, y: 0.1, w: 0.82, h: height,
-      text: cleanAnswer, color: '#172033', fontSize: 14
+      text: cleanAnswer, color: '#172033', fontSize: 14, coverOriginal: true
     });
+  }, [createAnnotation, currentPage]);
+
+  const insertAiAnswer = () => {
+    if (!aiAnswer || aiAnswer.startsWith('Erreur :')) return;
+    insertTextAnnotation(aiAnswer);
     setStatus('Réponse de Foxy ajoutée comme annotation.');
   };
+
+  useEffect(() => {
+    if (!aiInsertion?.id || aiInsertion.id === lastAiInsertionRef.current) return;
+    lastAiInsertionRef.current = aiInsertion.id;
+    insertTextAnnotation(aiInsertion.text);
+    setStatus('Foxy a ajouté sa réponse dans le PDF.');
+  }, [aiInsertion, insertTextAnnotation]);
 
   const savePdf = useCallback(async () => {
     if (!sourceBytes || isSaving) return;
@@ -580,6 +607,9 @@ function PdfEditor({ file }) {
         const annotationColor = hexToRgb(annotation.color);
 
         if (annotation.type === 'text') {
+          if (annotation.coverOriginal) {
+            page.drawRectangle({ x, y, width: (annotation.w || 0) * width, height: (annotation.h || 0) * height, color: rgb(1, 1, 1), opacity: 1, borderOpacity: 0 });
+          }
           const fontSize = Math.max(8, Math.min(32, annotation.fontSize || 16));
           const lines = String(annotation.text || '').split('\n').slice(0, 40);
           lines.forEach((line, index) => {
@@ -632,8 +662,11 @@ function PdfEditor({ file }) {
             <p>{pageCount ? `${pageCount} page${pageCount > 1 ? 's' : ''}` : 'Document PDF'}</p>
           </div>
         </div>
+        <div className="pdf-powered-by" aria-label="powered by FoxyPDF">
+          <span>powered by</span> <strong>FoxyPDF</strong>
+        </div>
         <div className="pdf-editor-header-actions">
-          <button type="button" className="pdf-ai-toggle-button" onClick={() => setIsAiOpen((open) => !open)} aria-label="Ouvrir Foxy pour ce PDF" title="Demander à Foxy"><MdAutoAwesome /><span>Demander à Foxy</span></button>
+          <button type="button" className="pdf-ai-toggle-button" onClick={() => void requestFoxy()} disabled={!pdfDocument} aria-label="Ouvrir Foxy pour ce PDF" title="Demander à Foxy"><MdAutoAwesome /><span>Demander à Foxy</span></button>
           <button type="button" className="pdf-save-button" onClick={() => void savePdf()} disabled={isSaving || isLoading}><MdSave />{isSaving ? 'Enregistrement…' : 'Enregistrer sous'}</button>
         </div>
       </header>

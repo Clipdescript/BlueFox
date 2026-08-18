@@ -362,6 +362,31 @@ ipcMain.handle('save-pdf', async (event, payload = {}) => {
   return { fileName: path.basename(filePath), filePath };
 });
 
+ipcMain.handle('search-youtube', async (_event, rawQuery) => {
+  const query = String(rawQuery || '').trim().slice(0, 160);
+  if (!query) return { ok: false, error: 'Écris un titre ou un artiste à rechercher.' };
+
+  try {
+    const youtubeSearch = await import('youtube-search-without-api-key');
+    const results = await youtubeSearch.search(query);
+    return {
+      ok: true,
+      results: (results || []).slice(0, 12).map((result) => ({
+        id: result.id?.videoId || '',
+        title: result.title || result.snippet?.title || 'Vidéo YouTube',
+        description: result.description || '',
+        duration: result.duration_raw || result.snippet?.duration || '',
+        channel: result.snippet?.channelTitle || result.author?.name || '',
+        thumbnail: result.snippet?.thumbnails?.high?.url || result.snippet?.thumbnails?.default?.url || (result.id?.videoId ? `https://i.ytimg.com/vi/${result.id.videoId}/hqdefault.jpg` : ''),
+        url: result.url || (result.id?.videoId ? `https://www.youtube.com/watch?v=${result.id.videoId}` : '')
+      })).filter((result) => result.id)
+    };
+  } catch (error) {
+    log.warn(`YouTube search unavailable: ${error.message}`);
+    return { ok: false, error: 'La recherche YouTube est indisponible pour le moment.' };
+  }
+});
+
 ipcMain.on('update-home-shortcuts', (_event, shortcuts) => {
   updateJumpList(sanitizeHomeShortcuts(shortcuts));
 });
@@ -389,17 +414,66 @@ ipcMain.handle('fetch-nature-background', async () => {
   }
 });
 
-ipcMain.handle('ask-ai', async (event, rawPrompt) => {
-  const prompt = String(rawPrompt || '').trim().slice(0, 4000);
+ipcMain.handle('ask-ai', async (event, rawRequest) => {
+  const request = typeof rawRequest === 'string' ? { prompt: rawRequest } : (rawRequest || {});
+  const mode = request.mode === 'document' ? 'document' : 'web';
+  const prompt = String(request.prompt || '').trim().slice(0, 4000);
+  const documentText = String(request.documentText || '').trim().slice(0, 24000);
   const exaApiKey = process.env.EXA_API_KEY;
   const mistralApiKey = process.env.MISTRAL_API_KEY;
 
   if (!prompt) return { ok: false, error: 'Écris une question pour Foxy.' };
-  if (!exaApiKey || !mistralApiKey) {
+  if (!mistralApiKey || (mode !== 'document' && !exaApiKey)) {
     return {
       ok: false,
       error: 'Les clés EXA_API_KEY et MISTRAL_API_KEY ne sont pas configurées dans BlueFox.'
     };
+  }
+
+  if (mode === 'document') {
+    try {
+      event.sender.send('ai-search-progress', { status: 'document' });
+      const mistralResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${mistralApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+          temperature: 0.1,
+          max_tokens: 1800,
+          messages: [
+            {
+              role: 'system',
+              content: 'Tu es Foxy, l’assistant PDF de BlueFox. Travaille exclusivement à partir du document fourni, sans recherche Internet, sans sources externes et sans inventer. Pour une demande de résumé, donne d’abord un résumé clair et fidèle, puis les idées importantes. Pour une demande de modification, propose une version réécrite prête à insérer et explique brièvement ce qui a changé. Réponds en français avec des paragraphes courts et du Markdown. Utilise `**...**` avec modération et `==...==` uniquement pour une information essentielle. Termine par exactement quatre questions de suivi courtes dans des balises <foxy_followup>question</foxy_followup>.'
+            },
+            {
+              role: 'user',
+              content: `Demande : ${prompt}\n\nTexte du document PDF :\n${documentText || 'Le texte du document est indisponible.'}`
+            }
+          ]
+        })
+      });
+      if (!mistralResponse.ok) throw new Error(`Mistral a répondu ${mistralResponse.status}`);
+
+      const mistralData = await mistralResponse.json();
+      const content = mistralData.choices?.[0]?.message?.content;
+      const rawAnswer = Array.isArray(content) ? content.map((part) => part.text || '').join('') : content;
+      if (!rawAnswer) throw new Error('Mistral n’a pas renvoyé de réponse.');
+
+      const followUps = [...rawAnswer.matchAll(/<foxy_followup>\s*(.*?)\s*<\/foxy_followup>/gis)]
+        .map((match) => match[1].trim())
+        .filter(Boolean)
+        .slice(0, 4);
+      const answer = rawAnswer.replace(/\s*<foxy_followup>.*?<\/foxy_followup>/gis, '').trim();
+      event.sender.send('ai-search-progress', { status: 'done' });
+      return { ok: true, answer, followUps, sources: [] };
+    } catch (error) {
+      event.sender.send('ai-search-progress', { status: 'error' });
+      log.warn(`Foxy PDF unavailable: ${error.message}`);
+      return { ok: false, error: `Foxy ne peut pas analyser ce PDF pour le moment : ${error.message}` };
+    }
   }
 
   try {
@@ -804,6 +878,10 @@ app.whenReady().then(() => {
   
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     details.requestHeaders['User-Agent'] = userAgent;
+    if (/^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\//i.test(details.url)) {
+      // YouTube Error 153 is returned when Electron's file:// production page has no referrer.
+      details.requestHeaders.Referer = 'https://www.youtube.com/';
+    }
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
 

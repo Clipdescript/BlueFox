@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
   savePdf: (payload) => ipcRenderer.invoke('save-pdf', payload),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   updateHomeShortcuts: (shortcuts) => ipcRenderer.send('update-home-shortcuts', shortcuts),
+  searchYouTube: (query) => ipcRenderer.invoke('search-youtube', query),
   onJumpListAction: (callback) => {
     const subscription = (_event, action) => callback(action);
     ipcRenderer.on('jump-list-action', subscription);
@@ -28,7 +29,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   forceClose: () => ipcRenderer.send('app-force-close'),
   getNatureBackground: () => ipcRenderer.invoke('fetch-nature-background'),
-  askAi: (prompt) => ipcRenderer.invoke('ask-ai', prompt),
+  askAi: (prompt, options = {}) => ipcRenderer.invoke('ask-ai', { prompt, ...options }),
   onAiSearchProgress: (callback) => {
     const subscription = (_event, progress) => callback(progress);
     ipcRenderer.on('ai-search-progress', subscription);

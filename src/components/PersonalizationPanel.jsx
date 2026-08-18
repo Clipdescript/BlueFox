@@ -22,7 +22,32 @@ const BASE_TAB_STYLES = [
   { label: 'Lavande claire', color: '#f1edff', accent: '#8d7bc8' }
 ];
 
-// 108 additional tones create a ten-times larger palette without repeating the presets above.
+const hslToHex = (hue, saturation, lightness) => {
+  const s = saturation / 100;
+  const l = lightness / 100;
+  const chroma = (1 - Math.abs((2 * l) - 1)) * s;
+  const segment = (hue / 60) % 2;
+  const second = chroma * (1 - Math.abs(segment - 1));
+  const [red, green, blue] = hue < 60
+    ? [chroma, second, 0]
+    : hue < 120
+      ? [second, chroma, 0]
+      : hue < 180
+        ? [0, chroma, second]
+        : hue < 240
+          ? [0, second, chroma]
+          : hue < 300
+            ? [second, 0, chroma]
+            : [chroma, 0, second];
+  const match = l - (chroma / 2);
+  return `#${[red, green, blue].map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`;
+};
+
+const PALETTE_HUE_NAMES = ['Rouge', 'Orange', 'Jaune', 'Vert citron', 'Vert', 'Turquoise', 'Cyan', 'Bleu', 'Indigo', 'Violet', 'Magenta', 'Rose'];
+const PALETTE_TONE_NAMES = ['brumeux', 'pâle', 'clair', 'doux', 'frais', 'vif', 'éclatant', 'profond', 'nocturne'];
+
+// 108 additional named tones keep the large palette readable and provide hex
+// values that Electron can apply to the native Windows title-bar overlay.
 const EXTRA_TAB_STYLES = Array.from({ length: 108 }, (_, index) => {
   const hueIndex = index % 12;
   const toneIndex = Math.floor(index / 12);
@@ -30,9 +55,9 @@ const EXTRA_TAB_STYLES = Array.from({ length: 108 }, (_, index) => {
   const lightness = 95 - (toneIndex * 7);
   const accentLightness = Math.max(28, lightness - 18);
   return {
-    label: `Palette ${String(index + 1).padStart(3, '0')}`,
-    color: `hsl(${hue} 72% ${lightness}%)`,
-    accent: `hsl(${hue} 72% ${accentLightness}%)`
+    label: `${PALETTE_HUE_NAMES[hueIndex]} ${PALETTE_TONE_NAMES[toneIndex]}`,
+    color: hslToHex(hue, 72, lightness),
+    accent: hslToHex(hue, 72, accentLightness)
   };
 });
 

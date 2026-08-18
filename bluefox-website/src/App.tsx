@@ -1,12 +1,16 @@
 ﻿import { useEffect, useState } from 'react';
 import { FaDiscord, FaGithub, FaGlobe, FaUsers } from 'react-icons/fa6';
 import {
+  MdArrowBack,
   MdAutoAwesome,
+  MdCheck,
   MdCheckCircle,
-  MdCircle,
+  MdClose,
   MdDarkMode,
   MdDownload,
+  MdExpandMore,
   MdArrowUpward,
+  MdInfo,
   MdLightMode,
   MdLock,
   MdNorthEast,
@@ -33,6 +37,18 @@ type LatestRelease = {
   tag_name?: string;
   name?: string;
   assets?: ReleaseAsset[];
+};
+
+type GoogleTranslateWindow = Window & {
+  google?: {
+    translate?: {
+      TranslateElement?: new (
+        options: { pageLanguage: string; includedLanguages: string; autoDisplay: boolean },
+        elementId: string,
+      ) => unknown;
+    };
+  };
+  googleTranslateElementInit?: () => void;
 };
 
 const RELEASES_API = 'https://api.github.com/repos/Clipdescript/BlueFox/releases/latest';
@@ -81,6 +97,144 @@ function Brand({ small = false }: { small?: boolean }) {
 
 type ThemeMode = 'light' | 'dark';
 
+function PrivacyPage({ theme, onToggleTheme }: { theme: ThemeMode; onToggleTheme: () => void }) {
+  return (
+    <div className="privacy-page">
+      <header className="privacy-header section-shell">
+        <a className="privacy-back-link" href="/">
+          <MdArrowBack aria-hidden="true" /> Accueil
+        </a>
+        <div className="privacy-brand-row">
+          <Brand />
+          <button
+            className="top-theme-toggle"
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={`Passer en mode ${theme === 'dark' ? 'clair' : 'sombre'}`}
+          >
+            {theme === 'dark' ? <MdLightMode /> : <MdDarkMode />}
+          </button>
+        </div>
+      </header>
+
+      <main className="privacy-main section-shell" aria-labelledby="privacy-title">
+        <div className="privacy-hero">
+          <p className="section-label">Confidentialité</p>
+          <h1 id="privacy-title">Une confidentialité claire, sans promesse floue.</h1>
+          <p className="privacy-intro">Notre éthique est simple : expliquer ce qui est utilisé, pourquoi cela l’est et vous laisser décider. BlueFox privilégie une navigation européenne, lisible et sans collecte inutile.</p>
+          <p className="privacy-updated">Dernière mise à jour : 18 août 2026</p>
+        </div>
+
+        <div className="privacy-principles" aria-label="Les principes de confidentialité de BlueFox">
+          <article className="privacy-principle">
+            <span className="privacy-principle-number">01</span>
+            <div className="privacy-principle-icon"><MdShield aria-hidden="true" /></div>
+            <div>
+              <h2>Vous gardez la main</h2>
+              <p>Le site BlueFox ne demande pas de compte et ne contient pas de formulaire de collecte. Vous pouvez découvrir le projet et télécharger le navigateur sans fournir de données personnelles au site.</p>
+            </div>
+          </article>
+          <article className="privacy-principle">
+            <span className="privacy-principle-number">02</span>
+            <div className="privacy-principle-icon"><MdLock aria-hidden="true" /></div>
+            <div>
+              <h2>La transparence avant tout</h2>
+              <p>Nous expliquons les fonctions et les services utilisés sans cacher les dépendances externes. Vous savez ce qui se passe et pouvez faire vos choix en connaissance de cause.</p>
+            </div>
+          </article>
+          <article className="privacy-principle">
+            <span className="privacy-principle-number">03</span>
+            <div className="privacy-principle-icon"><MdCheckCircle aria-hidden="true" /></div>
+            <div>
+              <h2>Pas de compte obligatoire</h2>
+              <p>BlueFox reste accessible sans inscription pour commencer. Votre navigation doit rester un espace simple, direct et respectueux de votre autonomie.</p>
+            </div>
+          </article>
+        </div>
+
+        <section className="privacy-details" aria-labelledby="privacy-services-title">
+          <div className="privacy-section-heading">
+            <p className="section-label">Notre éthique en pratique</p>
+            <h2 id="privacy-services-title">Des services utiles, expliqués avec leurs limites.</h2>
+          </div>
+          <div className="privacy-detail-list">
+            <article className="privacy-detail-item">
+              <h3>Choisir sa langue</h3>
+              <p>Le sélecteur de langue utilise le widget Google Translate. Cette traduction est proposée pour rendre le site plus accessible, mais Google peut traiter le contenu de la page et déposer ses propres éléments techniques.</p>
+            </article>
+            <article className="privacy-detail-item">
+              <h3>Une IA facultative</h3>
+              <p>Foxy accompagne votre navigation uniquement lorsque vous en avez besoin. Certaines requêtes peuvent passer par Exa et Mistral, selon leurs règles et leur disponibilité.</p>
+            </article>
+            <article className="privacy-detail-item">
+              <h3>Des partenaires identifiés</h3>
+              <p>Les releases, le code source et le support Discord reposent sur des services tiers identifiés. Nous indiquons leur rôle pour que vous puissiez consulter leurs propres politiques.</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="privacy-choice" aria-labelledby="privacy-choice-title">
+          <div>
+            <p className="section-label">Notre engagement</p>
+            <h2 id="privacy-choice-title">Moins de collecte, plus de clarté.</h2>
+            <p>Nous voulons construire un navigateur qui respecte votre espace : des choix compréhensibles, des fonctions facultatives et une collecte limitée. Vous pouvez refuser la traduction automatique, supprimer vos données locales ou nous contacter à tout moment.</p>
+          </div>
+          <a className="primary-button" href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer">Contacter le support</a>
+        </section>
+      </main>
+
+      <footer className="big-footer privacy-footer">
+        <div className="footer-content section-shell">
+          <div className="footer-main">
+            <div className="footer-brand-section">
+              <Brand />
+              <p className="footer-tagline">Plus d’autonomie, moins de pistage, et une IA qui sait rester facultative.</p>
+              <div className="footer-socials">
+                <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer" aria-label="BlueFox sur GitHub"><FaGithub /></a>
+                <a href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer" aria-label="Support Discord BlueFox"><FaDiscord /></a>
+              </div>
+            </div>
+            <div className="footer-links-grid">
+              <div className="footer-column">
+                <h4>Produit</h4>
+                <a href="/">Accueil</a>
+                <a href="/#features">Fonctionnalités</a>
+                <a href="/#faq">FAQ</a>
+                <a href="/#download">Téléchargement</a>
+              </div>
+              <div className="footer-column">
+                <h4>Ressources</h4>
+                <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer">Open Source</a>
+                <a href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer">Support Discord</a>
+                <a href="/">Accueil</a>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <div className="footer-bottom-info">
+              <span>© {new Date().getFullYear()} BlueFox Browser</span>
+              <span className="dot">·</span>
+              <span>Fait avec passion pour le Web</span>
+            </div>
+            <div className="footer-actions">
+              <div className="language-switcher">
+                <div className="language-switcher-heading">
+                  <span className="language-switcher-label">Langue</span>
+                </div>
+                <div id="google_translate_element" aria-label="Choisir la langue" />
+              </div>
+              <button className="footer-theme-toggle" type="button" onClick={onToggleTheme}>
+                {theme === 'dark' ? <MdLightMode /> : <MdDarkMode />}
+                <span>Mode {theme === 'dark' ? 'Clair' : 'Sombre'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
 function getInitialTheme(): ThemeMode {
   const savedTheme = window.localStorage.getItem('bluefox-site-theme-v2');
   if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
@@ -89,6 +243,7 @@ function getInitialTheme(): ThemeMode {
 
 function App() {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+  const [isPrivacyPage] = useState(() => window.location.pathname.replace(/\/+$/, '') === '/confidentialite');
   const [downloadUrl, setDownloadUrl] = useState(RELEASES_PAGE);
   const [downloadLabel, setDownloadLabel] = useState('Télécharger BlueFox');
   const [downloadStatus, setDownloadStatus] = useState('Recherche de la dernière version…');
@@ -98,6 +253,42 @@ function App() {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem('bluefox-site-theme-v2', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const translateWindow = window as GoogleTranslateWindow;
+    const initializeTranslator = () => {
+      const TranslateElement = translateWindow.google?.translate?.TranslateElement;
+      const target = document.getElementById('google_translate_element');
+      if (!TranslateElement || !target || target.childElementCount > 0) return;
+
+      new TranslateElement({
+        pageLanguage: 'fr',
+        includedLanguages: 'en,es,de,it,nl,pt,pl',
+        autoDisplay: false,
+      }, 'google_translate_element');
+    };
+
+    translateWindow.googleTranslateElementInit = initializeTranslator;
+    if (translateWindow.google?.translate?.TranslateElement) {
+      initializeTranslator();
+      return;
+    }
+
+    const existingScript = document.getElementById('google-translate-script');
+    if (existingScript) {
+      existingScript.addEventListener('load', initializeTranslator);
+      return () => existingScript.removeEventListener('load', initializeTranslator);
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-translate-script';
+    script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.async = true;
+    script.addEventListener('load', initializeTranslator);
+    document.head.appendChild(script);
+
+    return () => script.removeEventListener('load', initializeTranslator);
+  }, []);
 
   useEffect(() => {
     const revealElements = document.querySelectorAll<HTMLElement>('.reveal');
@@ -148,6 +339,10 @@ function App() {
 
     void detectLatestRelease();
   }, []);
+
+  if (isPrivacyPage) {
+    return <PrivacyPage theme={theme} onToggleTheme={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')} />;
+  }
 
   return (
     <>
@@ -210,34 +405,19 @@ function App() {
               <span className="france-value-number">01</span>
               <div className="france-pixel-icon" aria-hidden="true"><MdShield /></div>
               <h3>Votre espace</h3>
-              <p>Une interface qui vous laisse décider ce qui compte pour vous.</p>
-              <ul className="france-value-list">
-                <li>Onglets clairs</li>
-                <li>Réglages faciles à retrouver</li>
-                <li>Vous gardez la main</li>
-              </ul>
+              <p>Une interface qui vous laisse décider de ce qui compte pour vous. Profitez d’onglets clairs et de réglages faciles à retrouver, tout en gardant la main sur votre navigation.</p>
             </article>
             <article className="france-value-card">
               <span className="france-value-number">02</span>
               <div className="france-pixel-icon blue-pixel-icon" aria-hidden="true"><MdCheckCircle /></div>
               <h3>Des choix clairs</h3>
-              <p>Des fonctions expliquées simplement, sans vous perdre dans les détails.</p>
-              <ul className="france-value-list">
-                <li>Foxy reste facultatif</li>
-                <li>Pas de réglage caché</li>
-                <li>Une interface lisible</li>
-              </ul>
+              <p>Des fonctions expliquées simplement, sans vous perdre dans les détails. Foxy reste facultatif, aucun réglage n’est caché et l’interface reste lisible.</p>
             </article>
             <article className="france-value-card">
               <span className="france-value-number">03</span>
               <div className="france-pixel-icon blue-pixel-icon" aria-hidden="true"><MdLock /></div>
               <h3>Confidentialité européenne</h3>
-              <p>Pensé pour respecter le RGPD et vos choix.</p>
-              <ul className="france-value-list">
-                <li>Vos choix restent lisibles</li>
-                <li>Collecte limitée</li>
-                <li>Une approche transparente</li>
-              </ul>
+              <p>Pensé pour respecter le RGPD et vos choix. Vos préférences restent lisibles, la collecte est limitée et l’approche reste transparente.</p>
             </article>
           </div>
         </section>
@@ -290,12 +470,12 @@ function App() {
             <article className="pros-cons-card pros-card">
               <span className="card-kicker">Les avantages</span>
               <h3>Un navigateur plus direct.</h3>
-              <ul>{advantages.map((item) => <li key={item}><span className="list-mark">✓</span>{item}</li>)}</ul>
+              <ul>{advantages.map((item) => <li key={item}><span className="list-mark"><MdCheck aria-hidden="true" /></span>{item}</li>)}</ul>
             </article>
             <article className="pros-cons-card cons-card">
               <span className="card-kicker">Bon à savoir</span>
               <h3>Une expérience qui évolue avec vous.</h3>
-              <ul>{tradeoffs.map((item) => <li key={item}><span className="list-mark">i</span>{item}</li>)}</ul>
+              <ul>{tradeoffs.map((item) => <li key={item}><span className="list-mark"><MdInfo aria-hidden="true" /></span>{item}</li>)}</ul>
             </article>
           </div>
         </section>
@@ -311,10 +491,10 @@ function App() {
               <thead><tr><th>Fonction</th><th className="bluefox-column">BlueFox</th><th>Chrome</th><th>Firefox</th><th>Edge</th></tr></thead>
               <tbody>{comparisonRows.map((row) => <tr key={row.label}>
                 <th scope="row">{row.label}</th>
-                <td className="bluefox-column"><span className={`comparison-status ${row.availability.bluefox ? 'is-available' : 'is-unavailable'}`}>{row.availability.bluefox ? '✓' : '×'}</span>{row.bluefox}</td>
-                <td><span className={`comparison-status ${row.availability.chrome ? 'is-available' : 'is-unavailable'}`}>{row.availability.chrome ? '✓' : '×'}</span>{row.chrome}</td>
-                <td><span className={`comparison-status ${row.availability.firefox ? 'is-available' : 'is-unavailable'}`}>{row.availability.firefox ? '✓' : '×'}</span>{row.firefox}</td>
-                <td><span className={`comparison-status ${row.availability.edge ? 'is-available' : 'is-unavailable'}`}>{row.availability.edge ? '✓' : '×'}</span>{row.edge}</td>
+                <td className="bluefox-column"><span className={`comparison-status ${row.availability.bluefox ? 'is-available' : 'is-unavailable'}`}>{row.availability.bluefox ? <MdCheck aria-hidden="true" /> : <MdClose aria-hidden="true" />}</span>{row.bluefox}</td>
+                <td><span className={`comparison-status ${row.availability.chrome ? 'is-available' : 'is-unavailable'}`}>{row.availability.chrome ? <MdCheck aria-hidden="true" /> : <MdClose aria-hidden="true" />}</span>{row.chrome}</td>
+                <td><span className={`comparison-status ${row.availability.firefox ? 'is-available' : 'is-unavailable'}`}>{row.availability.firefox ? <MdCheck aria-hidden="true" /> : <MdClose aria-hidden="true" />}</span>{row.firefox}</td>
+                <td><span className={`comparison-status ${row.availability.edge ? 'is-available' : 'is-unavailable'}`}>{row.availability.edge ? <MdCheck aria-hidden="true" /> : <MdClose aria-hidden="true" />}</span>{row.edge}</td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -344,13 +524,48 @@ function App() {
           </div>
         </section>
 
+        <section className="faq-section section-shell reveal" id="faq" aria-labelledby="faq-title">
+          <div className="content-heading faq-heading">
+            <p className="section-label">Questions fréquentes</p>
+            <h2 id="faq-title">Pourquoi télécharger BlueFox ?</h2>
+            <p>Les réponses aux questions que vous pouvez vous poser avant de commencer.</p>
+          </div>
+          <div className="faq-list">
+            <details className="faq-item">
+              <summary>Pourquoi télécharger BlueFox ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>BlueFox offre une navigation rapide, légère et claire, avec Foxy IA intégré, des réglages accessibles et aucune inscription obligatoire pour commencer.</p></div>
+            </details>
+            <details className="faq-item">
+              <summary>BlueFox est-il gratuit ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>Oui, BlueFox est gratuit pour commencer. Vous pouvez télécharger le navigateur et découvrir ses fonctions essentielles sans créer de compte.</p></div>
+            </details>
+            <details className="faq-item">
+              <summary>Foxy IA est-il obligatoire ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>Non. Foxy reste facultatif et peut être désactivé lorsque vous préférez utiliser une expérience de navigation classique.</p></div>
+            </details>
+            <details className="faq-item">
+              <summary>Sur quel système BlueFox fonctionne-t-il ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>L’expérience actuelle est optimisée en priorité pour Windows. Les nouvelles compatibilités pourront évoluer avec les prochaines versions.</p></div>
+            </details>
+            <details className="faq-item">
+              <summary>Ai-je besoin de créer un compte ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>Non, aucune inscription n’est obligatoire pour commencer à utiliser BlueFox. Vous gardez ainsi une expérience simple et directe.</p></div>
+            </details>
+            <details className="faq-item">
+              <summary>Comment obtenir la dernière version ? <MdExpandMore className="faq-expand-icon" aria-hidden="true" /></summary>
+              <div className="faq-answer"><p>Le bouton de téléchargement recherche automatiquement la dernière release officielle de BlueFox. Si elle n’est pas détectée, vous pouvez la retrouver directement sur GitHub Releases.</p></div>
+            </details>
+          </div>
+        </section>
+
         <section className="comments-section section-shell reveal" id="comments" aria-labelledby="comments-title">
           <div className="content-heading comments-heading">
             <p className="section-label">Ils parlent de BlueFox</p>
             <h2 id="comments-title">Commentaires</h2>
           </div>
-          <article className="comment-card">
-            <header className="comment-header">
+          <div className="comments-list">
+            <article className="comment-card">
+              <header className="comment-header">
               <div className="comment-avatar" aria-hidden="true">𝖅</div>
               <div>
                 <h3>𝖅𝖔𝖚𝖟𝖟</h3>
@@ -371,7 +586,21 @@ function App() {
               <a href="https://gethost.cloud/" target="_blank" rel="noreferrer" aria-label="Visiter GetHost" title="Site GetHost"><FaGlobe aria-hidden="true" /></a>
               <a href="https://discord.gg/bz4Adyb95r" target="_blank" rel="noreferrer" aria-label="Rejoindre la communauté Discord de 𝖅𝖔𝖚𝖟𝖟" title="Communauté Discord de 𝖅𝖔𝖚𝖟𝖟"><FaUsers aria-hidden="true" /></a>
             </nav>
-          </article>
+            </article>
+
+            <article className="comment-card">
+              <header className="comment-header">
+                <div className="comment-avatar" aria-hidden="true">u</div>
+                <div>
+                  <h3>ughgnttyfgzs</h3>
+                  <div className="comment-rating" aria-label="4 étoiles sur 5">⭐️⭐️⭐️⭐️</div>
+                </div>
+              </header>
+              <div className="comment-body">
+                <p>Les pages chargent assez vites. Et j'ai regardé quelque vidéos yt. Honnêtement j'aimerais bien voir une bar de recherche, à la place d'un truc pour l'URL ET les recherches. Sinon, je kiffe.</p>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section className="final-cta section-shell reveal">
@@ -388,7 +617,7 @@ function App() {
               <p className="footer-tagline">Plus d'autonomie, moins de pistage, et une IA qui sait rester facultative.</p>
               <div className="footer-socials">
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer"><FaGithub /></a>
-                <a href="https://discord.gg/SctXs4FHCB" target="_blank" rel="noreferrer"><FaDiscord /></a>
+                <a href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer"><FaDiscord /></a>
               </div>
             </div>
             
@@ -397,14 +626,15 @@ function App() {
                 <h4>Produit</h4>
                 <a href="#features">Fonctionnalités</a>
                 <a href="#comments">Commentaires</a>
+                <a href="#faq">FAQ</a>
                 <a href="#download">Téléchargement</a>
                 <a href={RELEASES_PAGE}>Notes de version</a>
               </div>
               <div className="footer-column">
                 <h4>Ressources</h4>
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer">Open Source</a>
-                <a href="https://discord.gg/SctXs4FHCB" target="_blank" rel="noreferrer">Support Discord</a>
-                <a href="#privacy">Confidentialité</a>
+                <a href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer">Support Discord</a>
+                <a href="/confidentialite">Confidentialité</a>
               </div>
             </div>
           </div>
@@ -415,14 +645,22 @@ function App() {
               <span className="dot">·</span>
               <span>Fait avec passion pour le Web</span>
             </div>
-            <button
-              className="footer-theme-toggle"
-              type="button"
-              onClick={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')}
-            >
-              {theme === 'dark' ? <MdLightMode /> : <MdDarkMode />}
-              <span>Mode {theme === 'dark' ? 'Clair' : 'Sombre'}</span>
-            </button>
+            <div className="footer-actions">
+              <div className="language-switcher">
+                <div className="language-switcher-heading">
+                  <span className="language-switcher-label">Langue</span>
+                </div>
+                <div id="google_translate_element" aria-label="Choisir la langue" />
+              </div>
+              <button
+                className="footer-theme-toggle"
+                type="button"
+                onClick={() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark')}
+              >
+                {theme === 'dark' ? <MdLightMode /> : <MdDarkMode />}
+                <span>Mode {theme === 'dark' ? 'Clair' : 'Sombre'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </footer>

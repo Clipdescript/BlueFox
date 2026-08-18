@@ -182,9 +182,12 @@ const MusicConversationPlayer = ({ video }) => {
         key={video.id}
         src={embedUrl}
         title={`Lecture YouTube : ${video.title}`}
+        referrerPolicy="strict-origin-when-cross-origin"
         allow="autoplay; encrypted-media; picture-in-picture"
-        allowFullScreen
-      />
+        allowFullScreen        />
+      <a className="foxy-music-conversation-fallback" href={video.url} target="_blank" rel="noreferrer">
+        Ouvrir la vidéo directement sur YouTube
+      </a>
     </div>
   );
 };
