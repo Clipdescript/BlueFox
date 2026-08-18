@@ -82,8 +82,14 @@ body {
 }
 
 .bluefox-tab-bar .bluefox-tab-active {
-  background-color: color-mix(in srgb, var(--bluefox-tab-color-value, var(--bluefox-tab-color, #f3f2f0)) 58%, #ffffff 42%) !important;
+  background-color: #ffffff !important;
+  border-color: #d3d2cf !important;
+  color: #252525 !important;
   transition: background-color 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms ease, box-shadow 280ms ease, color 200ms ease !important;
+}
+
+.bluefox-tab-bar .bluefox-tab-active:hover {
+  background-color: #ffffff !important;
 }
 
 .bluefox-tab-bar .bluefox-tab-close:hover,
@@ -103,8 +109,8 @@ body {
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-active {
-  background-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 46%, #2b303a 54%) !important;
-  border-color: color-mix(in srgb, var(--bluefox-tab-color, #1d2026) 62%, #69717e 38%) !important;
+  background-color: #343a43 !important;
+  border-color: #606b7b !important;
   color: #ffffff !important;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.34) !important;
 }
@@ -199,8 +205,18 @@ body {
 }
 
 @keyframes bluefox-quick-links-in {
-  from { opacity: 0; transform: translateY(-5px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(-5px) scale(0.97); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes bluefox-quick-links-out {
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  to { opacity: 0; transform: translateY(-4px) scale(0.975); filter: blur(2px); }
+}
+
+.bluefox-home-quick-links.is-closing {
+  pointer-events: none;
+  animation: bluefox-quick-links-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links {
@@ -227,7 +243,233 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bluefox-home-quick-links { animation: none; }
+  .bluefox-home-quick-links,
+  .bluefox-home-quick-links.is-closing { animation: none; }
+}
+
+.bluefox-home-favorites,
+.bluefox-home-news {
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 380ms cubic-bezier(0.22, 1, 0.36, 1), margin 380ms cubic-bezier(0.22, 1, 0.36, 1), filter 380ms ease;
+}
+
+.bluefox-home-favorites {
+  max-height: 240px;
+}
+
+.bluefox-home-news {
+  max-height: 920px;
+}
+
+.bluefox-home-favorites.is-search-hidden,
+.bluefox-home-news.is-search-hidden {
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-14px);
+  filter: blur(1px);
+}
+
+.bluefox-home-search-section {
+  position: relative;
+  display: flex;
+  width: min(460px, calc(100% - 32px));
+  margin-inline: auto;
+  justify-content: center;
+  transition: width 380ms cubic-bezier(0.22, 1, 0.36, 1), transform 380ms cubic-bezier(0.22, 1, 0.36, 1), filter 380ms ease;
+}
+
+.bluefox-home-search-section.is-focused {
+  width: min(560px, calc(100% - 32px));
+  transform: translateY(var(--bluefox-home-search-focus-offset, 12px));
+  filter: blur(0);
+}
+
+.bluefox-home-search-bar {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(219, 225, 232, 0.82);
+  border-radius: 14px;
+  padding: 0 8px 0 15px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #59616c;
+  box-shadow: 0 8px 22px rgba(32, 33, 36, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.bluefox-home-search-bar:focus-within {
+  border-color: #a9d5dd;
+  box-shadow: 0 0 0 3px rgba(217, 240, 243, 0.72), 0 6px 20px rgba(32, 33, 36, 0.1);
+}
+
+.bluefox-home-search-bar input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #202124 !important;
+  font-size: 13px;
+}
+
+.bluefox-home-search-bar input::placeholder {
+  color: #858b95;
+  opacity: 1;
+}
+
+.bluefox-home-search-bar button {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6d7480;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.bluefox-home-search-bar button img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+}
+
+.bluefox-home-search-bar button:hover {
+  background: #f0efed;
+  color: #292929;
+}
+
+.bluefox-home-search-results {
+  position: absolute;
+  z-index: 20;
+  top: 58px;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(219, 225, 232, 0.82);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 14px 30px rgba(32, 33, 36, 0.12);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+  animation: bluefox-home-search-results-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bluefox-home-search-results button {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  padding: 9px 16px;
+  background: transparent;
+  color: #30343a;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.bluefox-home-search-results button:hover {
+  background: #f1f2f5;
+  color: #202124;
+}
+
+.bluefox-home-search-results button > svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  color: #30343a !important;
+}
+
+.bluefox-home-search-results button > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bluefox-home-search-results strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bluefox-home-search-results small {
+  color: #8a9099;
+  font-size: 11px;
+}
+
+@keyframes bluefox-home-search-results-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results {
+  border-color: #363c48;
+  background: #1d2026;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.38);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results button {
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results button:hover {
+  background: #303640;
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results button > svg {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results small {
+  color: #aeb7c5;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-results strong {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-bar {
+  border-color: #363c48;
+  background: #15171b;
+  color: #d5dbe5;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-bar:focus-within {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2), 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-bar input {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-bar input::placeholder {
+  color: #aeb7c5;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-home-search-bar button:hover {
+  background: #3a3d43;
+  color: #ffffff;
 }
 
 .bluefox-customize-trigger {
@@ -651,6 +893,35 @@ html[data-theme='dark'] ::-moz-selection {
   color: var(--theme-text-strong) !important;
 }
 
+.bluefox-topbar-utility-button {
+  border: 1px solid transparent !important;
+  background-color: transparent !important;
+  color: #6d6e72 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.bluefox-topbar-utility-button:hover {
+  border-color: transparent !important;
+  background-color: #f0efed !important;
+  color: #292929 !important;
+  transform: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-topbar-utility-button {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  color: #d5dbe5 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-topbar-utility-button:hover {
+  border-color: transparent !important;
+  background-color: #3a3d43 !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
 .bluefox-topbar-mode-switch {
   border-color: var(--theme-border) !important;
   background-color: var(--theme-surface-muted) !important;
@@ -805,11 +1076,17 @@ html[data-theme='dark'] ::-moz-selection {
   color: #137b8b !important;
 }
 
-.bluefox-sponsored-badge {
-  border-radius: 6px !important;
-  background-color: #e6f1fb !important;
-  color: #164e86 !important;
-  box-shadow: inset 0 0 0 1px rgba(22, 78, 134, 0.08);
+.bluefox-home-favorite-sponsored {
+  display: block;
+  max-width: 100px;
+  overflow: hidden;
+  color: #2563eb !important;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bluefox-music-page {
@@ -1490,7 +1767,7 @@ html[data-theme='dark'] ::-moz-selection {
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual.bluefox-tab-active {
-  background-color: #3a414c !important;
+  background-color: #343a43 !important;
   border-color: #606b7b !important;
   color: #ffffff !important;
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42) !important;

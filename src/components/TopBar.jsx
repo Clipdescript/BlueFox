@@ -11,7 +11,7 @@ import {
   MdDownload,
   MdExpandMore,
   MdExitToApp,
-  MdExtension,
+  MdWidgets,
   MdFavoriteBorder,
   MdHelpOutline,
   MdHistory,
@@ -218,8 +218,8 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           </button>
         </div>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
-        <button type="button" onClick={onMusicOpen} className="flex h-9 w-9 items-center justify-center rounded-full text-[#7c3aed] transition-colors hover:bg-[#f1edff] hover:text-[#6d28d9]" aria-label="Ouvrir BlueMusic" title="BlueMusic"><MdMusicNote className="text-[21px]" /></button>
-        <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="flex h-9 w-9 items-center justify-center rounded-full text-[#137b8b] transition-colors hover:bg-[#e8f5f7] hover:text-[#0b6573]" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdExtension className="text-[21px]" /></button>
+        <button type="button" onClick={onMusicOpen} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueMusic" title="BlueMusic"><MdMusicNote className="text-[21px]" /></button>
+        <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdWidgets className="text-[21px]" /></button>
         <div ref={menuRef} className={`relative ${isSettingsOpen ? 'hidden' : ''}`}>
           <button
             type="button"
@@ -249,7 +249,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
               <MenuRow icon={MdHistory}>Historique</MenuRow>
               <MenuRow icon={MdFavoriteBorder}>Favoris et listes</MenuRow>
               <MenuRow icon={MdDownload} shortcut="Ctrl+J">Téléchargements</MenuRow>
-              <MenuRow icon={MdExtension}>Extensions</MenuRow>
+              <MenuRow icon={MdWidgets}>Extensions</MenuRow>
               <MenuRow icon={MdDeleteSweep} shortcut="Ctrl+Maj+Suppr">Supprimer les données de navigation…</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />

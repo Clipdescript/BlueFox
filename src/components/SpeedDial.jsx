@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdApps, MdClose, MdPalette, MdSecurity } from 'react-icons/md';
+import { MdApps, MdClose, MdPalette, MdSearch } from 'react-icons/md';
+import fetchJsonp from 'fetch-jsonp';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
+const GOOGLE_SEARCH_ICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
 const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
 const NEWS_CACHE_MAX_AGE = 15 * 60 * 1000;
 const NEWS_MAX_AGE = 36 * 60 * 60 * 1000;
@@ -182,7 +184,7 @@ const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
-      {isSponsored && <span className="bluefox-sponsored-badge rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em]">Sponsorisé</span>}
+      {isSponsored && <span className="bluefox-home-favorite-sponsored">Sponsorisé</span>}
     </button>
   );
 };
@@ -208,12 +210,101 @@ const SuggestionCard = ({ article }) => (
 
 const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
+  const [homeSearch, setHomeSearch] = useState('');
+  const [homeSearchSuggestions, setHomeSearchSuggestions] = useState([]);
+  const [isHomeSearchFocused, setIsHomeSearchFocused] = useState(false);
+  const [homeSearchFocusOffset, setHomeSearchFocusOffset] = useState(12);
   const [articles, setArticles] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState(false);
   const [articleOffset, setArticleOffset] = useState(0);
   const [isQuickLinksOpen, setIsQuickLinksOpen] = useState(false);
+  const [isQuickLinksVisible, setIsQuickLinksVisible] = useState(false);
+  const [isQuickLinksClosing, setIsQuickLinksClosing] = useState(false);
+  const quickLinksRef = useRef(null);
+  const quickLinksCloseTimer = useRef(null);
+  const homeFavoritesRef = useRef(null);
+  const homeSearchRef = useRef(null);
   const requestInFlight = useRef(false);
+
+  const openQuickLinks = () => {
+    if (quickLinksCloseTimer.current) {
+      window.clearTimeout(quickLinksCloseTimer.current);
+      quickLinksCloseTimer.current = null;
+    }
+    setIsQuickLinksClosing(false);
+    setIsQuickLinksVisible(true);
+    setIsQuickLinksOpen(true);
+  };
+
+  const closeQuickLinks = () => {
+    if (!isQuickLinksVisible || isQuickLinksClosing) return;
+    setIsQuickLinksOpen(false);
+    setIsQuickLinksClosing(true);
+    quickLinksCloseTimer.current = window.setTimeout(() => {
+      setIsQuickLinksVisible(false);
+      setIsQuickLinksClosing(false);
+      quickLinksCloseTimer.current = null;
+    }, 180);
+  };
+
+  useEffect(() => {
+    if (!isQuickLinksOpen) return undefined;
+
+    const handleOutsidePointerDown = (event) => {
+      if (!quickLinksRef.current?.contains(event.target)) {
+        closeQuickLinks();
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [isQuickLinksOpen, isQuickLinksVisible, isQuickLinksClosing]);
+
+  useEffect(() => () => {
+    if (quickLinksCloseTimer.current) window.clearTimeout(quickLinksCloseTimer.current);
+  }, []);
+
+  useEffect(() => {
+    if (!isHomeSearchFocused) return undefined;
+
+    const handleHomeSearchOutsidePointerDown = (event) => {
+      if (!homeSearchRef.current?.contains(event.target)) {
+        setIsHomeSearchFocused(false);
+        setHomeSearch('');
+        setHomeSearchSuggestions([]);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleHomeSearchOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleHomeSearchOutsidePointerDown);
+  }, [isHomeSearchFocused]);
+
+  useEffect(() => {
+    const query = homeSearch.trim();
+    if (!isHomeSearchFocused || !query) {
+      setHomeSearchSuggestions([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=fr`);
+        if (!cancelled && response.ok) {
+          const data = await response.json();
+          setHomeSearchSuggestions(Array.isArray(data[1]) ? data[1].slice(0, 6) : []);
+        }
+      } catch {
+        if (!cancelled) setHomeSearchSuggestions([]);
+      }
+    }, 160);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [homeSearch, isHomeSearchFocused]);
 
   useEffect(() => {
     const publishShortcuts = () => {
@@ -357,6 +448,36 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
     ? Array.from({ length: Math.min(9, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
     : [];
 
+  const activateHomeSearch = () => {
+    if (!isHomeSearchFocused) {
+      const favorites = homeFavoritesRef.current;
+      if (favorites) {
+        const styles = window.getComputedStyle(favorites);
+        const marginBottom = Number.parseFloat(styles.marginBottom) || 0;
+        setHomeSearchFocusOffset(favorites.getBoundingClientRect().height + marginBottom + 12);
+      }
+      setHomeSearch('');
+    }
+    setIsHomeSearchFocused(true);
+  };
+
+  const submitHomeSearchValue = (value) => {
+    const query = value.trim();
+    if (!query) return;
+    setIsHomeSearchFocused(false);
+    setHomeSearchSuggestions([]);
+    onNavigate(query);
+  };
+
+  const submitHomeSearch = (event) => {
+    event.preventDefault();
+    submitHomeSearchValue(homeSearch);
+  };
+
+  const homeSearchResults = homeSearchSuggestions.length > 0
+    ? homeSearchSuggestions
+    : (homeSearch.trim() ? [homeSearch.trim()] : []);
+
   return (
     <div
       className={`bluefox-reference-home relative h-full w-full overflow-y-auto bg-white text-[#202124] ${homeBackground ? 'bluefox-home-customized' : ''}`}
@@ -365,17 +486,17 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
       <button
         type="button"
         onClick={() => onPersonalizationChange?.(!isPersonalizationOpen)}
-        className={`bluefox-home-floating-button bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0f4ff] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
+        className={`bluefox-home-floating-button bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0efed] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
         aria-label={isPersonalizationOpen ? 'Fermer la personnalisation' : 'Personnaliser la page d’accueil'}
         title="Personnaliser"
       >
         <MdPalette className="bluefox-home-control-icon text-[21px]" />
       </button>
 
-      <div className="absolute right-5 top-4 z-30">
+      <div ref={quickLinksRef} className="absolute right-5 top-4 z-30">
         <button
           type="button"
-          onClick={() => setIsQuickLinksOpen((open) => !open)}
+          onClick={() => (isQuickLinksOpen ? closeQuickLinks() : openQuickLinks())}
           className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#55565b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#202124]"
           aria-label={isQuickLinksOpen ? 'Fermer les liens BlueFox' : 'Ouvrir les liens BlueFox'}
           aria-expanded={isQuickLinksOpen}
@@ -384,19 +505,19 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
           {isQuickLinksOpen ? <MdClose className="text-[20px]" /> : <MdApps className="text-[20px]" />}
         </button>
 
-        {isQuickLinksOpen && (
-          <div className="bluefox-home-quick-links absolute right-0 top-11">
+        {isQuickLinksVisible && (
+          <div className={`bluefox-home-quick-links absolute right-0 top-11 ${isQuickLinksClosing ? 'is-closing' : ''}`}>
             <div className="bluefox-home-quick-links-heading">Applications BlueFox</div>
             <div className="bluefox-home-quick-links-grid">
-              <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le serveur Discord BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir le serveur Discord BlueFox">
                 <span className="bluefox-home-quick-link-icon discord"><QuickLinkFavicon url="https://discord.gg/z3bUt3hCya" fallback={FaDiscord} /></span>
                 <span className="bluefox-home-quick-link-label">Discord</span>
               </button>
-              <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le site de téléchargement BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir le site de téléchargement BlueFox">
                 <span className="bluefox-home-quick-link-icon download"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
                 <span className="bluefox-home-quick-link-label">Télécharger</span>
               </button>
-              <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir les extensions BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir les extensions BlueFox">
                 <span className="bluefox-home-quick-link-icon extensions"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
                 <span className="bluefox-home-quick-link-label">Extensions</span>
               </button>
@@ -405,23 +526,48 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
         )}
       </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
-        <section className="mb-12">
+        <section ref={homeFavoritesRef} className={`bluefox-home-favorites mb-8 ${isHomeSearchFocused ? 'is-search-hidden' : ''}`}>
           <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">
             {shortcuts.map(({ title, url, iconUrl, isSponsored }) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} isSponsored={isSponsored} onNavigate={onNavigate} />)}
           </div>
         </section>
 
-        <section className="mb-10">
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Rapport de confidentialité</h2>
-          <div className="bluefox-home-privacy-card flex min-h-[58px] items-center gap-3 rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-5 text-sm text-[#202124] shadow-none">
-            <MdSecurity className="bluefox-privacy-icon shrink-0 text-lg text-[#164e86]" />
-            <span className="text-lg font-semibold">0</span>
-            <span className="text-[12px] text-[#66676c]">BlueFox n’enregistre pas votre historique de navigation.</span>
-          </div>
+        <section ref={homeSearchRef} style={{ '--bluefox-home-search-focus-offset': `${homeSearchFocusOffset}px` }} className={`bluefox-home-search-section mb-10 ${isHomeSearchFocused ? 'is-focused' : ''}`}>
+          <form className="bluefox-home-search-bar" onSubmit={submitHomeSearch}>
+
+            <input
+              type="text"
+              value={homeSearch}
+              onChange={(event) => setHomeSearch(event.target.value)}
+              placeholder="Des réponses à toutes vos questions..."
+              aria-label="Rechercher sur le Web ou saisir une adresse"
+              onFocus={activateHomeSearch}
+            />
+            <button type="submit" aria-label="Lancer la recherche" title="Rechercher avec Google">
+              <img src={GOOGLE_SEARCH_ICON} alt="Google" />
+            </button>
+          </form>
+          {isHomeSearchFocused && homeSearchResults.length > 0 && (
+            <div className="bluefox-home-search-results" role="listbox" aria-label="Suggestions de recherche">
+              {homeSearchResults.map((suggestion, index) => (
+                <button
+                  type="button"
+                  key={`${suggestion}-${index}`}
+                  role="option"
+                  aria-selected="false"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => submitHomeSearchValue(suggestion)}
+                >
+                  <MdSearch aria-hidden="true" />
+                  <span><strong>{suggestion}</strong>{index === 0 && <small>Recherche Google</small>}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
-        <section>
+        <section className={`bluefox-home-news ${isHomeSearchFocused ? 'is-search-hidden' : ''}`}>
           <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Suggestions Foxy IA</h2>
           {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}

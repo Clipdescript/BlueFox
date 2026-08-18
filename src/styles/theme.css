@@ -9,16 +9,6 @@
   filter: none;
 }
 
-:root[data-theme='light'] .bluefox-sponsored-badge {
-  background-color: #e6f1fb !important;
-  color: #35658f !important;
-}
-
-:root[data-theme='dark'] .bluefox-sponsored-badge {
-  background-color: #2d4058 !important;
-  color: #c4dbf7 !important;
-}
-
 /* Dark mode accent: use violet for article hover and Foxy action controls. */
 :root[data-theme='dark'] .bluefox-app .bluefox-article-card:hover .bluefox-article-title {
   color: #c084fc !important;
@@ -95,9 +85,16 @@
   color: #ffffff !important;
 }
 
-.bluefox-home-customized .bluefox-home-favorite-tile,
+.bluefox-home-customized .bluefox-home-favorite-tile {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .bluefox-home-customized .bluefox-home-privacy-card,
-.bluefox-home-customized .bluefox-article-card,
 .bluefox-home-customized .bluefox-home-favorite-icon {
   border-color: rgba(255, 255, 255, 0.46) !important;
   background: rgba(20, 28, 42, 0.28) !important;
@@ -107,7 +104,27 @@
   -webkit-backdrop-filter: blur(14px) saturate(120%);
 }
 
-.bluefox-home-customized .bluefox-home-favorite-tile:hover,
+.bluefox-home-customized .bluefox-article-card {
+  border-color: rgba(255, 255, 255, 0.46) !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.bluefox-home-customized .bluefox-home-favorite-tile:hover {
+  border-color: rgba(225, 230, 236, 0.5) !important;
+  background: rgba(158, 164, 174, 0.38) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(8, 14, 24, 0.12) !important;
+  transition: background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, color 260ms ease !important;
+}
+
+.bluefox-home-customized .bluefox-home-favorite-tile:hover :where(span) {
+  color: #ffffff !important;
+}
+
 .bluefox-home-customized .bluefox-article-card:hover {
   border-color: rgba(255, 255, 255, 0.58) !important;
   background: rgba(255, 255, 255, 0.14) !important;
@@ -128,16 +145,10 @@
 .bluefox-home-customized .bluefox-article-card:hover .bluefox-article-title,
 .bluefox-home-customized .bluefox-article-card:hover .bluefox-article-source,
 .bluefox-home-customized .bluefox-home-privacy-card,
-.bluefox-home-customized .bluefox-home-privacy-card span,
-.bluefox-home-customized .bluefox-sponsored-badge {
+.bluefox-home-customized .bluefox-home-privacy-card span {
   color: #ffffff !important;
 }
 
-.bluefox-home-customized .bluefox-sponsored-badge {
-  border: 1px solid rgba(255, 255, 255, 0.62);
-  background: #164e86 !important;
-  color: #ffffff !important;
-}
 
 .bluefox-home-customized .bluefox-home-floating-button,
 .bluefox-home-customized .bluefox-home-floating-tools > *,
@@ -154,6 +165,19 @@
 .bluefox-home-customized .bluefox-home-floating-tools > *:hover,
 .bluefox-home-customized .bluefox-home-mode-switch:hover {
   background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* The appearance button keeps the same neutral gray hover as the user button. */
+.bluefox-home-customized .bluefox-customize-trigger:hover {
+  border-color: #d8d7d4 !important;
+  background: #f0efed !important;
+  color: #292929 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-customize-trigger:hover {
+  border-color: #4b4f57 !important;
+  background: #3a3d43 !important;
+  color: #ffffff !important;
 }
 
 .bluefox-home-customized .bluefox-home-floating-tools > * :where(button, svg),
@@ -177,6 +201,113 @@
 
 .bluefox-home-customized .bluefox-article-card img {
   border-color: rgba(255, 255, 255, 0.44) !important;
+}
+
+/* Search bar glass surface over custom images without tinting the image itself. */
+.bluefox-home-customized .bluefox-home-search-bar {
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 28px rgba(8, 14, 24, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+}
+
+.bluefox-home-customized .bluefox-home-search-bar:focus-within {
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16), 0 8px 24px rgba(8, 14, 24, 0.18) !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-bar input {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-bar input::placeholder {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-bar button {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-bar button:hover {
+  background: rgba(158, 164, 174, 0.38) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-bar input,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-bar input {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-bar input::placeholder,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-bar input::placeholder {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-results {
+  border: 1px solid rgba(255, 255, 255, 0.54) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 14px 32px rgba(8, 14, 24, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+}
+
+.bluefox-home-customized .bluefox-home-search-results button,
+.bluefox-home-customized .bluefox-home-search-results button > svg,
+.bluefox-home-customized .bluefox-home-search-results strong {
+  color: #ffffff !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-results button:hover {
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+.bluefox-home-customized .bluefox-home-search-results small {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button > svg,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results strong,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button > svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results strong {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button > svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results button > svg {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results small,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-search-results small {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+/* Keep quick-link tiles transparent until the pointer is over them on image backgrounds. */
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link:hover {
+  background: #edf1f6 !important;
+  box-shadow: inset 0 0 0 1px #d7e0ec !important;
+}
+
+/* Keep the three BlueFox quick-link titles readable over image backgrounds. */
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link-label,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-home-quick-link-label {
+  color: #000000 !important;
 }
 
 /* White homepage controls and a fluid glass WEB/IA switch over image backgrounds. */
@@ -388,4 +519,58 @@
   fill: #000000 !important;
   stroke: #000000 !important;
   -webkit-text-fill-color: #000000 !important;
+}
+
+/* Dark image-backed search surfaces use a deep black glass treatment. */
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar {
+  border-color: rgba(148, 163, 184, 0.34) !important;
+  background: rgba(5, 7, 10, 0.74) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results {
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  background: rgba(13, 16, 22, 0.84) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results button:hover {
+  background: rgba(71, 81, 96, 0.54) !important;
+}
+
+/* Final homepage search surfaces: glass in light mode and solid dark surfaces in dark mode. */
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-search-bar {
+  border-color: rgba(210, 218, 228, 0.86) !important;
+  background: rgba(255, 255, 255, 0.42) !important;
+  box-shadow: 0 8px 22px rgba(32, 33, 36, 0.08) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-search-results {
+  border-color: rgba(210, 218, 228, 0.86) !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: 0 14px 30px rgba(32, 33, 36, 0.12) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-search-bar {
+  border-color: #363c48 !important;
+  background: #15171b !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-home-search-results {
+  border-color: #363c48 !important;
+  background: #1d2026 !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.38) !important;
 }
