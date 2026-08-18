@@ -100,6 +100,52 @@
   line-height: 1.5;
 }
 
+.bluefox-theme-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 4px;
+  border: 1px solid #bfd2f5;
+  border-radius: 16px;
+  background: #f7faff;
+}
+
+.bluefox-theme-selector button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #2f333b !important;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.bluefox-theme-selector button:hover { background: #edf3ff; }
+.bluefox-theme-selector button:active { transform: scale(0.98); }
+.bluefox-theme-selector button.is-active {
+  background: #6f8fe8;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 3px 9px rgba(111, 143, 232, 0.24);
+}
+.bluefox-theme-selector button.is-active,
+.bluefox-theme-selector button.is-active :where(svg, span),
+.bluefox-theme-selector button.is-active svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.bluefox-theme-selector button svg { font-size: 19px; }
+
 .bluefox-personalization-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -204,12 +250,25 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 7px;
+  background-color: var(--swatch-color);
   background-image: linear-gradient(135deg, rgba(255,255,255,.38), transparent 48%), linear-gradient(180deg, transparent 52%, rgba(255,255,255,.82) 53% 59%, transparent 60%);
 }
 
 .bluefox-tab-color-swatch i { width: 62%; height: 4px; margin: 0 0 6px 6px; border-radius: 99px; background: var(--swatch-accent); box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+.bluefox-tab-color-swatch.is-selected {
+  width: 42px;
+  height: 42px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 3px solid color-mix(in srgb, var(--swatch-color) 28%, #ffffff 72%);
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--swatch-color) 66%, #ffffff 34%);
+  background-image: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--swatch-color) 18%, transparent), 0 4px 10px rgba(32, 33, 36, 0.14);
+}
+.bluefox-tab-color-swatch.is-selected i { display: none; }
+.bluefox-tab-color-check { width: 21px; height: 21px; color: #ffffff !important; fill: currentColor; }
 .bluefox-tab-style-label { display: block; width: 100%; overflow: hidden; color: #555b65 !important; font-size: 9px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
-.bluefox-tab-style-check { position: absolute; top: 5px; right: 5px; width: 17px; height: 17px; padding: 3px; border-radius: 50%; background: #2563eb; color: #ffffff !important; }
 
 .bluefox-custom-tab-color {
   display: flex;
@@ -226,7 +285,8 @@
 
 .bluefox-custom-tab-color:hover,
 .bluefox-custom-tab-color.is-selected { border-color: #7ca9ed; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-.bluefox-custom-tab-color-preview { width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(0,0,0,.15); border-radius: 9px; background-image: linear-gradient(135deg, rgba(255,255,255,.4), transparent); }
+.bluefox-custom-tab-color-preview { width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(0,0,0,.15); border-radius: 9px; background-color: var(--custom-tab-color); background-image: linear-gradient(135deg, rgba(255,255,255,.4), transparent); }
+.bluefox-custom-tab-color.is-selected .bluefox-custom-tab-color-preview { border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, var(--custom-tab-color) 18%, transparent); }
 .bluefox-custom-tab-color-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; }
 .bluefox-custom-tab-color-copy strong { color: #303640 !important; font-size: 12px; }
 .bluefox-custom-tab-color-copy small { color: #8a9099 !important; font-size: 10px; letter-spacing: .08em; }
@@ -289,6 +349,14 @@
 :root[data-theme='dark'] .bluefox-category-label { color: #c9cbd1 !important; }
 :root[data-theme='dark'] .bluefox-personalization-section { background: linear-gradient(180deg, #252932 0%, #20232a 100%); }
 :root[data-theme='dark'] .bluefox-section-heading { border-color: #363c48; background: linear-gradient(135deg, #2d333d, #252932); }
+:root[data-theme='dark'] .bluefox-theme-selector { border-color: #414957; background: #20232a; }
+:root[data-theme='dark'] .bluefox-theme-selector button { color: #d7dce5 !important; }
+:root[data-theme='dark'] .bluefox-theme-selector button:hover { background: #303640; }
+:root[data-theme='dark'] .bluefox-theme-selector button.is-active { background: #6178d0; color: #ffffff !important; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24); }
+:root[data-theme='dark'] .bluefox-theme-selector button.is-active,
+:root[data-theme='dark'] .bluefox-theme-selector button.is-active :where(svg, span),
+:root[data-theme='dark'] .bluefox-theme-selector button.is-active svg { color: #ffffff !important; fill: #ffffff !important; stroke: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+
 :root[data-theme='dark'] .bluefox-personalization-tabs { border-color: #363c48; background: #20232a; }
 :root[data-theme='dark'] .bluefox-personalization-tabs button:hover { color: #ffffff !important; background: #303640; }
 :root[data-theme='dark'] .bluefox-personalization-tabs button.is-active { border-color: #667eea; background: #303640; color: #c4b5fd !important; }
@@ -670,4 +738,26 @@
 @media (max-width: 380px) {
   .bluefox-settings-switcher button { min-height: 40px !important; gap: 5px !important; padding-inline: 5px !important; font-size: 11px !important; }
   .bluefox-settings-switcher button svg { width: 17px !important; height: 17px !important; }
+}
+
+/* Keep the personalization navigation icons visibly BlueFox blue in both themes. */
+.bluefox-personalization-tabs button svg,
+.bluefox-personalization-tabs button.is-active svg,
+.bluefox-personalization-tabs button:hover svg {
+  color: #2563eb !important;
+  fill: currentColor !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-personalization-tabs button svg,
+:root[data-theme='light'] .bluefox-app .bluefox-personalization-tabs button.is-active svg,
+:root[data-theme='light'] .bluefox-app .bluefox-personalization-tabs button:hover svg {
+  color: #2563eb !important;
+  fill: #2563eb !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-personalization-tabs button svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-personalization-tabs button.is-active svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-personalization-tabs button:hover svg {
+  color: #5f8dff !important;
+  fill: #5f8dff !important;
 }

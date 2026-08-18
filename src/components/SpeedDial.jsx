@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdApps, MdClose, MdDownload, MdExtension, MdPalette, MdSecurity } from 'react-icons/md';
-import ThemeToggle from './ThemeToggle';
+import { MdApps, MdClose, MdPalette, MdSecurity } from 'react-icons/md';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
 const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
@@ -165,6 +164,12 @@ const diversifyArticles = (loadedArticles) => {
 
 const hideArticleImage = (event) => {
   event.currentTarget.style.display = 'none';
+};
+
+const QuickLinkFavicon = ({ url, fallback: Fallback }) => {
+  const [hasError, setHasError] = useState(false);
+  if (hasError) return <Fallback className="text-[24px]" aria-hidden="true" />;
+  return <img src={getFaviconUrl(url)} alt="" className="h-7 w-7 object-contain" onError={() => setHasError(true)} />;
 };
 
 const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
@@ -367,10 +372,6 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
         <MdPalette className="bluefox-home-control-icon text-[21px]" />
       </button>
 
-      <div className="bluefox-home-floating-tools absolute left-5 top-4 z-20">
-        <ThemeToggle />
-      </div>
-
       <div className="absolute right-5 top-4 z-30">
         <button
           type="button"
@@ -388,15 +389,15 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
             <div className="bluefox-home-quick-links-heading">Applications BlueFox</div>
             <div className="bluefox-home-quick-links-grid">
               <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le serveur Discord BlueFox">
-                <span className="bluefox-home-quick-link-icon discord"><FaDiscord /></span>
+                <span className="bluefox-home-quick-link-icon discord"><QuickLinkFavicon url="https://discord.gg/z3bUt3hCya" fallback={FaDiscord} /></span>
                 <span className="bluefox-home-quick-link-label">Discord</span>
               </button>
               <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir le site de téléchargement BlueFox">
-                <span className="bluefox-home-quick-link-icon download"><MdDownload /></span>
+                <span className="bluefox-home-quick-link-icon download"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
                 <span className="bluefox-home-quick-link-label">Télécharger</span>
               </button>
               <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); setIsQuickLinksOpen(false); }} className="bluefox-home-quick-link" aria-label="Ouvrir les extensions BlueFox">
-                <span className="bluefox-home-quick-link-icon extensions"><MdExtension /></span>
+                <span className="bluefox-home-quick-link-icon extensions"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
                 <span className="bluefox-home-quick-link-label">Extensions</span>
               </button>
             </div>

@@ -10,13 +10,13 @@
 }
 
 :root[data-theme='light'] .bluefox-sponsored-badge {
-  background-color: #164e86 !important;
-  color: #ffffff !important;
+  background-color: #e6f1fb !important;
+  color: #35658f !important;
 }
 
 :root[data-theme='dark'] .bluefox-sponsored-badge {
-  background-color: #164e86 !important;
-  color: #ffffff !important;
+  background-color: #2d4058 !important;
+  color: #c4dbf7 !important;
 }
 
 /* Dark mode accent: use violet for article hover and Foxy action controls. */

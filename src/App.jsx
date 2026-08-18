@@ -1098,7 +1098,7 @@ function App() {
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts hideModeSwitch onMusicOpen={handleMusicTab} onMusicPlayback={handleAiMusicPlayback} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts hideModeSwitch hideThemeToggle onMusicOpen={handleMusicTab} onMusicPlayback={handleAiMusicPlayback} />
                          ) : (
                            <SpeedDial onNavigate={handleSearch} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={isPersonalizationOpen} onPersonalizationChange={setIsPersonalizationOpen} homeBackground={homeBackground} />
                          )}

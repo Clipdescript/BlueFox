@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MdArrowBack, MdCheck, MdClose, MdImage, MdPalette, MdUpload } from 'react-icons/md';
+import { MdArrowBack, MdCheck, MdClose, MdContrast, MdDarkMode, MdImage, MdLightMode, MdPalette, MdUpload } from 'react-icons/md';
+import { useTheme } from '../utils/theme.js';
 import '../styles/personalization.css';
 
 const LIGHT_DEFAULT_TAB_COLOR = '#f3f2f0';
@@ -415,6 +416,7 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
   const [loadingCategory, setLoadingCategory] = useState(null);
   const [galleryError, setGalleryError] = useState(false);
   const [customTabColor, setCustomTabColor] = useState(/^#[0-9a-f]{6}$/i.test(tabColor || '') ? tabColor : '#2563eb');
+  const { mode, setMode } = useTheme();
 
   React.useEffect(() => {
     if (/^#[0-9a-f]{6}$/i.test(tabColor || '')) setCustomTabColor(tabColor);
@@ -463,9 +465,9 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
     IMAGE_CATEGORIES.forEach((category) => { void loadCategoryImages(category); });
   }, [isOpen]);
   const defaultTabColor = resolvedTheme === 'dark' ? DARK_DEFAULT_TAB_COLOR : LIGHT_DEFAULT_TAB_COLOR;
-  const availableTabStyles = resolvedTheme === 'dark'
+  const availableTabStyles = Array.from(new Map((resolvedTheme === 'dark'
     ? TAB_STYLES
-    : TAB_STYLES.filter((style) => style.label !== 'Défaut sombre');
+    : TAB_STYLES.filter((style) => style.label !== 'Défaut sombre')).map((style) => [style.color.toLowerCase(), style])).values());
 
   return (
     <div className={`bluefox-personalization-panel ${isOpen ? 'is-open' : 'is-closed'}`} role="presentation">
@@ -483,6 +485,17 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
             <>
               <h1 className="bluefox-personalization-title">Apparence</h1>
               <p className="bluefox-personalization-intro">Choisissez les couleurs du navigateur et le fond de votre page Nouvel onglet.</p>
+              <div className="bluefox-theme-selector" role="group" aria-label="Choisir le thème de BlueFox">
+                {[
+                  { value: 'light', label: 'Clair', icon: MdLightMode },
+                  { value: 'dark', label: 'Sombre', icon: MdDarkMode },
+                  { value: 'system', label: 'Appareil', icon: MdContrast }
+                ].map(({ value, label, icon: Icon }) => (
+                  <button type="button" key={value} onClick={() => setMode(value)} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value}>
+                    <Icon aria-hidden="true" /><span>{label}</span>
+                  </button>
+                ))}
+              </div>
               <div className="bluefox-settings-switcher bluefox-personalization-tabs" role="tablist" aria-label="Options de personnalisation">
                 <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdPalette aria-hidden="true" /> Onglets</button>
                 <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdImage aria-hidden="true" /> Fonds de page</button>
@@ -497,15 +510,17 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
                   </div>
                   <div className="bluefox-tab-style-grid">
                     {availableTabStyles.map((style) => (
-                      <button key={style.label} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={`Choisir ${style.label}`} title={style.label}>
-                        <span className="bluefox-tab-color-swatch" style={{ backgroundColor: style.color, '--swatch-accent': style.accent }}><i /></span>
+                      <button key={style.color} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={`Choisir ${style.label}`} title={style.label}>
+                        <span className={`bluefox-tab-color-swatch ${tabColor === style.color ? 'is-selected' : ''}`} style={{ '--swatch-color': style.color, '--swatch-accent': style.accent }}>
+                          <i />
+                          {tabColor === style.color && <MdCheck className="bluefox-tab-color-check" aria-hidden="true" />}
+                        </span>
                         <span className="bluefox-tab-style-label">{style.label}</span>
-                        {tabColor === style.color && <MdCheck className="bluefox-tab-style-check" aria-hidden="true" />}
                       </button>
                     ))}
                   </div>
                   <label className={`bluefox-custom-tab-color ${isCustomTabColor ? 'is-selected' : ''}`}>
-                    <span className="bluefox-custom-tab-color-preview" style={{ backgroundColor: customTabColor }} />
+                    <span className="bluefox-custom-tab-color-preview" style={{ '--custom-tab-color': customTabColor }} />
                     <span className="bluefox-custom-tab-color-copy"><strong>Ma couleur</strong><small>{customTabColor.toUpperCase()}</small></span>
                     <input type="color" value={customTabColor} onChange={handleCustomTabColor} aria-label="Choisir une couleur personnalisée" />
                     {isCustomTabColor && <MdCheck aria-hidden="true" />}

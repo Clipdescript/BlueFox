@@ -158,16 +158,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: transparent;
   color: #303136;
   cursor: pointer;
-  transition: background-color 160ms ease, transform 160ms ease;
+  transition: none;
 }
 
 .bluefox-home-quick-link:hover {
-  background: #ffffff;
-  transform: translateY(-1px);
+  background: #edf1f6;
+  box-shadow: inset 0 0 0 1px #d7e0ec;
+  transform: none;
 }
 
 .bluefox-home-quick-link-icon {
@@ -181,9 +182,13 @@ body {
   box-shadow: 0 3px 9px rgba(32, 33, 36, 0.1);
 }
 
-.bluefox-home-quick-link-icon.discord { background: #eef0ff; color: #5865f2; }
-.bluefox-home-quick-link-icon.download { background: #e8f5f7; color: #137b8b; }
-.bluefox-home-quick-link-icon.extensions { background: #f1edff; color: #7c3aed; }
+.bluefox-home-quick-link-icon.discord,
+.bluefox-home-quick-link-icon.download,
+.bluefox-home-quick-link-icon.extensions {
+  border: 1px solid #d6e1f0;
+  background: #edf2f8;
+  color: #2563eb;
+}
 .bluefox-home-quick-link-label {
   max-width: 100%;
   overflow: hidden;
@@ -208,11 +213,18 @@ body {
 :root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links-heading { color: #f4f5f7; }
 :root[data-theme='dark'] .bluefox-app .bluefox-home-quick-links-grid { background: #17191d; }
 :root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link { color: #f4f5f7; }
-:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link:hover { background: #292d35; }
-:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28); }
-:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.discord { background: #2d3150; }
-:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.download { background: #214247; }
-:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.extensions { background: #3b2e55; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link:hover {
+  background: #2a3545;
+  box-shadow: inset 0 0 0 1px #3c506d;
+}
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon { box-shadow: none; }
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.discord,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.download,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-quick-link-icon.extensions {
+  border-color: #3c506d;
+  background: #2a3545;
+  color: #8eb2ff;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .bluefox-home-quick-links { animation: none; }
@@ -794,8 +806,10 @@ html[data-theme='dark'] ::-moz-selection {
 }
 
 .bluefox-sponsored-badge {
+  border-radius: 6px !important;
   background-color: #e6f1fb !important;
   color: #164e86 !important;
+  box-shadow: inset 0 0 0 1px rgba(22, 78, 134, 0.08);
 }
 
 .bluefox-music-page {

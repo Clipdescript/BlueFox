@@ -67,7 +67,7 @@ const SettingsPage = ({ onClose }) => {
             <div className="bluefox-settings-appearance-card rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] p-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--theme-surface)] text-[#137b8b] shadow-sm"><MdPalette className="text-xl" /></span>
-                <div className="min-w-0 flex-1"><p className="font-semibold">Thème de l’interface</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">Le sélecteur clair, sombre ou système est disponible en haut à gauche de la page d’accueil.</p></div>
+                <div className="min-w-0 flex-1"><p className="font-semibold">Thème de l’interface</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">Le sélecteur clair, sombre ou système est disponible dans la sidebar Apparence de la page d’accueil.</p></div>
                 <span className="shrink-0 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--theme-text-muted)]">{resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}</span>
               </div>
             </div>
