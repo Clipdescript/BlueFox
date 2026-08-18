@@ -2,17 +2,16 @@ import React from 'react';
 import { MdChatBubbleOutline, MdClose } from 'react-icons/md';
 import AiPage from './AiPage';
 
-const AiSidebar = ({ isOpen, onClose }) => (
+const AiSidebar = ({ isOpen, initialPrompt = '', isDocumentMode = false, documentText = '', onAnswer, onMusicPlayback, onClose }) => (
   <div className={`absolute bottom-0 right-0 top-[96px] z-[40] overflow-hidden transition-[width] duration-300 ease-out ${isOpen ? 'w-[min(560px,100vw)]' : 'w-0'}`}>
-    <aside
-      aria-label="Assistant Foxy"
+    <aside          aria-label={isDocumentMode ? 'Modifier le PDF avec Foxy' : 'Assistant Foxy'}
       aria-hidden={!isOpen}
       className="flex h-full w-[min(560px,100vw)] flex-col border-l border-[#e1e0dd] bg-white shadow-[-8px_0_28px_rgba(32,33,36,0.12)]"
     >
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-[#e7e6e3] px-4 text-[#292929]">
         <div className="flex items-center gap-2 text-[14px] font-medium">
           <MdChatBubbleOutline className="text-[18px] text-[#6d6e72]" />
-          <span>Assistant</span>
+          <span>{isDocumentMode ? 'Modifier' : 'Assistant'}</span>
         </div>
         <button
           type="button"
@@ -24,7 +23,7 @@ const AiSidebar = ({ isOpen, onClose }) => (
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
-        <AiPage isAiMode hideModeSwitch hideThemeToggle hideMusicToggle onModeChange={() => {}} />
+        <AiPage isAiMode initialPrompt={initialPrompt} isDocumentMode={isDocumentMode} documentText={documentText} onAnswer={onAnswer} onMusicPlayback={onMusicPlayback} hideModeSwitch hideThemeToggle hideMusicToggle onModeChange={() => {}} />
       </div>
     </aside>
   </div>

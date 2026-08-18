@@ -81,6 +81,20 @@ const getSiteName = (url) => {
   return parts.length > 1 ? parts[parts.length - 2] : domain;
 };
 
+const extractMusicRequest = (value) => {
+  const cleaned = String(value || '').trim().replace(/[!?.,;:]+$/, '');
+  const match = cleaned.match(/(?:peux[- ]?tu\s+)?(?:lance(?:r)?|joue(?:r)?|mets?|écoute(?:r)?|play)\s+(.+)/i);
+  if (!match) return '';
+
+  const query = match[1]
+    .trim()
+    .replace(/^(?:(?:le|la|un|une)\s+)?titre\s+(?:de\s+la\s+)?(?:musique\s+)?/i, '')
+    .replace(/^(?:(?:le|la|un|une)\s+)?musique\s+/i, '')
+    .trim();
+
+  return query.length >= 2 ? query.slice(0, 160) : '';
+};
+
 const hideUnusableImage = (event) => {
   const image = event.currentTarget;
   if (image.naturalWidth < 260 || image.naturalHeight < 180) {
@@ -152,7 +166,30 @@ const FastMarkdownMessage = ({ content, sources = [], messageKey, onTypingComple
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false, onMusicOpen }) => {
+const MusicConversationPlayer = ({ video }) => {
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`;
+
+  return (
+    <div className="foxy-music-conversation-player">
+      <div className="foxy-music-conversation-heading">
+        <span className="foxy-music-conversation-icon"><MdMusicNote /></span>
+        <div>
+          <strong>Lecture lancée par Foxy</strong>
+          <span>{video.title}</span>
+        </div>
+      </div>
+      <iframe
+        key={video.id}
+        src={embedUrl}
+        title={`Lecture YouTube : ${video.title}`}
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
+};
+
+const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false, onMusicOpen, onAnswer, onMusicPlayback }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -171,7 +208,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
   const [visibleResultCount, setVisibleResultCount] = useState(12);
 
   useEffect(() => {
-    if (initialPrompt) setPrompt(initialPrompt);
+    setPrompt(initialPrompt);
   }, [initialPrompt]);
 
   const clearProgressTimers = () => {
@@ -216,8 +253,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
   }, []);
 
   useEffect(() => {
-    if (isLoading) setShowSearchProgress(true);
-  }, [isLoading]);
+    if (isLoading && !isDocumentMode && searchStage !== 'music') setShowSearchProgress(true);
+    if (isDocumentMode || searchStage === 'music') setShowSearchProgress(false);
+  }, [isDocumentMode, isLoading, searchStage]);
 
   const animateAction = (action) => {
     setActiveAction(action);
@@ -253,24 +291,60 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
     setShowSourcePreview(false);
     setIsSourcePreviewClosing(false);
     setShowReasoning(false);
+    const musicQuery = !isDocumentMode ? extractMusicRequest(question) : '';
     setIsAnswerTyping(true);
     setVisibleResultCount(12);
-    setSearchStage('searching');
+    setSearchStage(isDocumentMode ? 'document' : musicQuery ? 'music' : 'searching');
+    setShowSearchProgress(!isDocumentMode && !musicQuery);
+    if (isDocumentMode) setShowSearchProgress(false);
     setFollowUps([]);
     setMessages((current) => [...current, { role: 'user', content: question }]);
     setIsLoading(true);
 
     try {
-      const result = await window.electron?.askAi(question);
-      if (!result?.ok) {
-        throw new Error(result?.error || 'La réponse IA est indisponible.');
+      if (musicQuery) {
+        const musicResult = await window.electron?.searchYouTube?.(musicQuery);
+        if (!musicResult?.ok) throw new Error(musicResult?.error || 'La recherche musicale est indisponible.');
+
+        const result = musicResult.results?.[0];
+        if (!result?.id) throw new Error(`Je n’ai pas trouvé « ${musicQuery} » sur YouTube.`);
+
+        const video = {
+          id: result.id,
+          title: result.title || musicQuery,
+          channel: result.channel || 'YouTube',
+          thumbnail: result.thumbnail || '',
+          url: result.url || `https://www.youtube.com/watch?v=${result.id}`
+        };
+        const answer = `Je lance **${video.title}**${video.channel ? ` de **${video.channel}**` : ''}.`;
+
+        setMessages((current) => [...current, {
+          role: 'assistant',
+          content: answer,
+          sources: [],
+          music: video
+        }]);
+        onMusicPlayback?.({ service: 'YouTube', title: video.title, tabTitle: 'YouTube' });
+        setFollowUps(['Lance une autre musique', 'Ouvre cette musique sur YouTube', 'Recherche un remix']);
+      } else {
+        const result = await window.electron?.askAi(question, isDocumentMode ? {
+          mode: 'document',
+          documentText: String(documentText || '').slice(0, 24000)
+        } : {});
+        if (!result?.ok) {
+          throw new Error(result?.error || 'La réponse IA est indisponible.');
+        }
+        setMessages((current) => [...current, {
+          role: 'assistant',
+          content: result.answer,
+          sources: result.sources || [],
+        }]);
+        onAnswer?.({
+          text: result.answer,
+          insertIntoPdf: isDocumentMode && /modif|réécri|insèr|ajout|remplac|corrig/i.test(question)
+        });
+        setFollowUps(Array.isArray(result.followUps) ? result.followUps : []);
       }
-      setMessages((current) => [...current, {
-        role: 'assistant',
-        content: result.answer,
-        sources: result.sources || [],
-      }]);
-      setFollowUps(Array.isArray(result.followUps) ? result.followUps : []);
     } catch (error) {
       setMessages((current) => [...current, {
         role: 'assistant',
@@ -343,9 +417,11 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
         <div className="flex h-14 shrink-0 items-center border-b border-[#e6e5e2] px-6 sm:px-10">
           <div className="flex h-full items-center gap-5 text-[14px] text-[#66676a]">
             <button type="button" onClick={() => setActiveView('response')} className={`relative flex h-full items-center gap-2 ${activeView === 'response' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdAutoAwesome /> Réponse{activeView === 'response' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
-            <button type="button" onClick={() => setActiveView('links')} className={`relative flex h-full items-center gap-2 ${activeView === 'links' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdLanguage /> Liens{activeView === 'links' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
-            <button type="button" onClick={() => setActiveView('images')} className={`relative flex h-full items-center gap-2 ${activeView === 'images' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdImage /> Images{activeView === 'images' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+            {!isDocumentMode && <>
+              <button type="button" onClick={() => setActiveView('links')} className={`relative flex h-full items-center gap-2 ${activeView === 'links' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdLanguage /> Liens{activeView === 'links' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+              <button type="button" onClick={() => setActiveView('images')} className={`relative flex h-full items-center gap-2 ${activeView === 'images' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdImage /> Images{activeView === 'images' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
               <button type="button" onClick={() => setActiveView('news')} className={`relative flex h-full items-center gap-2 ${activeView === 'news' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdNewspaper /> Actualités{activeView === 'news' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+            </>}
 
           </div>
           {(!hideModeSwitch || !hideThemeToggle) && <div className="ml-auto flex items-center gap-2">
@@ -370,19 +446,19 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
           </div>)
         )}
 
-        <div className={`relative mx-auto flex w-full ${activeView === 'images' ? 'max-w-[1180px]' : 'max-w-[1040px]'} flex-col px-6 pb-8 pt-8 sm:px-10 ${hasConversation ? 'justify-start' : 'min-h-full justify-center -translate-y-8'}`}>
+        <div className={`relative mx-auto flex w-full ${activeView === 'images' ? 'max-w-[1180px]' : 'max-w-[1040px]'} flex-col px-6 pb-8 pt-8 sm:px-10 ${hasConversation ? 'justify-start' : isDocumentMode ? 'min-h-full justify-center translate-y-0' : 'min-h-full justify-center -translate-y-8'}`}>
           {!hasConversation && (
             <div className="mb-8 text-center">
-              <p className="mb-2 text-[13px] text-[#86878a]">Recherche</p>
-              <h1 className="foxy-dm-title text-[30px] font-medium tracking-[-0.04em] text-[#292929]">Que voulez-vous savoir&nbsp;?</h1>
+              <p className="mb-2 text-[13px] text-[#86878a]">{isDocumentMode ? 'Document PDF' : 'Recherche'}</p>
+              <h1 className="foxy-dm-title text-[30px] font-medium tracking-[-0.04em] text-[#292929]">{isDocumentMode ? 'Que voulez-vous faire avec ce document ?' : 'Que voulez-vous savoir ?'}</h1>
             </div>
           )}
 
           {hasConversation && (
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-[12px] text-[#8a8b8e]">Recherche Foxy</p>
-                <h1 className="foxy-dm-title text-xl font-medium">Conversation</h1>
+                <p className="text-[12px] text-[#8a8b8e]">{isDocumentMode ? 'Analyse du document PDF' : 'Recherche Foxy'}</p>
+                <h1 className="foxy-dm-title text-xl font-medium">{isDocumentMode ? 'Résumé et modifications' : 'Conversation'}</h1>
               </div>
             </div>
           )}
@@ -392,17 +468,22 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
             <div className="mb-4 space-y-3">
               {messages.map((message, index) => (
                 <React.Fragment key={`${message.role}-${index}`}>
-                  <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`text-[14px] leading-6 ${message.role === 'assistant' ? 'w-full max-w-[760px] py-1 text-[#3f4042]' : 'max-w-[78%] rounded-xl bg-[#f3f3f1] px-3 py-1.5 text-[13px] leading-5 text-[#292929]'}`}>
-                      {message.role === 'assistant' ? <FastMarkdownMessage content={message.content} sources={message.sources} messageKey={`${message.role}-${index}`} onTypingComplete={handleTypingComplete} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
+                  {!(message.role === 'user' && hideUserPrompts) && (
+                    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`text-[14px] leading-6 ${message.role === 'assistant' ? 'w-full max-w-[760px] py-1 text-[#3f4042]' : 'max-w-[78%] rounded-xl bg-[#f3f3f1] px-3 py-1.5 text-[13px] leading-5 text-[#292929]'}`}>
+                        {message.role === 'assistant' ? <>
+                          <FastMarkdownMessage content={message.content} sources={message.sources} messageKey={`${message.role}-${index}`} onTypingComplete={handleTypingComplete} />
+                          {message.music && <MusicConversationPlayer video={message.music} />}
+                        </> : <p className="whitespace-pre-wrap">{message.content}</p>}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {message.role === 'user' && index === latestUserIndex && showSearchProgress && (
+                  {message.role === 'user' && index === latestUserIndex && !isDocumentMode && showSearchProgress && (
                     <div className={`foxy-search-progress ml-2 ${isLoading ? 'foxy-search-progress-active' : 'foxy-search-progress-complete'}`}>
                       <div className="foxy-search-step">
                         <span className={`foxy-search-step-icon ${isLoading && searchStage === 'searching' ? 'foxy-search-step-icon-active' : ''}`}><MdLanguage /></span>
-                        <p>Recherche des dernières informations sur <strong>{message.content}</strong></p>
+                        <p>{hideUserPrompts ? 'Recherche en cours…' : <>Recherche des dernières informations sur <strong>{message.content}</strong></>}</p>
                       </div>
                       {showSourcePreview && searchSources.length > 0 && (
                         <div className={`foxy-source-preview ${isSourcePreviewClosing ? 'foxy-source-preview-closing' : ''}`}>
@@ -453,7 +534,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
           )}
 
           {activeView === 'links' && hasConversation && (
-            <div className="space-y-1">              <p className="mb-3 text-[15px] text-[#85868a]">Résultats de recherche pour: <span className="font-medium text-[#4b4c4f]">{latestUser?.content || 'votre recherche'}</span></p>
+            <div className="space-y-1">              <p className="mb-3 text-[15px] text-[#85868a]">Résultats de recherche pour: <span className="font-medium text-[#4b4c4f]">{hideUserPrompts ? 'votre demande' : (latestUser?.content || 'votre recherche')}</span></p>
               {sources.slice(0, visibleResultCount).map((source) => (
                 <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block border-b border-[#ecebe8] py-3 first:pt-1 hover:bg-[#fcfcfa]">
                   <div className="flex items-start gap-3">
@@ -495,7 +576,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
 
           {activeView === 'images' && hasConversation && (
             <div>
-              <p className="mb-3 text-[15px] text-[#85868a]">Résultats d’images pour : <span className="font-medium text-[#4b4c4f]">{latestUser?.content || 'votre recherche'}</span></p>
+              <p className="mb-3 text-[15px] text-[#85868a]">Résultats d’images pour : <span className="font-medium text-[#4b4c4f]">{hideUserPrompts ? 'votre demande' : (latestUser?.content || 'votre recherche')}</span></p>
               {sources.some((source) => source.image) ? (
                 <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">{imageSources.slice(0, visibleResultCount).map((source) => <a data-image-result key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block min-w-0"><img src={source.image} alt={source.title} onLoad={hideUnusableImage} onError={hideBrokenImage} loading="lazy" className="aspect-[4/3] w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.015]" /><div className="mt-1.5 flex min-w-0 items-center gap-2 text-[13px] text-[#77787b]"><img src={getFaviconUrl(source.url)} alt="" className="h-5 w-5 shrink-0 rounded-full object-contain" /><span className="truncate">{getSiteName(source.url)}</span></div></a>)}</div>
               ) : <div className="px-5 py-10 text-center text-sm text-[#85868a]">Aucun résultat image n’a été fourni pour cette recherche.</div>}
@@ -503,9 +584,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', hideModeSwitch = f
           )}
 
           {activeView === 'response' && <div className="sticky bottom-0 z-20 -mx-6 mt-5 bg-white px-6 pb-4 pt-2 sm:-mx-10 sm:px-10"><form onSubmit={askFoxy} className="bluefox-ai-prompt-bar w-full rounded-[16px] border border-[#e3e3e6] bg-white p-2.5 shadow-[0_4px_18px_rgba(32,33,36,0.08)] focus-within:border-[#b9c9d8]">
-            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs'} aria-label="Question à Foxy" />
+            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={isDocumentMode ? 'Demander un résumé ou une modification du PDF' : (hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs')} aria-label="Question à Foxy" />
             <div className="flex items-center justify-between pt-1.5">
-              <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button><span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span><span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
+              <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button>{!isDocumentMode && <span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span>}<span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
               <div className="flex items-center gap-2 text-[#77787b]"><span className="hidden items-center gap-1 text-xs sm:flex">Modèle <MdExpandMore /></span><MdMic className="hidden text-lg sm:block" /><button type="submit" disabled={isLoading} className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-30 ${prompt.trim() ? 'bluefox-ai-send-button' : 'bluefox-ai-audio-button'}`} aria-label={prompt.trim() ? 'Envoyer' : 'Recherche vocale'}>{prompt.trim() ? <MdArrowUpward className="text-lg" /> : <MdGraphicEq className="text-[19px]" />}</button></div>
             </div>
           </form><p className="mt-2 px-2 text-center text-[10px] leading-4 text-[#85868a]">Les réponses de Foxy peuvent contenir des erreurs ou être incomplètes. Vérifiez les informations importantes avant de les utiliser.</p></div>}

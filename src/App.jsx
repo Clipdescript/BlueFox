@@ -6,7 +6,7 @@ import SpeedDial from './components/SpeedDial';
 import MusicPage from './components/MusicPage';
 import SettingsPage from './components/SettingsPage';
 import PersonalizationPanel from './components/PersonalizationPanel';
-import { MdSearch, MdClose } from 'react-icons/md';
+import { MdClose, MdMusicNote, MdSearch } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
 
 const AiPage = React.lazy(() => import('./components/AiPage'));
@@ -66,11 +66,11 @@ function App() {
   ));
   const [isAiMode, setIsAiMode] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState('');
+  const [aiSidebarTabs, setAiSidebarTabs] = useState({});
   const [isSpotifyOpen, setIsSpotifyOpen] = useState(false);
   const [isYouTubeOpen, setIsYouTubeOpen] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
   const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
   const [isCompactLayout, setIsCompactLayout] = useState(() => window.innerWidth <= 640);
   const [homeBackground, setHomeBackground] = useState(() => localStorage.getItem('bluefox_home_background_v1') || '');
@@ -80,6 +80,7 @@ function App() {
   const [addUrl, setAddUrl] = useState('');
   const [isWhatsAppOnline, setIsWhatsAppOnline] = useState(false);
   const [showMiniPlayer, setShowMiniPlayer] = useState(false);
+  const [musicPlayback, setMusicPlayback] = useState(null);
   const [miniPos, setMiniPos] = useState({ x: 960, y: 540 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -134,6 +135,8 @@ function App() {
   };
   
   const activeTab = tabs.find(t => t.id === activeTabId) || null;
+  const activeAiSidebar = activeTabId === null ? null : aiSidebarTabs[activeTabId] || null;
+  const isAiSidebarVisible = Boolean(activeAiSidebar?.open);
   const webviewRefs = useRef({});
 
   useEffect(() => {
@@ -246,6 +249,18 @@ function App() {
     setActiveTabId(newId);
   }, []);
 
+  const handleMusicPlaybackChange = useCallback((tabId, playback) => {
+    setMusicPlayback((currentPlayback) => {
+      if (!playback) return currentPlayback?.tabId === tabId ? null : currentPlayback;
+      return { ...playback, tabId };
+    });
+  }, []);
+
+  const handleAiMusicPlayback = useCallback((playback) => {
+    if (activeTabId === null) return;
+    handleMusicPlaybackChange(activeTabId, playback);
+  }, [activeTabId, handleMusicPlaybackChange]);
+
   const handleNewWindow = useCallback(() => {
     window.electron?.newWindow?.();
   }, []);
@@ -277,6 +292,8 @@ function App() {
       }
     }
 
+    if (musicPlayback?.tabId === id) setMusicPlayback(null);
+
     setTabs(prev => {
         const newTabs = prev.filter(t => t.id !== id);
         if (newTabs.length === 0) {
@@ -296,7 +313,7 @@ function App() {
     });
     delete webviewRefs.current[id];
     return true;
-  }, [activeTabId, tabs]);
+  }, [activeTabId, musicPlayback, tabs]);
 
   const handleSearch = useCallback((query) => {
     const requestedUrl = query.trim();
@@ -340,8 +357,23 @@ function App() {
   }, [activeTabId, isAiMode, tabs]);
 
   const handleAssistantToggle = useCallback(() => {
-    setIsAiSidebarOpen((isOpen) => !isOpen);
-  }, []);
+    if (activeTabId === null) return;
+    setAiInitialPrompt('');
+    setAiSidebarTabs((currentTabs) => {
+      const current = currentTabs[activeTabId] || {};
+      return {
+        ...currentTabs,
+        [activeTabId]: {
+          ...current,
+          open: !current.open,
+          isDocumentMode: false,
+          documentText: '',
+          initialPrompt: '',
+          request: null
+        }
+      };
+    });
+  }, [activeTabId]);
 
   const openPdfPayloadInNewTab = useCallback((pdf) => {
     if (!pdf?.url) return;
@@ -613,13 +645,41 @@ function App() {
     setAiInitialPrompt(prompt);
     setIsSettingsOpen(false);
     setIsAiMode(false);
-    setIsAiSidebarOpen(true);
-  }, []);
+    setAiSidebarTabs((currentTabs) => ({
+      ...currentTabs,
+      [activeTabId]: { open: true, isDocumentMode: false, documentText: '', initialPrompt: prompt, request: null }
+    }));
+  }, [activeTabId]);
 
   useEffect(() => {
     const unsubscribe = window.electron?.onAskFoxySelection?.(handleAskFoxySelection);
     return () => unsubscribe?.();
   }, [handleAskFoxySelection]);
+
+  const handleOpenPdfFoxy = useCallback((_prompt, documentText = '') => {
+    if (activeTabId === null) return;
+    setAiInitialPrompt('');
+    setAiSidebarTabs((currentTabs) => ({
+      ...currentTabs,
+      [activeTabId]: {
+        open: true,
+        isDocumentMode: true,
+        documentText: String(documentText || '').slice(0, 24000),
+        initialPrompt: '',
+        request: null
+      }
+    }));
+  }, [activeTabId]);
+
+  const handlePdfAiAnswer = useCallback((result) => {
+    const answer = typeof result === 'string' ? result : result?.text;
+    if (!answer || !result?.insertIntoPdf || activeTabId === null) return;
+    setAiSidebarTabs((currentTabs) => {
+      const current = currentTabs[activeTabId];
+      if (!current?.open || !current.isDocumentMode) return currentTabs;
+      return { ...currentTabs, [activeTabId]: { ...current, request: { id: Date.now(), text: answer } } };
+    });
+  }, [activeTabId]);
 
   const handleSettingsOpen = useCallback(() => {
     const existingSettingsTab = tabs.find((tab) => tab.isSettings);
@@ -962,7 +1022,7 @@ function App() {
             onSettings={handleSettingsOpen}
             showHomeButton={Boolean(activeTab?.isSearching) && !isAiMode && !isSettingsOpen}
             onHome={goHome}
-            isAssistantActive={isAiSidebarOpen}
+            isAssistantActive={isAiSidebarVisible}
             currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
             isAiMode={isAiMode}
@@ -981,7 +1041,7 @@ function App() {
 
         <main
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
-          style={{ marginRight: (isAiSidebarOpen || isPersonalizationOpen) && !isCompactLayout ? 'min(560px, 100vw)' : '0px' }}
+          style={{ marginRight: (isAiSidebarVisible || isPersonalizationOpen) && !isCompactLayout ? 'min(560px, 100vw)' : '0px' }}
         >
            {tabs.map(tab => (
                <div 
@@ -993,7 +1053,11 @@ function App() {
                        <SettingsPage onClose={handleSettingsClose} />
                    ) : tab.isPdf ? (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">Ouverture de l’éditeur PDF…</div>}>
-                         <PdfEditor file={tab.pdfFile || { fileName: tab.title, filePath: tab.pdfPath }} />
+                         <PdfEditor
+                           file={tab.pdfFile || { fileName: tab.title, filePath: tab.pdfPath }}
+                           onOpenFoxy={handleOpenPdfFoxy}
+                           aiInsertion={tab.id === activeTabId && activeAiSidebar?.isDocumentMode ? activeAiSidebar.request || null : null}
+                         />
                        </Suspense>
                    ) : tab.isSearching ? (
                         !tab.hibernated ? (
@@ -1013,11 +1077,14 @@ function App() {
                             </div>
                         )
                    ) : tab.isMusic ? (
-                       <MusicPage />
+                       <MusicPage
+                         musicTabId={tab.id}
+                         onPlaybackChange={handleMusicPlaybackChange}
+                       />
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} onMusicOpen={handleMusicTab} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts onMusicOpen={handleMusicTab} onMusicPlayback={handleAiMusicPlayback} />
                          ) : (
                            <SpeedDial onNavigate={handleSearch} isAiMode={isAiMode} onModeChange={handleModeChange} onMusicOpen={handleMusicTab} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={isPersonalizationOpen} onPersonalizationChange={setIsPersonalizationOpen} homeBackground={homeBackground} />
                          )}
@@ -1025,6 +1092,19 @@ function App() {
                    )}
                </div>
            ))}
+
+           {musicPlayback && activeTabId !== musicPlayback.tabId && !activeTab?.isPdf && !activeTab?.isSettings && (
+             <button
+               type="button"
+               className="bluefox-music-background-dock"
+               onClick={() => setActiveTabId(musicPlayback.tabId)}
+               title={`Revenir à ${musicPlayback.title || musicPlayback.service}`}
+               aria-label={`Musique en arrière-plan : ${musicPlayback.title || musicPlayback.service}`}
+             >
+               <MdMusicNote aria-hidden="true" />
+               <span>{musicPlayback.title || musicPlayback.service}</span>
+             </button>
+           )}
 
            {/* Floating Mini YouTube Player */}
            {!isSettingsOpen && isYouTubeOpen && showMiniPlayer && miniSrc && (
@@ -1079,9 +1159,24 @@ function App() {
         </main>
       </div>
 
-      {isAiSidebarOpen && (
+      {isAiSidebarVisible && (
         <Suspense fallback={null}>
-          <AiSidebar isOpen={isAiSidebarOpen} initialPrompt={aiInitialPrompt} onClose={() => setIsAiSidebarOpen(false)} />
+          <AiSidebar
+            isOpen={isAiSidebarVisible}
+            initialPrompt={activeAiSidebar?.initialPrompt || ''}
+            isDocumentMode={Boolean(activeAiSidebar?.isDocumentMode)}
+            documentText={activeAiSidebar?.documentText || ''}
+            onAnswer={handlePdfAiAnswer}
+            onMusicPlayback={handleAiMusicPlayback}
+            onClose={() => {
+              if (activeTabId === null) return;
+              setAiSidebarTabs((currentTabs) => ({
+                ...currentTabs,
+                [activeTabId]: { ...(currentTabs[activeTabId] || {}), open: false }
+              }));
+              setAiInitialPrompt('');
+            }}
+          />
         </Suspense>
       )}
 
