@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MdDarkMode, MdExpandMore, MdLightMode, MdContrast } from 'react-icons/md';
+import { MdCheck, MdDarkMode, MdExpandMore, MdLightMode, MdContrast } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
 
 const THEME_LABELS = {
@@ -34,7 +34,7 @@ const ThemeToggle = () => {
         <MdExpandMore className={`text-[16px] transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
       </button>
       {isMenuOpen && (
-        <div className="absolute left-0 top-10 min-w-[132px] overflow-hidden rounded-lg border border-[#d8d7d4] bg-white p-1 text-[12px] shadow-lg">
+        <div className="bluefox-theme-menu absolute left-0 top-10 min-w-[132px] overflow-hidden rounded-lg border border-[#d8d7d4] bg-white p-1 text-[12px] shadow-lg">
           {Object.entries(THEME_LABELS).map(([value, label]) => (
             <button
               type="button"
@@ -46,7 +46,7 @@ const ThemeToggle = () => {
               className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-[#4f5054] transition-colors hover:bg-[#f0efed] hover:text-[#202124] ${mode === value ? 'font-semibold text-[#137b8b]' : ''}`}
             >
               <span>{label}</span>
-              {mode === value && <span aria-hidden="true">✓</span>}
+              {mode === value && <MdCheck className="bluefox-theme-check inline-block h-[15px] w-[15px] shrink-0" style={{ color: resolvedTheme === 'dark' ? '#ffffff' : '#000000', fill: resolvedTheme === 'dark' ? '#ffffff' : '#000000' }} aria-hidden="true" />}
             </button>
           ))}
         </div>

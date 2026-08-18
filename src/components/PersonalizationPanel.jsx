@@ -4,9 +4,10 @@ import '../styles/personalization.css';
 
 const LIGHT_DEFAULT_TAB_COLOR = '#f3f2f0';
 const DARK_DEFAULT_TAB_COLOR = '#1d2026';
-const DARK_TAB_SURFACE = '#252932';
 
-const TAB_STYLES = [
+const BASE_TAB_STYLES = [
+  { label: 'Défaut clair', color: '#f3f2f0', accent: '#a6a7ab' },
+  { label: 'Défaut sombre', color: '#1d2026', accent: '#7c8492' },
   { label: 'Bleu clair', color: '#e8f1ff', accent: '#2563eb' },
   { label: 'Gris clair', color: '#f1f3f4', accent: '#8a919a' },
   { label: 'Blanc', color: '#ffffff', accent: '#c6cbd2' },
@@ -21,155 +22,362 @@ const TAB_STYLES = [
   { label: 'Lavande claire', color: '#f1edff', accent: '#8d7bc8' }
 ];
 
-const image = (label, id) => ({
-  label,
-  url: `url("https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=90")`
+// 108 additional tones create a ten-times larger palette without repeating the presets above.
+const EXTRA_TAB_STYLES = Array.from({ length: 108 }, (_, index) => {
+  const hueIndex = index % 12;
+  const toneIndex = Math.floor(index / 12);
+  const hue = hueIndex * 30;
+  const lightness = 95 - (toneIndex * 7);
+  const accentLightness = Math.max(28, lightness - 18);
+  return {
+    label: `Palette ${String(index + 1).padStart(3, '0')}`,
+    color: `hsl(${hue} 72% ${lightness}%)`,
+    accent: `hsl(${hue} 72% ${accentLightness}%)`
+  };
 });
 
-const IMAGE_CATEGORIES = [
+const TAB_STYLES = [...BASE_TAB_STYLES, ...EXTRA_TAB_STYLES];
+
+const image = (label, id) => ({
+  label,
+  url: `url("https://images.unsplash.com/${id}?auto=format&fit=crop&w=1800&q=95")`
+});
+
+const imageSet = (label, ids) => ids.map((id, index) => image(`${label} ${String(index + 1).padStart(2, '0')}`, id));
+
+const LEGACY_IMAGE_CATEGORIES = [
   {
     label: 'Artistes des îles du Pacifique et d’Asie',
     cover: image('Artistes des îles du Pacifique et d’Asie', 'photo-1531058020387-3be344556be6'),
-    images: [
-      image('Couleurs océaniques', 'photo-1507525428034-b723cf961d3e'),
-      image('Art polynésien', 'photo-1544551763-46a013bb70d5'),
-      image('Lumière tropicale', 'photo-1516690561799-46d8f74f9abf'),
-      image('Sable et ciel', 'photo-1500530855697-b586d89ba3ee'),
-      image('Jardin exotique', 'photo-1497250681960-ef046c08a56e'),
-      image('Peinture colorée', 'photo-1549490349-8643362247b5')
-    ]
+    images: imageSet('Océans et îles', [
+      'photo-1507525428034-b723cf961d3e', 'photo-1544551763-46a013bb70d5', 'photo-1516690561799-46d8f74f9abf',
+      'photo-1497250681960-ef046c08a56e', 'photo-1500530855697-b586d89ba3ee', 'photo-1501785888041-af3ef285b470',
+      'photo-1473116763249-2faaef81ccda', 'photo-1510414842594-a61c69b5ae57', 'photo-1500534623283-312aade485b7',
+      'photo-1520250497591-112f2f40a3f4', 'photo-1540541338287-41700207dee6', 'photo-1513836279014-a89f7a76ae86',
+      'photo-1511497584788-876760111969', 'photo-1470252649378-9c29740c9fa8', 'photo-1531058020387-3be344556be6',
+      'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23', 'photo-1490750967868-88aa4486c946',
+      'photo-1541701494587-cb58502866ab', 'photo-1549490349-8643362247b5', 'photo-1579783902614-a3fb3927b6a5',
+      'photo-1561214115-f2f134cc4912', 'photo-1507525428034-b723cf961d3e', 'photo-1544551763-46a013bb70d5',
+      'photo-1516690561799-46d8f74f9abf', 'photo-1500530855697-b586d89ba3ee', 'photo-1497250681960-ef046c08a56e',
+      'photo-1501785888041-af3ef285b470', 'photo-1510414842594-a61c69b5ae57', 'photo-1520250497591-112f2f40a3f4'
+    ])
   },
   {
     label: 'Artistes amérindiens',
     cover: image('Artistes amérindiens', 'photo-1549490349-8643362247b5'),
-    images: [
-      image('Motifs rouges et noirs', 'photo-1513364776144-60967b0f800f'),
-      image('Formes traditionnelles', 'photo-1547891654-e66ed7ebb968'),
-      image('Couleurs graphiques', 'photo-1541701494587-cb58502866ab'),
-      image('Dessin contemporain', 'photo-1561214115-f2f134cc4912'),
-      image('Art abstrait', 'photo-1579783902614-a3fb3927b6a5'),
-      image('Texture artistique', 'photo-1549490349-8643362247b5')
-    ]
+    images: imageSet('Motifs et terres rouges', [
+      'photo-1513364776144-60967b0f800f', 'photo-1547891654-e66ed7ebb968', 'photo-1541701494587-cb58502866ab',
+      'photo-1561214115-f2f134cc4912', 'photo-1579783902614-a3fb3927b6a5', 'photo-1549490349-8643362247b5',
+      'photo-1518005020951-eccb494ad742', 'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b',
+      'photo-1550859492-d5da9d8e45f3', 'photo-1531058020387-3be344556be6', 'photo-1577083288073-40892c0860a4',
+      'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7', 'photo-1513475382585-d06e58bcb0e0',
+      'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23', 'photo-1490750967868-88aa4486c946',
+      'photo-1497250681960-ef046c08a56e', 'photo-1544551763-46a013bb70d5', 'photo-1516690561799-46d8f74f9abf',
+      'photo-1500530855697-b586d89ba3ee', 'photo-1470252649378-9c29740c9fa8', 'photo-1541701494587-cb58502866ab',
+      'photo-1513364776144-60967b0f800f', 'photo-1547891654-e66ed7ebb968', 'photo-1561214115-f2f134cc4912',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1549490349-8643362247b5', 'photo-1518005020951-eccb494ad742'
+    ])
   },
   {
     label: 'Illustrations contemporaines',
     cover: image('Artistes LGBTQ+', 'photo-1531058020387-3be344556be6'),
-    images: [
-      image('Expression colorée', 'photo-1531058020387-3be344556be6'),
-      image('Portrait artistique', 'photo-1534528741775-53994a69daeb'),
-      image('Lumières pastel', 'photo-1518709268805-4e9042af9f23'),
-      image('Art vivant', 'photo-1500530855697-b586d89ba3ee'),
-      image('Fleurs et couleurs', 'photo-1490750967868-88aa4486c946'),
-      image('Création moderne', 'photo-1561214115-f2f134cc4912')
-    ]
+    images: imageSet('Illustrations et couleurs', [
+      'photo-1531058020387-3be344556be6', 'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23',
+      'photo-1500530855697-b586d89ba3ee', 'photo-1490750967868-88aa4486c946', 'photo-1561214115-f2f134cc4912',
+      'photo-1549490349-8643362247b5', 'photo-1541701494587-cb58502866ab', 'photo-1513364776144-60967b0f800f',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b',
+      'photo-1550859492-d5da9d8e45f3', 'photo-1518005020951-eccb494ad742', 'photo-1547891654-e66ed7ebb968',
+      'photo-1577083288073-40892c0860a4', 'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7',
+      'photo-1513475382585-d06e58bcb0e0', 'photo-1497250681960-ef046c08a56e', 'photo-1516690561799-46d8f74f9abf',
+      'photo-1544551763-46a013bb70d5', 'photo-1470252649378-9c29740c9fa8', 'photo-1507525428034-b723cf961d3e',
+      'photo-1462331940025-496dfbfc7564', 'photo-1502134249126-9f3755a50d78', 'photo-1518709268805-4e9042af9f23',
+      'photo-1531058020387-3be344556be6', 'photo-1534528741775-53994a69daeb', 'photo-1561214115-f2f134cc4912'
+    ])
   },
   {
     label: 'Artistes latino',
     cover: image('Artistes latino', 'photo-1490750967868-88aa4486c946'),
-    images: [
-      image('Fleurs graphiques', 'photo-1490750967868-88aa4486c946'),
-      image('Couleurs chaudes', 'photo-1500530855697-b586d89ba3ee'),
-      image('Peinture solaire', 'photo-1541701494587-cb58502866ab'),
-      image('Illustration florale', 'photo-1518709268805-4e9042af9f23'),
-      image('Jardin de couleurs', 'photo-1497250681960-ef046c08a56e'),
-      image('Art populaire', 'photo-1513364776144-60967b0f800f')
-    ]
+    images: imageSet('Couleurs latines et florales', [
+      'photo-1490750967868-88aa4486c946', 'photo-1500530855697-b586d89ba3ee', 'photo-1541701494587-cb58502866ab',
+      'photo-1518709268805-4e9042af9f23', 'photo-1497250681960-ef046c08a56e', 'photo-1513364776144-60967b0f800f',
+      'photo-1549490349-8643362247b5', 'photo-1531058020387-3be344556be6', 'photo-1534528741775-53994a69daeb',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1518005020951-eccb494ad742', 'photo-1557682250-33bd709cbe85',
+      'photo-1557682260-967a4f6a9c6b', 'photo-1550859492-d5da9d8e45f3', 'photo-1547891654-e66ed7ebb968',
+      'photo-1577083288073-40892c0860a4', 'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7',
+      'photo-1513475382585-d06e58bcb0e0', 'photo-1544551763-46a013bb70d5', 'photo-1516690561799-46d8f74f9abf',
+      'photo-1507525428034-b723cf961d3e', 'photo-1501785888041-af3ef285b470', 'photo-1500534623283-312aade485b7',
+      'photo-1470252649378-9c29740c9fa8', 'photo-1531058020387-3be344556be6', 'photo-1490750967868-88aa4486c946',
+      'photo-1497250681960-ef046c08a56e', 'photo-1518709268805-4e9042af9f23', 'photo-1513364776144-60967b0f800f'
+    ])
   },
   {
     label: 'Artistes noirs',
     cover: image('Artistes noirs', 'photo-1541701494587-cb58502866ab'),
-    images: [
-      image('Formes végétales', 'photo-1541701494587-cb58502866ab'),
-      image('Art abstrait coloré', 'photo-1579783902614-a3fb3927b6a5'),
-      image('Peinture contemporaine', 'photo-1549490349-8643362247b5'),
-      image('Motifs organiques', 'photo-1513364776144-60967b0f800f'),
-      image('Couleurs profondes', 'photo-1561214115-f2f134cc4912'),
-      image('Composition moderne', 'photo-1547891654-e66ed7ebb968')
-    ]
+    images: imageSet('Art contemporain et formes', [
+      'photo-1541701494587-cb58502866ab', 'photo-1579783902614-a3fb3927b6a5', 'photo-1549490349-8643362247b5',
+      'photo-1513364776144-60967b0f800f', 'photo-1561214115-f2f134cc4912', 'photo-1547891654-e66ed7ebb968',
+      'photo-1531058020387-3be344556be6', 'photo-1518005020951-eccb494ad742', 'photo-1557682250-33bd709cbe85',
+      'photo-1557682260-967a4f6a9c6b', 'photo-1550859492-d5da9d8e45f3', 'photo-1577083288073-40892c0860a4',
+      'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7', 'photo-1513475382585-d06e58bcb0e0',
+      'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23', 'photo-1490750967868-88aa4486c946',
+      'photo-1497250681960-ef046c08a56e', 'photo-1544551763-46a013bb70d5', 'photo-1516690561799-46d8f74f9abf',
+      'photo-1500530855697-b586d89ba3ee', 'photo-1470252649378-9c29740c9fa8', 'photo-1507525428034-b723cf961d3e',
+      'photo-1501785888041-af3ef285b470', 'photo-1500534623283-312aade485b7', 'photo-1462331940025-496dfbfc7564',
+      'photo-1502134249126-9f3755a50d78', 'photo-1541701494587-cb58502866ab', 'photo-1579783902614-a3fb3927b6a5'
+    ])
   },
   {
     label: 'Paysages',
     cover: image('Paysages', 'photo-1464822759023-fed622ff2c3b'),
-    images: [
-      image('Arche dans le désert', 'photo-1474044159687-1ee9f3a51722'),
-      image('Montagnes bleues', 'photo-1464822759023-fed622ff2c3b'),
-      image('Lac de montagne', 'photo-1500534623283-312aade485b7'),
-      image('Vallée lumineuse', 'photo-1501785888041-af3ef285b470'),
-      image('Désert rouge', 'photo-1509316785289-025f5b846b35'),
-      image('Côte sauvage', 'photo-1507525428034-b723cf961d3e')
-    ]
+    images: imageSet('Montagnes, lacs et horizons', [
+      'photo-1474044159687-1ee9f3a51722', 'photo-1464822759023-fed622ff2c3b', 'photo-1500534623283-312aade485b7',
+      'photo-1501785888041-af3ef285b470', 'photo-1509316785289-025f5b846b35', 'photo-1507525428034-b723cf961d3e',
+      'photo-1470071459604-3b5ec3a7fe05', 'photo-1441974231531-c6227db76b6e', 'photo-1472214103451-9374bd1c798e',
+      'photo-1469474968028-56623f02e42e', 'photo-1501854140801-50d01698950b', 'photo-1511497584788-876760111969',
+      'photo-1513836279014-a89f7a76ae86', 'photo-1448375240586-882707db888b', 'photo-1473445361085-b9a07f55608b',
+      'photo-1535378917042-10a22c95931a', 'photo-1500530855697-b586d89ba3ee', 'photo-1497250681960-ef046c08a56e',
+      'photo-1518173946687-a4c8892bbd9f', 'photo-1510414842594-a61c69b5ae57', 'photo-1520250497591-112f2f40a3f4',
+      'photo-1540541338287-41700207dee6', 'photo-1500534623283-312aade485b7', 'photo-1501785888041-af3ef285b470',
+      'photo-1464822759023-fed622ff2c3b', 'photo-1474044159687-1ee9f3a51722', 'photo-1509316785289-025f5b846b35',
+      'photo-1472214103451-9374bd1c798e', 'photo-1469474968028-56623f02e42e', 'photo-1501854140801-50d01698950b'
+    ])
   },
   {
     label: 'Textures',
     cover: image('Textures', 'photo-1518005020951-eccb494ad742'),
-    images: [
-      image('Texture géométrique', 'photo-1518005020951-eccb494ad742'),
-      image('Texture minérale', 'photo-1531058020387-3be344556be6'),
-      image('Motif bleu', 'photo-1557682250-33bd709cbe85'),
-      image('Surface abstraite', 'photo-1557682260-967a4f6a9c6b'),
-      image('Papier coloré', 'photo-1549490349-8643362247b5'),
-      image('Lignes graphiques', 'photo-1513364776144-60967b0f800f')
-    ]
+    images: imageSet('Textures et matières', [
+      'photo-1518005020951-eccb494ad742', 'photo-1531058020387-3be344556be6', 'photo-1557682250-33bd709cbe85',
+      'photo-1557682260-967a4f6a9c6b', 'photo-1549490349-8643362247b5', 'photo-1513364776144-60967b0f800f',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1541701494587-cb58502866ab', 'photo-1547891654-e66ed7ebb968',
+      'photo-1561214115-f2f134cc4912', 'photo-1550859492-d5da9d8e45f3', 'photo-1577083288073-40892c0860a4',
+      'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7', 'photo-1513475382585-d06e58bcb0e0',
+      'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23', 'photo-1490750967868-88aa4486c946',
+      'photo-1497250681960-ef046c08a56e', 'photo-1500530855697-b586d89ba3ee', 'photo-1470252649378-9c29740c9fa8',
+      'photo-1507525428034-b723cf961d3e', 'photo-1501785888041-af3ef285b470', 'photo-1500534623283-312aade485b7',
+      'photo-1518005020951-eccb494ad742', 'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b',
+      'photo-1549490349-8643362247b5', 'photo-1513364776144-60967b0f800f', 'photo-1541701494587-cb58502866ab'
+    ])
   },
   {
     label: 'Vie',
     cover: image('Vie', 'photo-1535378917042-10a22c95931a'),
-    images: [
-      image('Détail naturel', 'photo-1535378917042-10a22c95931a'),
-      image('Lumière dorée', 'photo-1500530855697-b586d89ba3ee'),
-      image('Matière chaude', 'photo-1518709268805-4e9042af9f23'),
-      image('Nature abstraite', 'photo-1497250681960-ef046c08a56e'),
-      image('Écorce', 'photo-1448375240586-882707db888b'),
-      image('Feuillage', 'photo-1473445361085-b9a07f55608b')
-    ]
+    images: imageSet('Nature et vivant', [
+      'photo-1535378917042-10a22c95931a', 'photo-1500530855697-b586d89ba3ee', 'photo-1518709268805-4e9042af9f23',
+      'photo-1497250681960-ef046c08a56e', 'photo-1448375240586-882707db888b', 'photo-1473445361085-b9a07f55608b',
+      'photo-1470071459604-3b5ec3a7fe05', 'photo-1441974231531-c6227db76b6e', 'photo-1472214103451-9374bd1c798e',
+      'photo-1469474968028-56623f02e42e', 'photo-1501854140801-50d01698950b', 'photo-1511497584788-876760111969',
+      'photo-1513836279014-a89f7a76ae86', 'photo-1518173946687-a4c8892bbd9f', 'photo-1510414842594-a61c69b5ae57',
+      'photo-1501785888041-af3ef285b470', 'photo-1509316785289-025f5b846b35', 'photo-1507525428034-b723cf961d3e',
+      'photo-1490750967868-88aa4486c946', 'photo-1497250681960-ef046c08a56e', 'photo-1500534623283-312aade485b7',
+      'photo-1520250497591-112f2f40a3f4', 'photo-1540541338287-41700207dee6', 'photo-1535378917042-10a22c95931a',
+      'photo-1448375240586-882707db888b', 'photo-1473445361085-b9a07f55608b', 'photo-1518709268805-4e9042af9f23',
+      'photo-1500530855697-b586d89ba3ee', 'photo-1470071459604-3b5ec3a7fe05', 'photo-1441974231531-c6227db76b6e'
+    ])
   },
   {
     label: 'Terre',
     cover: image('Terre', 'photo-1446776811953-b23d57bd21aa'),
-    images: [
-      image('Horizon terrestre', 'photo-1446776811953-b23d57bd21aa'),
-      image('Jupiter', 'photo-1614728263952-84ea256f9679'),
-      image('Lune', 'photo-1534791547706-6c9c8c8e0e31'),
-      image('Nébuleuse', 'photo-1462331940025-496dfbfc7564'),
-      image('Espace profond', 'photo-1502134249126-9f3755a50d78'),
-      image('Carte naturelle', 'photo-1500534623283-312aade485b7')
-    ]
+    images: imageSet('Terre et cosmos', [
+      'photo-1446776811953-b23d57bd21aa', 'photo-1614728263952-84ea256f9679', 'photo-1534791547706-6c9c8c8e0e31',
+      'photo-1462331940025-496dfbfc7564', 'photo-1502134249126-9f3755a50d78', 'photo-1500534623283-312aade485b7',
+      'photo-1446776811953-b23d57bd21aa', 'photo-1614728263952-84ea256f9679', 'photo-1534791547706-6c9c8c8e0e31',
+      'photo-1462331940025-496dfbfc7564', 'photo-1502134249126-9f3755a50d78', 'photo-1518709268805-4e9042af9f23',
+      'photo-1531058020387-3be344556be6', 'photo-1507525428034-b723cf961d3e', 'photo-1501785888041-af3ef285b470',
+      'photo-1464822759023-fed622ff2c3b', 'photo-1474044159687-1ee9f3a51722', 'photo-1509316785289-025f5b846b35',
+      'photo-1470071459604-3b5ec3a7fe05', 'photo-1441974231531-c6227db76b6e', 'photo-1472214103451-9374bd1c798e',
+      'photo-1469474968028-56623f02e42e', 'photo-1501854140801-50d01698950b', 'photo-1511497584788-876760111969',
+      'photo-1513836279014-a89f7a76ae86', 'photo-1510414842594-a61c69b5ae57', 'photo-1520250497591-112f2f40a3f4',
+      'photo-1540541338287-41700207dee6', 'photo-1446776811953-b23d57bd21aa', 'photo-1462331940025-496dfbfc7564'
+    ])
   },
   {
     label: 'Art',
     cover: image('Art', 'photo-1541701494587-cb58502866ab'),
-    images: [
-      image('Peinture abstraite', 'photo-1541701494587-cb58502866ab'),
-      image('Couleurs éclatantes', 'photo-1513364776144-60967b0f800f'),
-      image('Encre', 'photo-1561214115-f2f134cc4912'),
-      image('Composition', 'photo-1579783902614-a3fb3927b6a5'),
-      image('Formes libres', 'photo-1549490349-8643362247b5'),
-      image('Atelier', 'photo-1518005020951-eccb494ad742')
-    ]
+    images: imageSet('Peintures et créations', [
+      'photo-1541701494587-cb58502866ab', 'photo-1513364776144-60967b0f800f', 'photo-1561214115-f2f134cc4912',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1549490349-8643362247b5', 'photo-1518005020951-eccb494ad742',
+      'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b', 'photo-1550859492-d5da9d8e45f3',
+      'photo-1531058020387-3be344556be6', 'photo-1547891654-e66ed7ebb968', 'photo-1577083288073-40892c0860a4',
+      'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7', 'photo-1513475382585-d06e58bcb0e0',
+      'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23', 'photo-1490750967868-88aa4486c946',
+      'photo-1497250681960-ef046c08a56e', 'photo-1500530855697-b586d89ba3ee', 'photo-1470252649378-9c29740c9fa8',
+      'photo-1507525428034-b723cf961d3e', 'photo-1501785888041-af3ef285b470', 'photo-1500534623283-312aade485b7',
+      'photo-1541701494587-cb58502866ab', 'photo-1513364776144-60967b0f800f', 'photo-1561214115-f2f134cc4912',
+      'photo-1579783902614-a3fb3927b6a5', 'photo-1549490349-8643362247b5', 'photo-1518005020951-eccb494ad742'
+    ])
   },
   {
     label: 'Paysages urbains',
     cover: image('Paysages urbains', 'photo-1477959858617-67f85cf4f1df'),
-    images: [
-      image('Ville au soleil', 'photo-1477959858617-67f85cf4f1df'),
-      image('Rue sous la pluie', 'photo-1519608487953-e999c86e7455'),
-      image('Architecture moderne', 'photo-1487958449943-2429e8be8625'),
-      image('Gratte-ciel', 'photo-1480714378408-67cf0d13bc1b'),
-      image('Nuit urbaine', 'photo-1519501025264-65ba15a82390'),
-      image('Lumières de la ville', 'photo-1494526585095-c41746248156')
-    ]
+    images: imageSet('Villes et architectures', [
+      'photo-1477959858617-67f85cf4f1df', 'photo-1519608487953-e999c86e7455', 'photo-1487958449943-2429e8be8625',
+      'photo-1480714378408-67cf0d13bc1b', 'photo-1519501025264-65ba15a82390', 'photo-1494526585095-c41746248156',
+      'photo-1449824913935-59a10b8d2000', 'photo-1496568816309-51d7c20e3b21', 'photo-1496588152823-86ff7695e68f',
+      'photo-1479839672679-a46483c0e7c8', 'photo-1511818966892-d7d671e672a2', 'photo-1486406146926-c627a92ad1ab',
+      'photo-1497366811353-6870744d04b2', 'photo-1487958449943-2429e8be8625', 'photo-1480714378408-67cf0d13bc1b',
+      'photo-1519501025264-65ba15a82390', 'photo-1494526585095-c41746248156', 'photo-1477959858617-67f85cf4f1df',
+      'photo-1519608487953-e999c86e7455', 'photo-1449824913935-59a10b8d2000', 'photo-1496568816309-51d7c20e3b21',
+      'photo-1496588152823-86ff7695e68f', 'photo-1479839672679-a46483c0e7c8', 'photo-1511818966892-d7d671e672a2',
+      'photo-1486406146926-c627a92ad1ab', 'photo-1497366811353-6870744d04b2', 'photo-1477959858617-67f85cf4f1df',
+      'photo-1487958449943-2429e8be8625', 'photo-1519501025264-65ba15a82390', 'photo-1494526585095-c41746248156'
+    ])
   },
   {
     label: 'Formes géométriques',
     cover: image('Formes géométriques', 'photo-1557682250-33bd709cbe85'),
-    images: [
-      image('Polygones', 'photo-1557682250-33bd709cbe85'),
-      image('Dégradé géométrique', 'photo-1557682260-967a4f6a9c6b'),
-      image('Formes pastel', 'photo-1550859492-d5da9d8e45f3'),
-      image('Architecture abstraite', 'photo-1518005020951-eccb494ad742'),
-      image('Lignes et volumes', 'photo-1487958449943-2429e8be8625'),
-      image('Composition colorée', 'photo-1541701494587-cb58502866ab')
-    ]
+    images: imageSet('Géométrie et couleurs', [
+      'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b', 'photo-1550859492-d5da9d8e45f3',
+      'photo-1518005020951-eccb494ad742', 'photo-1487958449943-2429e8be8625', 'photo-1541701494587-cb58502866ab',
+      'photo-1513364776144-60967b0f800f', 'photo-1561214115-f2f134cc4912', 'photo-1579783902614-a3fb3927b6a5',
+      'photo-1549490349-8643362247b5', 'photo-1547891654-e66ed7ebb968', 'photo-1577083288073-40892c0860a4',
+      'photo-1561839561-b13bcfe95249', 'photo-1578301978018-3005759f48f7', 'photo-1513475382585-d06e58bcb0e0',
+      'photo-1531058020387-3be344556be6', 'photo-1534528741775-53994a69daeb', 'photo-1518709268805-4e9042af9f23',
+      'photo-1490750967868-88aa4486c946', 'photo-1497250681960-ef046c08a56e', 'photo-1500530855697-b586d89ba3ee',
+      'photo-1470252649378-9c29740c9fa8', 'photo-1507525428034-b723cf961d3e', 'photo-1501785888041-af3ef285b470',
+      'photo-1557682250-33bd709cbe85', 'photo-1557682260-967a4f6a9c6b', 'photo-1550859492-d5da9d8e45f3',
+      'photo-1518005020951-eccb494ad742', 'photo-1487958449943-2429e8be8625', 'photo-1541701494587-cb58502866ab'
+    ])
+  }
+];
+
+const fetchJson = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Image source returned ${response.status}`);
+  return response.json();
+};
+
+const toRemoteImage = (label, imageUrl, sourceUrl) => ({
+  label: label || 'Image sans titre',
+  url: `url("${imageUrl}")`,
+  sourceUrl
+});
+
+const uniqueRemoteImages = (items) => Array.from(new Map(items.filter((item) => item?.url).map((item) => [item.url, item])).values()).slice(0, 30);
+
+const loadMetImages = async () => {
+  const queries = ['Asian art', 'African art', 'Latin American art', 'historical art'];
+  const searchResults = await Promise.all(queries.map((query) => fetchJson(`https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(query)}&hasImages=true&isPublicDomain=true`)));
+  const objectIds = Array.from(new Set(searchResults.flatMap((result) => (result.objectIDs || []).slice(0, 20)))).slice(0, 60);
+  const objects = await Promise.all(objectIds.map((id) => fetchJson(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)));
+  return uniqueRemoteImages(objects.map((item) => toRemoteImage(item.title, item.primaryImage, item.objectURL)));
+};
+
+
+const loadWikimediaImages = async (queries, blockedTitle = /painting|dessin|map|carte|plan|flag|drapeau|portrait/i) => {
+  const results = await Promise.all(queries.map((query) => fetchJson(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=30&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1800&format=json&origin=*`)));
+  const images = results.flatMap((result) => Object.values(result.query?.pages || {}).map((page) => {
+    const info = page.imageinfo?.[0];
+    const title = page.title?.replace(/^File:/, '') || '';
+    if ((!info?.thumburl && !info?.url) || blockedTitle.test(title)) return null;
+    return toRemoteImage(title, info.thumburl || info.url, info.descriptionurl);
+  }));
+  return uniqueRemoteImages(images);
+};
+
+const loadEiffelImages = () => loadWikimediaImages([
+  'Eiffel Tower Paris', 'Tour Eiffel Paris', 'Eiffel Tower night', 'Eiffel Tower Seine'
+]);
+
+const loadEgyptianMonumentImages = () => loadWikimediaImages([
+  'Egypt pyramids Giza', 'Egyptian temple Luxor', 'Abu Simbel Egypt', 'Egyptian obelisk',
+  'Karnak temple Egypt', 'Valley of the Kings Egypt', 'Egyptian monument desert', 'Cairo historic monument'
+], /painting|dessin|map|carte|plan|flag|drapeau|portrait|logo|statue|sculpture|diagram/i);
+
+const loadNationalParkImages = () => loadWikimediaImages([
+  'national park landscape', 'national park waterfall', 'national park mountain', 'national park forest'
+]);
+
+const loadFlowerImages = () => loadWikimediaImages([
+  'rose flower photography', 'tulip flower photography', 'cherry blossom flower',
+  'lavender flower field', 'orchid flower macro', 'sunflower field photography',
+  'peony flower', 'lotus flower', 'wildflowers meadow', 'botanical garden flowers',
+  'beautiful flowers nature', 'flower macro photography', 'tropical flowers'
+], /painting|dessin|map|carte|plan|flag|drapeau|portrait|logo|statue|sculpture|illustration|artificial|fake|plastic|bouquet arrangement/i);
+
+const loadVeniceImages = () => loadWikimediaImages([
+  'Venice Italy Grand Canal', 'Venice gondola', 'Venice Rialto Bridge', 'Venice St Mark Basilica',
+  'Venice architecture', 'Venice lagoon', 'Venice sunset', 'Venice night photography'
+], /painting|dessin|map|carte|plan|flag|drapeau|portrait|logo|statue|sculpture|diagram|advertisement/i);
+
+const loadMarineImages = () => loadWikimediaImages([
+  'ocean landscape', 'coral reef', 'whale ocean', 'dolphin ocean', 'sea turtle ocean',
+  'underwater photography', 'blue ocean waves', 'marine wildlife'
+], /painting|dessin|map|carte|plan|flag|drapeau|portrait|logo|statue|sculpture|shipwreck|diagram/i);
+
+const loadWaterfallImages = () => loadWikimediaImages([
+  'waterfall landscape', 'Iguazu Falls', 'Victoria Falls', 'Niagara Falls',
+  'waterfall forest', 'mountain waterfall', 'beautiful waterfall nature'
+], /painting|dessin|map|carte|plan|flag|drapeau|portrait|logo|statue|sculpture|diagram/i);
+
+const loadNasaImages = async () => {
+  const queries = ['planet', 'galaxy', 'nebula', 'moon surface', 'earth from space'];
+  const results = await Promise.all(queries.map((query) => fetchJson(`https://images-api.nasa.gov/search?q=${encodeURIComponent(query)}&media_type=image&page_size=30`)));
+  const blockedTitle = /astronaut|people|person|portrait|crew|human|model|man |woman /i;
+  const imageSets = results.map((data) => (data.collection?.items || []).map((item) => {
+    const metadata = item.data?.[0] || {};
+    const imageLink = item.links?.find((link) => link.render === 'image')?.href;
+    if (!imageLink || blockedTitle.test(`${metadata.title || ''} ${metadata.description || ''}`)) return null;
+    return toRemoteImage(metadata.title, imageLink, `https://images.nasa.gov/details/${metadata.nasa_id}`);
+  }).filter(Boolean));
+  const balancedImages = [];
+  for (let index = 0; index < 30; index += 1) imageSets.forEach((set) => { if (set[index]) balancedImages.push(set[index]); });
+  return uniqueRemoteImages(balancedImages);
+};
+
+const IMAGE_CATEGORIES = [
+  {
+    label: 'The Met · Art du monde',
+    cover: 'linear-gradient(135deg, #6f3f2d, #d6a45e)',
+    loader: loadMetImages,
+    sourceLabel: 'The Metropolitan Museum of Art — Open Access'
+  },
+  {
+    label: 'Wikimedia Commons · Tour Eiffel et Paris',
+    cover: 'linear-gradient(135deg, #193b59, #d39c5c)',
+    loader: loadEiffelImages,
+    sourceLabel: 'Wikimedia Commons — fichiers originaux et licences affichées'
+  },
+  {
+    label: 'Wikimedia Commons · Monuments égyptiens',
+    cover: 'linear-gradient(135deg, #5e351f, #d8ae65)',
+    loader: loadEgyptianMonumentImages,
+    sourceLabel: 'Wikimedia Commons — pyramides, temples et monuments d’Égypte'
+  },
+  {
+    label: 'Wikimedia Commons · Parcs nationaux',
+    cover: 'linear-gradient(135deg, #173f35, #7eaf6d)',
+    loader: loadNationalParkImages,
+    sourceLabel: 'Wikimedia Commons — paysages et parcs protégés'
+  },
+  {
+    label: 'Wikimedia Commons · Fleurs',
+    cover: 'linear-gradient(135deg, #6b285d, #e8a45e)',
+    loader: loadFlowerImages,
+    sourceLabel: 'Wikimedia Commons — fleurs, jardins et photographies botaniques'
+  },
+  {
+    label: 'Wikimedia Commons · Venise',
+    cover: 'linear-gradient(135deg, #153c56, #d59b63)',
+    loader: loadVeniceImages,
+    sourceLabel: 'Wikimedia Commons — canaux, palais et monuments de Venise'
+  },
+  {
+    label: 'Wikimedia Commons · Océans et vie marine',
+    cover: 'linear-gradient(135deg, #063b59, #35a9bd)',
+    loader: loadMarineImages,
+    sourceLabel: 'Wikimedia Commons — photographies de mers et de faune marine'
+  },
+  {
+    label: 'Wikimedia Commons · Cascades et chutes d’eau',
+    cover: 'linear-gradient(135deg, #154b43, #75c5d1)',
+    loader: loadWaterfallImages,
+    sourceLabel: 'Wikimedia Commons — paysages naturels et cascades'
+  },
+  {
+    label: 'NASA · Planètes et univers',
+    cover: 'linear-gradient(135deg, #081b3a, #2877b5 52%, #e58e47)',
+    loader: loadNasaImages,
+    sourceLabel: 'NASA Images — planètes, galaxies et univers'
   }
 ];
 
@@ -178,6 +386,21 @@ const formatBackground = (value) => `${value} center / cover no-repeat`;
 const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabColor, onTabColorChange, resolvedTheme = 'light', onClose }) => {
   const [activeSection, setActiveSection] = useState('tabs');
   const [activeCategory, setActiveCategory] = useState(null);
+  const [categoryImages, setCategoryImages] = useState({});
+  const [loadingCategory, setLoadingCategory] = useState(null);
+  const [galleryError, setGalleryError] = useState(false);
+  const [customTabColor, setCustomTabColor] = useState(/^#[0-9a-f]{6}$/i.test(tabColor || '') ? tabColor : '#2563eb');
+
+  React.useEffect(() => {
+    if (/^#[0-9a-f]{6}$/i.test(tabColor || '')) setCustomTabColor(tabColor);
+  }, [tabColor]);
+
+  const handleCustomTabColor = (event) => {
+    const nextColor = event.target.value;
+    setCustomTabColor(nextColor);
+    onTabColorChange(nextColor);
+  };
+  const isCustomTabColor = tabColor === customTabColor && !TAB_STYLES.some((style) => style.color === tabColor);
 
   const selectBackgroundImage = (event) => {
     const [file] = event.target.files || [];
@@ -189,8 +412,35 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
   };
 
   const selectedCategory = IMAGE_CATEGORIES.find((category) => category.label === activeCategory);
+  const selectedImages = selectedCategory ? categoryImages[selectedCategory.label] || [] : [];
+  const loadCategoryImages = async (category, showLoading = false) => {
+    if (categoryImages[category.label]) return categoryImages[category.label];
+    if (showLoading) setLoadingCategory(category.label);
+
+    try {
+      const images = await category.loader();
+      setCategoryImages((current) => ({ ...current, [category.label]: images }));
+      return images;
+    } catch {
+      if (showLoading) setGalleryError(true);
+      return [];
+    } finally {
+      if (showLoading) setLoadingCategory(null);
+    }
+  };
+  const openCategory = async (category) => {
+    setActiveCategory(category.label);
+    setGalleryError(false);
+    await loadCategoryImages(category, true);
+  };
+  React.useEffect(() => {
+    if (!isOpen) return;
+    IMAGE_CATEGORIES.forEach((category) => { void loadCategoryImages(category); });
+  }, [isOpen]);
   const defaultTabColor = resolvedTheme === 'dark' ? DARK_DEFAULT_TAB_COLOR : LIGHT_DEFAULT_TAB_COLOR;
-  const previewSurface = resolvedTheme === 'dark' ? DARK_TAB_SURFACE : '#f7f8fa';
+  const availableTabStyles = resolvedTheme === 'dark'
+    ? TAB_STYLES
+    : TAB_STYLES.filter((style) => style.label !== 'Défaut sombre');
 
   return (
     <div className={`bluefox-personalization-panel ${isOpen ? 'is-open' : 'is-closed'}`} role="presentation">
@@ -208,7 +458,7 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
             <>
               <h1 className="bluefox-personalization-title">Apparence</h1>
               <p className="bluefox-personalization-intro">Choisissez les couleurs du navigateur et le fond de votre page Nouvel onglet.</p>
-              <div className="bluefox-personalization-tabs" role="tablist" aria-label="Options de personnalisation">
+              <div className="bluefox-settings-switcher bluefox-personalization-tabs" role="tablist" aria-label="Options de personnalisation">
                 <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdPalette aria-hidden="true" /> Onglets</button>
                 <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdImage aria-hidden="true" /> Fonds de page</button>
               </div>
@@ -216,18 +466,25 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
               {activeSection === 'tabs' ? (
                 <section className="bluefox-personalization-section" role="tabpanel">
                   <div className="bluefox-section-heading"><h2>Choisir un style d’onglet</h2><p>La couleur s’applique à la barre des onglets et aux contrôles de la fenêtre.</p></div>
+                  <div className="bluefox-tab-palette-toolbar">
+                    <span><strong>{availableTabStyles.length}</strong> couleurs disponibles</span>
+                    <span>Choisissez une teinte ou créez la vôtre</span>
+                  </div>
                   <div className="bluefox-tab-style-grid">
-                    {TAB_STYLES.map((style) => (
-                      <button key={style.label} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={`Choisir le style ${style.label}`}>
-                        <div className="bluefox-tab-style-browser" style={{ '--preview-tab-color': resolvedTheme === 'dark' ? `color-mix(in srgb, ${style.color} 34%, #1d2026 66%)` : style.color, '--preview-tab-color-accent': style.color, '--preview-accent': style.accent, '--preview-surface': previewSurface }}>
-                          <div className="bluefox-tab-style-strip"><span className="bluefox-mini-tab is-active"><i /> Nouvel onglet <b>×</b></span><span className="bluefox-mini-tab"><i /> Google <b>×</b></span><strong>+</strong></div>
-                          <div className="bluefox-tab-style-address" />
-                        </div>
+                    {availableTabStyles.map((style) => (
+                      <button key={style.label} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={`Choisir ${style.label}`} title={style.label}>
+                        <span className="bluefox-tab-color-swatch" style={{ backgroundColor: style.color, '--swatch-accent': style.accent }}><i /></span>
                         <span className="bluefox-tab-style-label">{style.label}</span>
                         {tabColor === style.color && <MdCheck className="bluefox-tab-style-check" aria-hidden="true" />}
                       </button>
                     ))}
                   </div>
+                  <label className={`bluefox-custom-tab-color ${isCustomTabColor ? 'is-selected' : ''}`}>
+                    <span className="bluefox-custom-tab-color-preview" style={{ backgroundColor: customTabColor }} />
+                    <span className="bluefox-custom-tab-color-copy"><strong>Ma couleur</strong><small>{customTabColor.toUpperCase()}</small></span>
+                    <input type="color" value={customTabColor} onChange={handleCustomTabColor} aria-label="Choisir une couleur personnalisée" />
+                    {isCustomTabColor && <MdCheck aria-hidden="true" />}
+                  </label>
                   <button type="button" className="bluefox-reset-control" onClick={() => onTabColorChange(defaultTabColor)}>Réinitialiser les onglets</button>
                 </section>
               ) : (
@@ -235,8 +492,8 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
                   <div className="bluefox-section-heading"><h2>Fond de la page d’accueil</h2><p>Choisissez une collection puis une image de haute qualité pour votre nouvel onglet.</p></div>
                   <div className="bluefox-category-grid">
                     {IMAGE_CATEGORIES.map((category) => (
-                      <button key={category.label} type="button" className="bluefox-category-choice" onClick={() => setActiveCategory(category.label)} aria-label={`Ouvrir la catégorie ${category.label}`}>
-                        <span className="bluefox-category-cover" style={{ backgroundImage: category.cover.url }} />
+                      <button key={category.label} type="button" className="bluefox-category-choice" onClick={() => { void openCategory(category); }} aria-label={`Ouvrir la catégorie ${category.label}`}>
+                        <span className="bluefox-category-cover" style={{ backgroundImage: categoryImages[category.label]?.[0]?.url || category.cover.url || category.cover }} />
                         <span className="bluefox-category-label">{category.label}</span>
                       </button>
                     ))}
@@ -248,15 +505,21 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
             </>
           ) : (
             <section className="bluefox-gallery-section" role="tabpanel">
-              <div className="bluefox-gallery-heading"><div><h2>{selectedCategory.label}</h2><p>Actualisé quotidiennement</p></div><span className="bluefox-gallery-toggle" aria-hidden="true"><i /></span></div>
-              <div className="bluefox-gallery-grid">
-                {selectedCategory.images.map((item) => (
-                  <button key={item.label} type="button" className={`bluefox-gallery-choice ${homeBackground === formatBackground(item.url) ? 'is-selected' : ''}`} onClick={() => setHomeBackground(formatBackground(item.url))} aria-label={`Choisir ${item.label}`}>
-                    <span style={{ backgroundImage: item.url }} />
-                    {homeBackground === formatBackground(item.url) && <MdCheck aria-hidden="true" />}
-                  </button>
-                ))}
-              </div>
+              <div className="bluefox-gallery-heading"><div><h2>{selectedCategory.label}</h2><p>{selectedCategory.sourceLabel}</p></div><span className="bluefox-gallery-toggle" aria-hidden="true"><i /></span></div>
+              {loadingCategory === selectedCategory.label ? (
+                <div className="bluefox-gallery-loading">Chargement des images officielles…</div>
+              ) : galleryError ? (
+                <div className="bluefox-gallery-loading">Cette source n’est pas disponible pour le moment.</div>
+              ) : (
+                <div className="bluefox-gallery-grid">
+                  {selectedImages.map((item) => (
+                    <button key={item.url} type="button" className={`bluefox-gallery-choice ${homeBackground === formatBackground(item.url) ? 'is-selected' : ''}`} onClick={() => setHomeBackground(formatBackground(item.url))} aria-label={`Choisir ${item.label}`} title={item.sourceUrl || item.label}>
+                      <span style={{ backgroundImage: item.url }} />
+                      {homeBackground === formatBackground(item.url) && <MdCheck aria-hidden="true" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           )}
         </div>

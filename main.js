@@ -414,9 +414,8 @@ const LIGHT_WINDOW_COLORS = {
   symbol: '#000000'
 };
 const DARK_WINDOW_COLORS = {
-  // This must match the dark TabBar surface, otherwise the native controls
-  // leave a visible vertical seam at the right edge of the tab strip.
-  titleBar: '#1d2026',
+  // Native Windows controls use a true black surface in dark mode.
+  titleBar: '#000000',
   background: '#15171b',
   symbol: '#ffffff'
 };
@@ -424,14 +423,11 @@ const DARK_WINDOW_COLORS = {
 const getWindowColors = (theme) => theme === 'dark' ? DARK_WINDOW_COLORS : LIGHT_WINDOW_COLORS;
 const isValidWindowColor = (value) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 
-// Dark mode keeps the user's accent as a tint while preserving a readable
-// surface for the native Windows controls and the tab labels.
+// Dark mode keeps the native Windows controls on a true black surface;
+// the selected tab accent is used only by the in-app tab strip.
 const getWindowSurfaceColor = (theme, color) => {
-  if (theme !== 'dark' || !isValidWindowColor(color)) return color;
-  const channels = color.slice(1).match(/.{2}/g).map((channel) => parseInt(channel, 16));
-  const darkSurface = [0x1d, 0x20, 0x26];
-  const mixed = channels.map((channel, index) => Math.round(channel * 0.34 + darkSurface[index] * 0.66));
-  return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+  if (theme === 'dark') return '#000000';
+  return color;
 };
 
 const getWindowSymbolColor = (color) => {

@@ -20,6 +20,7 @@ import {
   MdLock,
   MdMic,
   MdPrint,
+  MdPublic,
   MdRefresh,
   MdSearch,
   MdSecurity,
@@ -34,7 +35,6 @@ import fetchJsonp from 'fetch-jsonp';
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
-const GOOGLE_FAVICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
 
 const formatCompactAddress = (url) => {
   if (!url) return '';
@@ -59,9 +59,9 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
 );
 
 const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
-  const addressIcon = isAiMode || isSettingsOpen ? BLUEFOX_LOGO : (currentFavicon || GOOGLE_FAVICON);
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
+  const [isFaviconBroken, setIsFaviconBroken] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -79,6 +79,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
   }, [suggestions]);
 
   useEffect(() => setInputVal(currentUrl || ''), [currentUrl]);
+  useEffect(() => setIsFaviconBroken(false), [currentFavicon]);
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -145,15 +146,17 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
         <div className="bluefox-address-bar flex h-9 items-center rounded-[9px] border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3]">
           {isSettingsOpen ? (
             <MdSettingsSuggest className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
-          ) : (
+          ) : isAiMode ? (
+            <img src={BLUEFOX_LOGO} alt="BlueFox" className="mr-2 h-[18px] w-[18px] object-contain" />
+          ) : currentFavicon && !isFaviconBroken ? (
             <img
-              src={addressIcon}
-              alt={isAiMode ? 'BlueFox' : 'Google'}
+              src={currentFavicon}
+              alt="Icône du site"
               className="mr-2 h-[18px] w-[18px] object-contain"
-              onError={(event) => {
-                if (!isAiMode && event.currentTarget.src !== GOOGLE_FAVICON) event.currentTarget.src = GOOGLE_FAVICON;
-              }}
+              onError={() => setIsFaviconBroken(true)}
             />
+          ) : (
+            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Site sans icône" />
           )}
           <input
             type="text"

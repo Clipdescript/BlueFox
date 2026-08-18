@@ -1,11 +1,19 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdSettingsSuggest } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdPublic, MdSettingsSuggest } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const CLOSE_ANIMATION_MS = 180;
 const DRAG_START_DISTANCE = 5;
 const TAB_REORDER_ANIMATION_MS = 220;
+
+const isDarkTabColor = (value) => {
+  const match = String(value || '').match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!match) return false;
+  const hex = match[1].length === 3 ? match[1].split('').map((part) => part + part).join('') : match[1];
+  const [red, green, blue] = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) < 92;
+};
 
 const TabVisual = ({
   tab,
@@ -16,7 +24,14 @@ const TabVisual = ({
   tabColor,
   onTabClose,
   isPreview = false
-}) => (
+}) => {
+  const [faviconError, setFaviconError] = useState(false);
+
+  useEffect(() => {
+    setFaviconError(false);
+  }, [tab.favicon]);
+
+  return (
   <div
     draggable={false}
     onDragStart={(event) => event.preventDefault()}
@@ -26,7 +41,7 @@ const TabVisual = ({
         onTabClose(event, tab.id);
       }
     }}
-    className={`bluefox-tab-visual group relative flex h-8 ${tabDensity} shrink-0 items-center rounded-[9px] ${
+    className={`bluefox-tab-visual ${isDarkTabColor(tabColor) ? 'bluefox-tab-dark' : ''} group relative flex h-8 ${tabDensity} shrink-0 items-center rounded-[9px] ${
       isPreview ? 'pointer-events-none' : 'cursor-pointer'
     } ${
       isClosing ? 'bluefox-tab-closing pointer-events-none' : 'bluefox-tab-enter'
@@ -42,15 +57,23 @@ const TabVisual = ({
         <MdSettingsSuggest className="h-full w-full text-[#137b8b]" aria-hidden="true" />
       ) : tab.isMusic ? (
         <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
-      ) : tab.url && tab.favicon ? (
-        <img draggable={false} src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
+      ) : tab.url && tab.favicon && !faviconError ? (
+        <img
+          draggable={false}
+          src={tab.favicon}
+          alt=""
+          className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`}
+          onError={() => setFaviconError(true)}
+        />
+      ) : tab.url ? (
+        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label="Site sans icône" />
       ) : (
         <img draggable={false} src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />
       )}
       {tab.isLoading && <span className="absolute inset-0 animate-spin rounded-full border border-transparent border-r-[#66676b] border-t-[#66676b]" />}
     </div>
 
-    <span className="flex-1 truncate text-[12px] font-normal">
+    <span className="bluefox-tab-title flex-1 truncate text-[12px] font-normal">
       {tab.isSettings
         ? 'Paramètres'
         : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
@@ -67,7 +90,8 @@ const TabVisual = ({
       </button>
     )}
   </div>
-);
+  );
+};
 
 const TabBar = React.memo(({
   tabs,

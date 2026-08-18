@@ -304,3 +304,88 @@
 :root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-floating-button {
   color: #ffffff !important;
 }
+
+/* The theme picker is a light popover and must stay readable over image-backed home pages. */
+.bluefox-home-customized .bluefox-theme-menu {
+  border-color: rgba(216, 215, 212, 0.96) !important;
+  background: #ffffff !important;
+  color: #4f5054 !important;
+}
+
+.bluefox-home-customized .bluefox-theme-menu button,
+.bluefox-home-customized .bluefox-theme-menu button span,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-theme-menu * {
+  color: #4f5054 !important;
+  -webkit-text-fill-color: #4f5054 !important;
+}
+
+.bluefox-home-customized .bluefox-theme-menu button:hover {
+  background: #f0efed !important;
+  color: #202124 !important;
+}
+
+.bluefox-home-customized .bluefox-theme-menu button:hover span {
+  color: #202124 !important;
+}
+
+:root[data-theme='dark'] .bluefox-home-customized .bluefox-theme-menu {
+  border-color: #4b5260 !important;
+  background: #252932 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-home-customized .bluefox-theme-menu button,
+:root[data-theme='dark'] .bluefox-home-customized .bluefox-theme-menu button span,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-theme-menu * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-home-customized .bluefox-theme-menu button:hover {
+  background: #3a414d !important;
+}
+
+/* Keep the selected-theme check icon black in light mode and white in dark mode. */
+:root[data-theme='light'] .bluefox-app .bluefox-theme-menu svg,
+:root[data-theme='light'] .bluefox-app .bluefox-theme-menu .bluefox-theme-check {
+  color: #000000 !important;
+  fill: #000000 !important;
+  stroke: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-theme-menu svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-theme-menu .bluefox-theme-check {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Article titles use a theme accent without an image and the page foreground over images. */
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-title {
+  color: #1769aa !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card:hover .bluefox-article-title {
+  color: #0b4f8a !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-title,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home:not(.bluefox-home-customized) .bluefox-article-card:hover .bluefox-article-title {
+  color: #c084fc !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-article-card:hover .bluefox-article-title,
+:root[data-theme='dark'] .bluefox-app .bluefox-home-customized .bluefox-article-card:hover .bluefox-article-title {
+  color: #ffffff !important;
+}
+
+/* On a light custom background, the sun and arrow become black on hover for contrast. */
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-tools [data-theme-control] > button:hover,
+:root[data-theme='light'] .bluefox-app .bluefox-home-customized .bluefox-home-floating-tools [data-theme-control] > button:hover svg {
+  color: #000000 !important;
+  fill: #000000 !important;
+  stroke: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}

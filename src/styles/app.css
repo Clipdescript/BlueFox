@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -28,7 +28,7 @@
   --theme-text-strong: #ffffff;
   --theme-text-muted: #ffffff;
   --theme-border: #363c48;
-  --theme-chrome: #1d2026;
+  --theme-chrome: #000000;
 }
 
 * {
@@ -1280,4 +1280,86 @@ html[data-theme='dark'] ::-moz-selection {
     animation: none;
     transform: none;
   }
+}
+
+/* Use the BlueFox site heading font consistently across every app title. */
+.bluefox-app :where(h1, h2, h3, h4, h5, h6, [class*="title"], [class*="heading"], [class*="kicker"]) {
+  font-family: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Dark tab colors need a deliberate light foreground, including inactive tabs. */
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-title,
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-close,
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-close svg {
+  color: #ffffff !important;
+}
+
+.bluefox-tab-bar .bluefox-tab-dark:hover .bluefox-tab-title,
+.bluefox-tab-bar .bluefox-tab-dark:hover .bluefox-tab-close,
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-close:hover,
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-close:hover svg {
+  color: #ffffff !important;
+}
+
+.bluefox-tab-bar .bluefox-tab-dark .bluefox-tab-close:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Dark mode tab chrome: black rail, graphite tabs, and a soft slate hover instead of pale gray. */
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar {
+  background-color: #050505 !important;
+  border-color: #202327 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-control-bg {
+  background-color: #111316 !important;
+  border-color: #2d333b !important;
+  color: #dbe1ea !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual {
+  background-color: #292e36 !important;
+  border-color: #3b424c !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual.bluefox-tab-active {
+  background-color: #3a414c !important;
+  border-color: #606b7b !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual.bluefox-tab-active:hover {
+  background-color: #4b5563 !important;
+  border-color: #748092 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual .bluefox-tab-title,
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual .bluefox-tab-close,
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual .bluefox-tab-close svg {
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual .bluefox-tab-close:hover {
+  background-color: #667386 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-item > span {
+  background-color: #343a43 !important;
+}
+
+.bluefox-tab-fallback-icon,
+.bluefox-address-fallback-icon {
+  color: #607086 !important;
+}
+
+:root[data-theme='dark'] .bluefox-tab-fallback-icon,
+:root[data-theme='dark'] .bluefox-address-fallback-icon {
+  color: #c4cfdd !important;
 }
