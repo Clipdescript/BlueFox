@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MdArrowBack, MdArrowOutward, MdDarkMode, MdLightMode, MdMusicNote } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
+import '../styles/music.css';
 import { FaDeezer } from 'react-icons/fa6';
 import { SiSpotify, SiYoutube, SiYoutubemusic } from 'react-icons/si';
 

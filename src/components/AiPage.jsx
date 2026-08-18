@@ -30,6 +30,7 @@ import {
   MdThumbDown,
   MdThumbUp,
 } from 'react-icons/md';
+import '../styles/music.css';
 
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 

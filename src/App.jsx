@@ -3,12 +3,12 @@ import { SidebarPanel } from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
-import MusicPage from './components/MusicPage';
-import SettingsPage from './components/SettingsPage';
-import PersonalizationPanel from './components/PersonalizationPanel';
 import { MdClose, MdMusicNote, MdSearch } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
 
+const MusicPage = React.lazy(() => import('./components/MusicPage'));
+const SettingsPage = React.lazy(() => import('./components/SettingsPage'));
+const PersonalizationPanel = React.lazy(() => import('./components/PersonalizationPanel'));
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 const PdfEditor = React.lazy(() => import('./components/PdfEditor'));
@@ -135,6 +135,7 @@ function App() {
   };
   
   const activeTab = tabs.find(t => t.id === activeTabId) || null;
+  const [shouldMountBackgroundTabs, setShouldMountBackgroundTabs] = useState(false);
   const activeAiSidebar = activeTabId === null ? null : aiSidebarTabs[activeTabId] || null;
   const isAiSidebarVisible = Boolean(activeAiSidebar?.open);
   const webviewRefs = useRef({});
@@ -142,6 +143,13 @@ function App() {
   useEffect(() => {
     setIsAiMode(Boolean(activeTab?.isAi));
   }, [activeTabId]);
+
+  useEffect(() => {
+    // Keep the first paint focused on the visible tab. Background pages are
+    // mounted shortly afterward so startup does not launch every webview at once.
+    const timer = window.setTimeout(() => setShouldMountBackgroundTabs(true), 350);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handleTabClick = useCallback((id) => {
     const nextTab = tabs.find((tab) => tab.id === id);
@@ -1043,14 +1051,16 @@ function App() {
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
           style={{ marginRight: (isAiSidebarVisible || isPersonalizationOpen) && !isCompactLayout ? 'min(560px, 100vw)' : '0px' }}
         >
-           {tabs.map(tab => (
+           {tabs.map(tab => (!shouldMountBackgroundTabs && tab.id !== activeTabId && !tab.isMusic ? null : (
                <div 
                 key={tab.id} 
                 className={`absolute inset-0 w-full h-full ${tab.id === activeTabId ? 'z-10 visible' : 'z-0 invisible'}`}
                 style={{ visibility: tab.id === activeTabId ? 'visible' : 'hidden' }}
                >
                    {tab.isSettings ? (
-                       <SettingsPage onClose={handleSettingsClose} />
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement des paramètres…</div>}>
+                         <SettingsPage onClose={handleSettingsClose} />
+                       </Suspense>
                    ) : tab.isPdf ? (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">Ouverture de l’éditeur PDF…</div>}>
                          <PdfEditor
@@ -1077,10 +1087,12 @@ function App() {
                             </div>
                         )
                    ) : tab.isMusic ? (
-                       <MusicPage
-                         musicTabId={tab.id}
-                         onPlaybackChange={handleMusicPlaybackChange}
-                       />
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de BlueMusic…</div>}>
+                         <MusicPage
+                           musicTabId={tab.id}
+                           onPlaybackChange={handleMusicPlaybackChange}
+                         />
+                       </Suspense>
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
@@ -1091,9 +1103,9 @@ function App() {
                        </Suspense>
                    )}
                </div>
-           ))}
+           )))}
 
-           {musicPlayback && activeTabId !== musicPlayback.tabId && !activeTab?.isPdf && !activeTab?.isSettings && (
+           {musicPlayback && activeTabId !== musicPlayback.tabId && !activeTab?.isPdf && !activeTab?.isSettings && !activeTab?.isSearching && (
              <button
                type="button"
                className="bluefox-music-background-dock"
@@ -1180,15 +1192,17 @@ function App() {
         </Suspense>
       )}
 
-      <PersonalizationPanel
-        isOpen={isPersonalizationOpen}
-        homeBackground={homeBackground}
-        setHomeBackground={setHomeBackground}
-        tabColor={tabColor}
-        onTabColorChange={setTabColor}
-        resolvedTheme={resolvedTheme}
-        onClose={() => setIsPersonalizationOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <PersonalizationPanel
+          isOpen={isPersonalizationOpen}
+          homeBackground={homeBackground}
+          setHomeBackground={setHomeBackground}
+          tabColor={tabColor}
+          onTabColorChange={setTabColor}
+          resolvedTheme={resolvedTheme}
+          onClose={() => setIsPersonalizationOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 }

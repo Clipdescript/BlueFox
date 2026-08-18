@@ -610,7 +610,8 @@ function createWindow({ privateMode = false } = {}) {
     },
     backgroundColor: initialWindowColors.background,
     icon: path.join(__dirname, 'public/Logo.ico'),
-    show: true,      webPreferences: {
+    show: false,
+    webPreferences: {
         ...(privateMode ? { partition: `bluefox-private-${Date.now()}` } : {}),
         preload: path.join(__dirname, 'preload.js'),
 
@@ -693,6 +694,38 @@ function createWindow({ privateMode = false } = {}) {
   const startUrl = isDev
     ? 'http://localhost:5173'
     : `file://${path.join(__dirname, 'dist-react/index.html')}`;
+  const loadApplicationContent = async () => {
+    if (mainWindow.isDestroyed()) return;
+    if (!isDev) {
+      try {
+        await mainWindow.loadURL(startUrl);
+        if (!mainWindow.isDestroyed()) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      } catch {
+        if (!mainWindow.isDestroyed()) mainWindow.show();
+      }
+      return;
+    }
+
+    // Keep the native window hidden while Vite starts. BlueFox appears once,
+    // directly on its real interface, without an intermediate loading page.
+    for (let attempt = 0; attempt < 100 && !mainWindow.isDestroyed(); attempt += 1) {
+      try {
+        await mainWindow.loadURL(startUrl);
+        if (!mainWindow.isDestroyed()) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+        return;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+
+    if (!mainWindow.isDestroyed()) mainWindow.show();
+  };
 
   const routeNewWindowToTab = (url) => {
     if (/^https?:\/\//i.test(url)) {
@@ -781,11 +814,7 @@ function createWindow({ privateMode = false } = {}) {
     });
   });
 
-  mainWindow.loadURL(startUrl);
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.focus();
-  });
+  void loadApplicationContent();
 
   // Window Controls
   ipcMain.on('window-minimize', (event) => {
