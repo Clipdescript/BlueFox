@@ -216,9 +216,10 @@ html[data-theme='dark'] ::-moz-selection {
   position: fixed;
   z-index: 100;
   pointer-events: none;
-  transform: rotate(1deg) scale(1.025);
+  transform: translateY(-1px) scale(1.01);
   transform-origin: center;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 7px 14px rgba(0, 0, 0, 0.16));
+  user-select: none;
   will-change: left, transform;
 }
 

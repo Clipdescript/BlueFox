@@ -5,7 +5,7 @@ const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const CLOSE_ANIMATION_MS = 180;
 const DRAG_START_DISTANCE = 5;
-const TAB_REORDER_ANIMATION_MS = 280;
+const TAB_REORDER_ANIMATION_MS = 220;
 
 const TabVisual = ({
   tab,
@@ -18,6 +18,8 @@ const TabVisual = ({
   isPreview = false
 }) => (
   <div
+    draggable={false}
+    onDragStart={(event) => event.preventDefault()}
     onAuxClick={(event) => {
       if (!isPreview && event.button === 1) {
         event.preventDefault();
@@ -41,9 +43,9 @@ const TabVisual = ({
       ) : tab.isMusic ? (
         <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
       ) : tab.url && tab.favicon ? (
-        <img src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
+        <img draggable={false} src={tab.favicon} alt="" className={`h-full w-full object-contain transition-opacity duration-200 ${tab.isLoading ? 'opacity-40' : 'opacity-100'}`} />
       ) : (
-        <img src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />
+        <img draggable={false} src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />
       )}
       {tab.isLoading && <span className="absolute inset-0 animate-spin rounded-full border border-transparent border-r-[#66676b] border-t-[#66676b]" />}
     </div>
@@ -80,11 +82,12 @@ const TabBar = React.memo(({
   const [closingTabs, setClosingTabs] = useState(() => new Set());
   const [dragState, setDragState] = useState(null);
   const tabStripRef = useRef(null);
+  const dragSourceRef = useRef(null);
   const tabItemRefs = useRef(new Map());
+  const tabsRef = useRef(tabs);
   const layoutRectsRef = useRef(new Map());
   const previousRectsRef = useRef(null);
   const flipAnimationsRef = useRef(new Map());
-  const dragIndexRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const isCrowded = tabs.length >= 7;
@@ -122,6 +125,7 @@ const TabBar = React.memo(({
   }, [tabs.length]);
 
   useLayoutEffect(() => {
+    tabsRef.current = tabs;
     const previousRects = previousRectsRef.current;
     previousRectsRef.current = null;
 
@@ -180,9 +184,9 @@ const TabBar = React.memo(({
     }, CLOSE_ANIMATION_MS);
   };
 
-  const captureTabPositions = () => {
+  const captureTabPositions = (currentTabs = tabsRef.current) => {
     const positions = new Map();
-    tabs.forEach((tab) => {
+    currentTabs.forEach((tab) => {
       const element = tabItemRefs.current.get(tab.id);
       if (element) positions.set(tab.id, element.getBoundingClientRect());
     });
@@ -191,11 +195,11 @@ const TabBar = React.memo(({
     previousRectsRef.current = positions;
   };
 
-  const getDropIndex = (draggedId, clientX) => {
-    const remainingTabs = tabs.filter((tab) => tab.id !== draggedId);
+  const getDropIndex = (draggedId, pointerX, currentTabs = tabsRef.current) => {
+    const remainingTabs = currentTabs.filter((tab) => tab.id !== draggedId);
     const targetPosition = remainingTabs.findIndex((tab) => {
       const rect = layoutRectsRef.current.get(tab.id);
-      return rect ? clientX < rect.left + rect.width / 2 : false;
+      return rect ? pointerX < rect.left + rect.width / 2 : false;
     });
     return targetPosition < 0 ? remainingTabs.length : targetPosition;
   };
@@ -206,16 +210,17 @@ const TabBar = React.memo(({
     if (!item) return;
 
     const rect = item.getBoundingClientRect();
-    const index = tabs.findIndex((tab) => tab.id === tabId);
+    const stripRect = tabStripRef.current?.getBoundingClientRect();
+    tabsRef.current = tabs;
+    dragSourceRef.current = event.currentTarget;
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragIndexRef.current = index;
     setDragState({
       id: tabId,
       pointerId: event.pointerId,
       startX: event.clientX,
       currentX: event.clientX,
       offsetX: event.clientX - rect.left,
-      top: rect.top,
+      top: stripRect ? stripRect.top + (stripRect.height - rect.height) / 2 : rect.top,
       width: rect.width,
       height: rect.height,
       started: false
@@ -236,24 +241,45 @@ const TabBar = React.memo(({
       setDragState((state) => state && { ...state, currentX: event.clientX });
     }
 
-    const draggedCenterX = event.clientX - currentDrag.offsetX + currentDrag.width / 2;
-    const targetIndex = getDropIndex(tabId, draggedCenterX);
-    if (targetIndex === dragIndexRef.current || targetIndex < 0) return;
+    // Use the pointer itself for the insertion threshold. This prevents the tab
+    // from getting stuck when the pointer is held near the grabbed tab's edge.
+    const currentTabs = tabsRef.current;
+    const currentIndex = currentTabs.findIndex((tab) => tab.id === tabId);
+    const targetIndex = getDropIndex(tabId, event.clientX, currentTabs);
+    if (currentIndex < 0 || targetIndex === currentIndex || targetIndex < 0) return;
 
-    captureTabPositions();
-    dragIndexRef.current = targetIndex;
+    const nextTabs = [...currentTabs];
+    const [draggedTab] = nextTabs.splice(currentIndex, 1);
+    nextTabs.splice(targetIndex, 0, draggedTab);
+    captureTabPositions(currentTabs);
+    // Keep a synchronous order reference so quick pointer events cannot all
+    // calculate against the same stale React render.
+    tabsRef.current = nextTabs;
     setDragState((state) => state && { ...state, currentX: event.clientX });
     onTabsReorder?.(tabId, targetIndex);
+  };
+
+  const getDragPreviewLeft = (currentDrag) => {
+    const stripRect = tabStripRef.current?.getBoundingClientRect();
+    const desiredLeft = currentDrag.currentX - currentDrag.offsetX;
+    if (!stripRect) return desiredLeft;
+
+    // Keep the lifted tab inside the visible tab strip. Vertical movement is ignored,
+    // so a drag can never turn into a detached Electron window.
+    const minLeft = stripRect.left;
+    const maxLeft = Math.max(minLeft, stripRect.right - currentDrag.width);
+    return Math.max(minLeft, Math.min(desiredLeft, maxLeft));
   };
 
   const finishTabDrag = (event, tabId) => {
     const currentDrag = dragState;
     if (!currentDrag || currentDrag.id !== tabId || currentDrag.pointerId !== event.pointerId) return;
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    const dragSource = dragSourceRef.current;
+    if (dragSource?.hasPointerCapture?.(event.pointerId)) {
+      dragSource.releasePointerCapture(event.pointerId);
     }
+    dragSourceRef.current = null;
     setDragState(null);
-    dragIndexRef.current = null;
     if (!currentDrag.started && !closingTabs.has(tabId)) {
       onTabClick(tabId);
     }
@@ -265,7 +291,19 @@ const TabBar = React.memo(({
     <div className="drag-region bluefox-tab-bar flex h-12 items-center border-b border-[#d8d7d4] px-2 text-[#282828] select-none" style={{ '--bluefox-tab-color': tabColor }}>
       <div className="relative no-drag flex h-full min-w-0 flex-1 items-center">
         {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets précédents"><MdChevronLeft className="text-xl" /></button>}
-        <div ref={tabStripRef} className={`no-scrollbar flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-[138px] ${canScrollLeft ? 'pl-9' : ''} ${canScrollRight ? 'pr-[176px]' : ''}`}>
+        <div
+          ref={tabStripRef}
+          className={`no-scrollbar flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-[138px] ${canScrollLeft ? 'pl-9' : ''} ${canScrollRight ? 'pr-[176px]' : ''}`}
+          onPointerMove={(event) => {
+            if (dragState) moveTabDrag(event, dragState.id);
+          }}
+          onPointerUp={(event) => {
+            if (dragState) finishTabDrag(event, dragState.id);
+          }}
+          onPointerCancel={(event) => {
+            if (dragState) finishTabDrag(event, dragState.id);
+          }}
+        >
           {tabs.map((tab, index) => {
             const isActive = tab.id === activeTabId;
             const isClosing = closingTabs.has(tab.id);
@@ -278,10 +316,9 @@ const TabBar = React.memo(({
                   else tabItemRefs.current.delete(tab.id);
                 }}
                 className={`bluefox-tab-item flex shrink-0 items-center ${isDragged ? 'bluefox-tab-drag-source' : ''}`}
+                draggable={false}
+                onDragStart={(event) => event.preventDefault()}
                 onPointerDown={(event) => beginTabDrag(event, tab.id)}
-                onPointerMove={(event) => moveTabDrag(event, tab.id)}
-                onPointerUp={(event) => finishTabDrag(event, tab.id)}
-                onPointerCancel={(event) => finishTabDrag(event, tab.id)}
               >
                 {index > 0 && <span className="mx-0.5 h-4 w-px shrink-0 bg-[#d2d1ce]" aria-hidden="true" />}
                 <TabVisual
@@ -308,7 +345,7 @@ const TabBar = React.memo(({
         <div
           className="bluefox-tab-drag-preview"
           style={{
-            left: `${dragState.currentX - dragState.offsetX}px`,
+            left: `${getDragPreviewLeft(dragState)}px`,
             top: `${dragState.top}px`,
             width: `${dragState.width}px`,
             height: `${dragState.height}px`
