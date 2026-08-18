@@ -486,7 +486,7 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
       <button
         type="button"
         onClick={() => onPersonalizationChange?.(!isPersonalizationOpen)}
-        className={`bluefox-home-floating-button bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0efed] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
+        className={`bluefox-home-floating-button bluefox-image-glass-control bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0efed] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
         aria-label={isPersonalizationOpen ? 'Fermer la personnalisation' : 'Personnaliser la page d’accueil'}
         title="Personnaliser"
       >
@@ -497,7 +497,7 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
         <button
           type="button"
           onClick={() => (isQuickLinksOpen ? closeQuickLinks() : openQuickLinks())}
-          className="bluefox-home-floating-button flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#55565b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#202124]"
+          className="bluefox-home-floating-button bluefox-image-glass-control flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#55565b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#202124]"
           aria-label={isQuickLinksOpen ? 'Fermer les liens BlueFox' : 'Ouvrir les liens BlueFox'}
           aria-expanded={isQuickLinksOpen}
           title="Liens BlueFox"
