@@ -11,6 +11,7 @@ import { useTheme } from './utils/theme.js';
 
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
+const PdfEditor = React.lazy(() => import('./components/PdfEditor'));
 const SETTINGS_URL = 'bluefox://parametres';
 
 // Local development servers commonly omit a domain suffix (for example,
@@ -49,6 +50,8 @@ function App() {
         ...tab,
         initialUrl: tab.initialUrl || tab.url,
         isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA')),
+        isPdf: Boolean(tab.isPdf),
+        pdfPath: tab.pdfPath || '',
         isSettings: Boolean(tab.isSettings || tab.url === SETTINGS_URL || tab.title === 'Paramètres')
       }))
     : [];
@@ -207,8 +210,8 @@ function App() {
         localStorage.removeItem('bluefox_active_tab_id');
         return;
     }
-    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isSettings, isMusic }) => ({
-        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isSettings: Boolean(isSettings), isMusic: Boolean(isMusic), isLoading: false
+    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isPdf, pdfPath, isSettings, isMusic }) => ({
+        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isPdf: Boolean(isPdf), ...(isPdf && pdfPath ? { pdfPath } : {}), isSettings: Boolean(isSettings), isMusic: Boolean(isMusic), isLoading: false
     }));
     localStorage.setItem('bluefox_tabs', JSON.stringify(tabsToSave));
     if (activeTabId !== null) {
@@ -329,9 +332,9 @@ function App() {
       setActiveTabId(tab.id);
       return;
     }
-    
+
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
+      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isPdf: false, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
         : t
     ));
   }, [activeTabId, isAiMode, tabs]);
@@ -339,6 +342,43 @@ function App() {
   const handleAssistantToggle = useCallback(() => {
     setIsAiSidebarOpen((isOpen) => !isOpen);
   }, []);
+
+  const openPdfPayloadInNewTab = useCallback((pdf) => {
+    if (!pdf?.url) return;
+
+    const id = Date.now();
+    setIsSettingsOpen(false);
+    setIsAiMode(false);
+    setTabs(prev => [...prev, {
+      id,
+      title: pdf.fileName || 'Document PDF',
+      url: pdf.url,
+      initialUrl: pdf.url,
+      isSearching: true,
+      isPdf: true,
+      pdfPath: pdf.filePath || '',
+      pdfFile: pdf,
+      isAi: false,
+      isMusic: false,
+      favicon: '',
+      isLoading: true
+    }]);
+    setActiveTabId(id);
+  }, []);
+
+  const handleOpenPdf = useCallback(async () => {
+    const pdf = await window.electron?.openPdf?.();
+    openPdfPayloadInNewTab(pdf);
+  }, [openPdfPayloadInNewTab]);
+
+  const handleOpenAssociatedPdf = useCallback(async (filePath) => {
+    try {
+      const pdf = await window.electron?.loadPdf?.(filePath);
+      openPdfPayloadInNewTab(pdf);
+    } catch (error) {
+      console.error('Unable to open associated PDF:', error);
+    }
+  }, [openPdfPayloadInNewTab]);
 
   const openUrlInNewTab = useCallback((url) => {
     if (!/^https?:\/\//i.test(url)) return;
@@ -349,6 +389,7 @@ function App() {
       title: url,
       url,
       isSearching: true,
+      isPdf: false,
       isAi: false,
       favicon: '',
       isLoading: true
@@ -360,6 +401,11 @@ function App() {
     const unsubscribe = window.electron?.onOpenUrlInNewTab?.(openUrlInNewTab);
     return () => unsubscribe?.();
   }, [openUrlInNewTab]);
+
+  useEffect(() => {
+    const unsubscribe = window.electron?.onOpenPdfFile?.(handleOpenAssociatedPdf);
+    return () => unsubscribe?.();
+  }, [handleOpenAssociatedPdf]);
 
   useEffect(() => {
     const unsubscribe = window.electron?.onJumpListAction?.((action) => {
@@ -376,7 +422,7 @@ function App() {
   const goHome = useCallback(() => {
      setTabs(prev => prev.map(t => 
         t.id === activeTabId 
-          ? { ...t, url: '', isSearching: false, isSettings: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
+          ? { ...t, url: '', isSearching: false, isPdf: false, isSettings: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
           : t
       ));
   }, [activeTabId]);
@@ -444,15 +490,15 @@ function App() {
 
                   setTabs(prev => prev.map(t => {
                       if (t.id === tab.id) {
-                          const newTitle = webview.getTitle();
-                          const newUrl = webview.getURL();
+                          const newTitle = t.isPdf ? t.title : webview.getTitle();
+                          const newUrl = t.isPdf ? t.url : webview.getURL();
                           
                           // CRITICAL: Only update state title/url, do NOT let this trigger a re-render of webview src
                           if (t.title !== newTitle || t.url !== newUrl) {
                               return { 
                                   ...t, 
                                   title: newTitle,
-                                  url: newUrl 
+                                  url: newUrl
                               };
                           }
                       }
@@ -481,7 +527,7 @@ function App() {
               webview.addEventListener('page-title-updated', updateState);
               const updateNavigatedUrl = (event) => {
                    setTabs(prev => prev.map(t => {
-                       if (t.id === tab.id && t.url !== event.url) {
+                       if (t.id === tab.id && !t.isPdf && t.url !== event.url) {
                            return { ...t, url: event.url, isLoading: false };
                        }
                        return t;
@@ -564,22 +610,10 @@ function App() {
     const prompt = String(selection || '').trim().slice(0, 4000);
     if (!prompt) return;
 
-    const aiTab = {
-      id: Date.now(),
-      title: 'Foxy IA',
-      url: '',
-      isSearching: false,
-      isAi: true,
-      isSettings: false,
-      isMusic: false,
-      favicon: '',
-      isLoading: false
-    };
     setAiInitialPrompt(prompt);
     setIsSettingsOpen(false);
-    setIsAiMode(true);
-    setTabs((currentTabs) => [...currentTabs, aiTab]);
-    setActiveTabId(aiTab.id);
+    setIsAiMode(false);
+    setIsAiSidebarOpen(true);
   }, []);
 
   useEffect(() => {
@@ -937,6 +971,7 @@ function App() {
             onBack={handleBack}
             onForward={handleForward}
             onNewTab={handleNewTab}
+            onOpenPdf={handleOpenPdf}
             onPrint={handlePrint}
             onNewWindow={handleNewWindow}
             onZoomOut={handleZoomOut}
@@ -956,6 +991,10 @@ function App() {
                >
                    {tab.isSettings ? (
                        <SettingsPage onClose={handleSettingsClose} />
+                   ) : tab.isPdf ? (
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">Ouverture de l’éditeur PDF…</div>}>
+                         <PdfEditor file={tab.pdfFile || { fileName: tab.title, filePath: tab.pdfPath }} />
+                       </Suspense>
                    ) : tab.isSearching ? (
                         !tab.hibernated ? (
                             <webview 
@@ -1042,7 +1081,7 @@ function App() {
 
       {isAiSidebarOpen && (
         <Suspense fallback={null}>
-          <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} />
+          <AiSidebar isOpen={isAiSidebarOpen} initialPrompt={aiInitialPrompt} onClose={() => setIsAiSidebarOpen(false)} />
         </Suspense>
       )}
 

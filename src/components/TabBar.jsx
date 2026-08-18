@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdPublic, MdSettingsSuggest } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdPictureAsPdf, MdPublic, MdSettingsSuggest } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
@@ -57,6 +57,8 @@ const TabVisual = ({
         <MdSettingsSuggest className="h-full w-full text-[#137b8b]" aria-hidden="true" />
       ) : tab.isMusic ? (
         <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
+      ) : tab.isPdf ? (
+        <MdPictureAsPdf className="h-full w-full text-[#d14b4b]" aria-label="Document PDF" />
       ) : tab.url && tab.favicon && !faviconError ? (
         <img
           draggable={false}

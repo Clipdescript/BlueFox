@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.38",
+  "version": "2.0.39",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -25,6 +25,8 @@
     "fetch-jsonp": "^1.4.0",
     "freebuff": "^0.0.149",
     "fs-extra": "^11.3.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.2.108",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-icons": "^5.5.0",
@@ -79,6 +81,16 @@
       "output": "release-236"
     },
     "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF document",
+        "description": "Ouvrir un PDF dans BlueFox",
+        "mimeType": "application/pdf",
+        "role": "Viewer",
+        "icon": "public/Logo.ico"
+      }
+    ],
     "protocols": [
       {
         "name": "HTTP URL",

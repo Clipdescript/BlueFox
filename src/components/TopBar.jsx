@@ -20,6 +20,7 @@ import {
   MdLock,
   MdMic,
   MdPrint,
+  MdPictureAsPdf,
   MdPublic,
   MdRefresh,
   MdSearch,
@@ -58,7 +59,7 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
@@ -208,6 +209,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           {isMenuOpen && (
             <div className="absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
               <MenuRow icon={MdAddBox} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); setIsMenuOpen(false); }}>Nouvel onglet</MenuRow>
+              <MenuRow icon={MdPictureAsPdf} onClick={async () => { await onOpenPdf?.(); setIsMenuOpen(false); }}>Ouvrir un PDF</MenuRow>
               <MenuRow icon={MdWindow} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); setIsMenuOpen(false); }}>Nouvelle fenêtre</MenuRow>
               <MenuRow icon={MdLock} shortcut="Ctrl+Maj+N">Nouvelle fenêtre privée</MenuRow>
 

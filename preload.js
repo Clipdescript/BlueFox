@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
   setTabColor: (color) => ipcRenderer.send('window-tab-color', color),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  openPdf: () => ipcRenderer.invoke('open-pdf'),
+  loadPdf: (filePath) => ipcRenderer.invoke('load-pdf', filePath),
+  savePdf: (payload) => ipcRenderer.invoke('save-pdf', payload),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   updateHomeShortcuts: (shortcuts) => ipcRenderer.send('update-home-shortcuts', shortcuts),
   onJumpListAction: (callback) => {
@@ -35,6 +38,11 @@ contextBridge.exposeInMainWorld('electron', {
     const subscription = (_event, url) => callback(url);
     ipcRenderer.on('open-url-in-new-tab', subscription);
     return () => ipcRenderer.removeListener('open-url-in-new-tab', subscription);
+  },
+  onOpenPdfFile: (callback) => {
+    const subscription = (_event, filePath) => callback(filePath);
+    ipcRenderer.on('open-pdf-file', subscription);
+    return () => ipcRenderer.removeListener('open-pdf-file', subscription);
   },
   onAskFoxySelection: (callback) => {
     const subscription = (_event, selection) => callback(selection);

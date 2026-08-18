@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme } = require('electron');
 const path = require('path');
+const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
@@ -143,6 +144,17 @@ const updateJumpList = (shortcuts = []) => {
   }
 };
 
+const normalizePdfArgument = (argument) => {
+  if (typeof argument !== 'string' || argument.startsWith('-')) return '';
+  let filePath = argument;
+  if (/^file:\/\//i.test(argument)) {
+    try { filePath = fileURLToPath(argument); } catch { return ''; }
+  }
+  return /\.pdf$/i.test(filePath) && fs.existsSync(filePath) ? filePath : '';
+};
+
+const findPdfFilePath = (commandLine = []) => commandLine.map(normalizePdfArgument).find(Boolean) || '';
+
 const parseJumpListAction = (commandLine = []) => {
   const actionArgument = commandLine.find((argument) => argument.startsWith('--bluefox-action='));
   if (!actionArgument) return null;
@@ -174,6 +186,17 @@ const sendJumpListAction = (action) => {
   }
 };
 
+const sendPdfFile = (filePath) => {
+  const targetWindow = BrowserWindow.getAllWindows()[0];
+  if (!targetWindow || targetWindow.isDestroyed()) return;
+
+  const deliver = () => {
+    if (!targetWindow.isDestroyed()) targetWindow.webContents.send('open-pdf-file', filePath);
+  };
+  if (targetWindow.webContents.isLoading()) targetWindow.webContents.once('did-finish-load', deliver);
+  else deliver();
+};
+
 const focusMainWindow = () => {
   const targetWindow = BrowserWindow.getAllWindows()[0];
   if (!targetWindow || targetWindow.isDestroyed()) return;
@@ -203,6 +226,14 @@ function handleJumpListAction(commandLine) {
 
 if (hasSingleInstanceLock) {
   app.on('second-instance', (_event, commandLine) => {
+    const pdfFilePath = findPdfFilePath(commandLine);
+    if (pdfFilePath) {
+      log.info(`[PDF] Second instance opened with file: ${pdfFilePath}`);
+      focusMainWindow();
+      sendPdfFile(pdfFilePath);
+      return;
+    }
+
     // Check if there's a URL passed in the command line (from external browser link)
     const urlArg = commandLine.find(arg => /^https?:\/\//i.test(arg));
     if (urlArg) {
@@ -276,6 +307,60 @@ async function fetchUnusedNatureImage() {
 }
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+const readPdfFile = async (filePath) => {
+  if (typeof filePath !== 'string' || path.extname(filePath).toLowerCase() !== '.pdf') {
+    throw new Error('Le fichier sélectionné n’est pas un PDF.');
+  }
+
+  const data = await fs.promises.readFile(filePath);
+  return {
+    fileName: path.basename(filePath),
+    filePath,
+    url: pathToFileURL(filePath).toString(),
+    data: new Uint8Array(data)
+  };
+};
+
+ipcMain.handle('open-pdf', async (event) => {
+  const ownerWindow = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(ownerWindow, {
+    title: 'Ouvrir un PDF',
+    properties: ['openFile'],
+    filters: [{ name: 'Documents PDF', extensions: ['pdf'] }]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return readPdfFile(result.filePaths[0]);
+});
+
+ipcMain.handle('load-pdf', async (_event, filePath) => readPdfFile(filePath));
+
+const toPdfBuffer = (value) => {
+  if (value instanceof Uint8Array) return Buffer.from(value);
+  if (value instanceof ArrayBuffer) return Buffer.from(value);
+  if (ArrayBuffer.isView(value)) return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  if (Array.isArray(value)) return Buffer.from(value);
+  if (value?.type === 'Buffer' && Array.isArray(value.data)) return Buffer.from(value.data);
+  throw new Error('Les données PDF sont invalides.');
+};
+
+ipcMain.handle('save-pdf', async (event, payload = {}) => {
+  const ownerWindow = BrowserWindow.fromWebContents(event.sender);
+  const rawName = String(payload.suggestedName || 'document-bluefox.pdf').trim();
+  const safeName = (rawName.replace(/[<>:"/\\|?*]/g, '_').replace(/\.pdf$/i, '') || 'document-bluefox') + '.pdf';
+  const result = await dialog.showSaveDialog(ownerWindow, {
+    title: 'Enregistrer le PDF modifié',
+    defaultPath: safeName,
+    filters: [{ name: 'Documents PDF', extensions: ['pdf'] }]
+  });
+
+  if (result.canceled || !result.filePath) return null;
+
+  const filePath = result.filePath.toLowerCase().endsWith('.pdf') ? result.filePath : `${result.filePath}.pdf`;
+  await fs.promises.writeFile(filePath, toPdfBuffer(payload.data));
+  return { fileName: path.basename(filePath), filePath };
+});
 
 ipcMain.on('update-home-shortcuts', (_event, shortcuts) => {
   updateJumpList(sanitizeHomeShortcuts(shortcuts));
@@ -696,7 +781,7 @@ ipcMain.on('window-new', () => {
   createWindow();
 });
 
-// Set as Default Browser & PDF Reader (Best effort)
+// HTTP/HTTPS protocol registration. The packaged installer registers the .pdf file association.
 if (!isDev) {
     app.setAsDefaultProtocolClient('http');
     app.setAsDefaultProtocolClient('https');
@@ -722,8 +807,9 @@ app.whenReady().then(() => {
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
 
-  // Check if app was opened with a URL (from being set as default browser)
+  // Check if app was opened with a URL or a PDF file association.
   const startupUrl = initialJumpListArgs.find(arg => /^https?:\/\//i.test(arg));
+  const startupPdfPath = findPdfFilePath(initialJumpListArgs);
   
   const initialAction = parseJumpListAction(initialJumpListArgs);
   createWindow({ privateMode: initialAction?.action === 'private-window' });
@@ -734,6 +820,11 @@ app.whenReady().then(() => {
     log.info(`[PROTOCOL] App started with URL: ${startupUrl}`);
     setTimeout(() => {
       sendJumpListAction({ type: 'open-url', url: startupUrl });
+    }, 1000);
+  } else if (startupPdfPath) {
+    log.info(`[PDF] App started with associated file: ${startupPdfPath}`);
+    setTimeout(() => {
+      sendPdfFile(startupPdfPath);
     }, 1000);
   } else if (initialAction?.action !== 'new-window' && initialAction?.action !== 'private-window') {
     handleJumpListAction(initialJumpListArgs);
