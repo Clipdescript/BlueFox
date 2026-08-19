@@ -746,6 +746,62 @@ ipcMain.handle('fetch-nature-background', async () => {
   }
 });
 
+ipcMain.handle('generate-ai-questions', async (_event, rawContext = {}) => {
+  const mistralApiKey = process.env.MISTRAL_API_KEY;
+  if (!mistralApiKey) return { ok: false, error: 'MISTRAL_API_KEY n’est pas configurée.' };
+
+  const pageUrl = String(rawContext.url || '').trim().slice(0, 500);
+  const pageTitle = String(rawContext.title || '').trim().slice(0, 240);
+  const pageDescription = String(rawContext.description || '').trim().slice(0, 1000);
+  const pageText = String(rawContext.text || '').trim().slice(0, 6000);
+  if (!/^https?:\/\//i.test(pageUrl) || (!pageTitle && !pageDescription && !pageText)) {
+    return { ok: false, error: 'Le contenu de la page est insuffisant.' };
+  }
+
+  try {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${mistralApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+        temperature: 0.35,
+        max_tokens: 320,
+        messages: [
+          {
+            role: 'system',
+            content: 'Tu génères des suggestions de questions pour la sidebar IA Foxy. Analyse uniquement le contenu fourni de la page web. Retourne exactement un tableau JSON contenant 3 chaînes en français, sans Markdown, sans introduction et sans réponses. Chaque chaîne doit être une vraie question directement liée au titre, au sujet ou aux informations visibles de cette page. Ne produis jamais des questions génériques comme « Résume cette page » si tu peux poser une question précise. Adapte la demande au type de page : vidéo, musique, boutique, article, documentation, réseau social ou autre. N’invente aucun produit, prix, personne, fait ou contenu absent des éléments fournis. Les trois questions doivent être différentes, naturelles et utiles.'
+          },
+          {
+            role: 'user',
+            content: `URL : ${pageUrl}\nTitre : ${pageTitle || 'inconnu'}\nDescription : ${pageDescription || 'indisponible'}\nContenu visible :\n${pageText || 'indisponible'}`
+          }
+        ]
+      })
+    });
+    if (!response.ok) throw new Error(`Mistral a répondu ${response.status}`);
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    const rawContent = Array.isArray(content) ? content.map((part) => part.text || '').join('') : String(content || '');
+    const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('Réponse de questions invalide.');
+
+    const questions = [...new Set(JSON.parse(jsonMatch[0])
+      .filter((question) => typeof question === 'string')
+      .map((question) => question.replace(/^[-•\\s]+/, '').trim().slice(0, 180))
+      .filter((question) => question.length > 12))]
+      .slice(0, 3);
+    if (questions.length !== 3) throw new Error('Mistral n’a pas généré trois questions.');
+    return { ok: true, questions };
+  } catch (error) {
+    log.warn(`Foxy question generation unavailable: ${error.message}`);
+    return { ok: false, error: error.message };
+  }
+});
+
 ipcMain.handle('ask-ai', async (event, rawRequest) => {
   const request = typeof rawRequest === 'string' ? { prompt: rawRequest } : (rawRequest || {});
   const mode = request.mode === 'document' ? 'document' : 'web';

@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('electron', {
   forceClose: () => ipcRenderer.send('app-force-close'),
   getNatureBackground: () => ipcRenderer.invoke('fetch-nature-background'),
   askAi: (prompt, options = {}) => ipcRenderer.invoke('ask-ai', { prompt, ...options }),
+  generateAiQuestions: (pageContext = {}) => ipcRenderer.invoke('generate-ai-questions', pageContext),
   onAiSearchProgress: (callback) => {
     const subscription = (_event, progress) => callback(progress);
     ipcRenderer.on('ai-search-progress', subscription);

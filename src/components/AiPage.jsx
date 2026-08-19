@@ -14,14 +14,16 @@ import {
   MdContentCopy,
   MdExpandMore,
   MdGraphicEq,
-  MdImage,
+  MdFeed,
+  MdInsertLink,
   MdLanguage,
+  MdPhotoLibrary,
   MdLightbulbOutline,
   MdMenu,
   MdMic,
+  MdNorthEast,
   MdMoreHoriz,
   MdMusicNote,
-  MdNewspaper,
   MdPause,
   MdPlayArrow,
   MdReply,
@@ -242,7 +244,7 @@ const MusicConversationPlayer = ({ video, onOpenMusic, onMusicControl, musicPlay
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, onAnswer, onOpenMusic, onMusicControl, musicPlayback, onMusicPlaybackChange, hasMusicTab = false, conversation, conversationKey, onConversationChange }) => {
+const AiPage = ({ isAiMode, onModeChange, isSidebar = false, pageContext = null, currentTitle = '', currentUrl = '', currentFavicon = '', initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, onAnswer, onOpenMusic, onMusicControl, musicPlayback, onMusicPlaybackChange, hasMusicTab = false, conversation, conversationKey, onConversationChange }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [messages, setMessages] = useState(() => Array.isArray(conversation?.messages) ? conversation.messages : []);
   const [isLoading, setIsLoading] = useState(false);
@@ -259,6 +261,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
   const [followUps, setFollowUps] = useState(() => Array.isArray(conversation?.followUps) ? conversation.followUps : []);
   const progressTimers = useRef([]);
   const [visibleResultCount, setVisibleResultCount] = useState(12);
+  const [sidebarSuggestions, setSidebarSuggestions] = useState([]);
 
   useEffect(() => {
     setPrompt(initialPrompt);
@@ -269,6 +272,22 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
     setMessages(Array.isArray(conversation.messages) ? conversation.messages : []);
     setFollowUps(Array.isArray(conversation.followUps) ? conversation.followUps : []);
   }, [conversation]);
+
+  useEffect(() => {
+    if (!isSidebar || !pageContext?.url) {
+      setSidebarSuggestions([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setSidebarSuggestions([]);
+    const generateSuggestions = async () => {
+      const result = await window.electron?.generateAiQuestions?.(pageContext);
+      if (!cancelled && result?.ok && Array.isArray(result.questions)) setSidebarSuggestions(result.questions.slice(0, 3));
+    };
+    void generateSuggestions();
+    return () => { cancelled = true; };
+  }, [isSidebar, pageContext?.description, pageContext?.text, pageContext?.title, pageContext?.url]);
 
   useEffect(() => {
     onConversationChange?.(conversationKey, { messages, followUps });
@@ -426,6 +445,16 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
   const latestUser = [...messages].reverse().find((message) => message.role === 'user');
   const sources = latestAssistant?.sources || [];
   const imageSources = sources.filter((source) => source.image);
+  const sidebarSite = (() => {
+    if (!isSidebar || isDocumentMode || !/^https?:\/\//i.test(currentUrl)) return null;
+    let hostname = '';
+    try { hostname = new URL(currentUrl).hostname.toLowerCase(); } catch { return null; }
+    const siteName = getSiteName(currentUrl);
+    return {
+      name: siteName === 'Web' ? '' : siteName.charAt(0).toUpperCase() + siteName.slice(1),
+      favicon: currentFavicon || getFaviconUrl(currentUrl)
+    };
+  })();
   const visibleNewsSources = sources.slice(0, visibleResultCount);
   const latestUserIndex = messages.reduce((lastIndex, message, index) => message.role === 'user' ? index : lastIndex, -1);
   const handleTypingComplete = useCallback(() => setIsAnswerTyping(false), []);
@@ -480,9 +509,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           <div className="flex h-full items-center gap-5 text-[14px] text-[#66676a]">
             <button type="button" onClick={() => setActiveView('response')} className={`relative flex h-full items-center gap-2 ${activeView === 'response' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdAutoAwesome /> Réponse{activeView === 'response' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
             {!isDocumentMode && <>
-              <button type="button" onClick={() => setActiveView('links')} className={`relative flex h-full items-center gap-2 ${activeView === 'links' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdLanguage /> Liens{activeView === 'links' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
-              <button type="button" onClick={() => setActiveView('images')} className={`relative flex h-full items-center gap-2 ${activeView === 'images' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdImage /> Images{activeView === 'images' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
-              <button type="button" onClick={() => setActiveView('news')} className={`relative flex h-full items-center gap-2 ${activeView === 'news' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdNewspaper /> Actualités{activeView === 'news' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+              <button type="button" onClick={() => setActiveView('links')} className={`relative flex h-full items-center gap-2 ${activeView === 'links' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdInsertLink /> Liens{activeView === 'links' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+              <button type="button" onClick={() => setActiveView('images')} className={`relative flex h-full items-center gap-2 ${activeView === 'images' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdPhotoLibrary /> Images{activeView === 'images' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
+              <button type="button" onClick={() => setActiveView('news')} className={`relative flex h-full items-center gap-2 ${activeView === 'news' ? 'font-medium text-[#292929]' : 'hover:text-[#292929]'}`}><MdFeed /> Articles{activeView === 'news' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#292929]" />}</button>
             </>}
 
           </div>
@@ -508,11 +537,12 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           </div>)
         )}
 
-        <div className={`relative mx-auto flex w-full ${activeView === 'images' ? 'max-w-[1180px]' : 'max-w-[1040px]'} flex-col px-6 pb-8 pt-8 sm:px-10 ${hasConversation ? 'justify-start' : isDocumentMode ? 'min-h-full justify-center translate-y-0' : 'min-h-full justify-center -translate-y-8'}`}>
+        <div className={`relative mx-auto flex w-full ${activeView === 'images' ? 'max-w-[1180px]' : 'max-w-[1040px]'} flex-col px-6 pb-8 pt-8 sm:px-10 ${hasConversation ? 'justify-start' : isSidebar ? 'min-h-full justify-between translate-y-0' : isDocumentMode ? 'min-h-full justify-center translate-y-0' : 'min-h-full justify-center -translate-y-8'}`}>
           {!hasConversation && (
             <div className="mb-8 text-center">
               <p className="mb-2 text-[13px] text-[#86878a]">{isDocumentMode ? 'Document PDF' : 'Recherche'}</p>
               <h1 className="foxy-dm-title text-[30px] font-medium tracking-[-0.04em] text-[#292929]">{isDocumentMode ? 'Que voulez-vous faire avec ce document ?' : 'Que voulez-vous savoir ?'}</h1>
+              {isSidebar && sidebarSite?.name && sidebarSuggestions.length > 0 && <div className="foxy-sidebar-suggestions">{sidebarSuggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => setPrompt(suggestion)}><MdNorthEast aria-hidden="true" /><span>{suggestion}</span></button>)}</div>}
             </div>
           )}
 
@@ -645,7 +675,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
             </div>
           )}
 
-          {activeView === 'response' && <div className="sticky bottom-0 z-20 -mx-6 mt-5 bg-white px-6 pb-4 pt-2 sm:-mx-10 sm:px-10"><form onSubmit={askFoxy} className="bluefox-ai-prompt-bar w-full rounded-[16px] border border-[#e3e3e6] bg-white p-2.5 shadow-[0_4px_18px_rgba(32,33,36,0.08)] focus-within:border-[#b9c9d8]">
+          {activeView === 'response' && <div className="sticky bottom-0 z-20 -mx-6 mt-5 bg-white px-6 pb-4 pt-2 sm:-mx-10 sm:px-10">{sidebarSite?.name && <div className="foxy-sidebar-site-context"><img src={sidebarSite.favicon} alt="" onError={(event) => { event.currentTarget.src = BLUEFOX_LOGO; }} /><span>{sidebarSite.name}</span></div>}<form onSubmit={askFoxy} className="bluefox-ai-prompt-bar w-full rounded-[16px] border border-[#e3e3e6] bg-white p-2.5 shadow-[0_4px_18px_rgba(32,33,36,0.08)] focus-within:border-[#b9c9d8]">
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={isDocumentMode ? 'Demander un résumé ou une modification du PDF' : (hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs')} aria-label="Question à Foxy" />
             <div className="flex items-center justify-between pt-1.5">
               <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button>{!isDocumentMode && <span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span>}<span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>
@@ -653,7 +683,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
             </div>
           </form><p className="mt-2 px-2 text-center text-[10px] leading-4 text-[#85868a]">Les réponses de Foxy peuvent contenir des erreurs ou être incomplètes. Vérifiez les informations importantes avant de les utiliser.</p></div>}
 
-          {!hasConversation && (
+          {!hasConversation && !isSidebar && (
             <>
             <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button type="button" onClick={() => setPrompt('Explique-moi les actualités importantes du jour.')} className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] p-5 text-left hover:bg-[#f0f0f1]"><span className="flex items-center gap-2 text-[15px] font-medium"><MdSearch /> Recherche et organisation</span><span className="mt-2 block text-[13px] leading-5 text-[#85868a]">Foxy ouvre des onglets et organise vos recherches.</span></button>

@@ -657,6 +657,94 @@ html[data-theme='dark'] ::-moz-selection {
   padding-bottom: 36px;
 }
 
+.foxy-sidebar-site-context {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 8px;
+  width: min(100%, 760px);
+  padding: 0 4px;
+  color: #4f5053;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.foxy-sidebar-site-context img {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.foxy-sidebar-suggestions {
+  display: flex;
+  width: min(100%, 520px);
+  flex-direction: column;
+  gap: 0;
+  margin: 20px auto 0;
+  text-align: left;
+}
+
+.foxy-sidebar-suggestions button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-bottom-color: #e3e3e6;
+  border-radius: 0;
+  background: transparent;
+  padding: 11px 4px;
+  color: #4f5053;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.foxy-sidebar-suggestions button:hover {
+  border-color: transparent;
+  border-bottom-color: #a9d5dd;
+  background: #f1fafb;
+  color: #137b8b;
+  transform: none;
+}
+
+.foxy-sidebar-suggestions button svg {
+  flex: 0 0 auto;
+  color: #137b8b;
+  font-size: 15px;
+}
+
+.foxy-sidebar-suggestions button span {
+  min-width: 0;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-sidebar-suggestions button {
+  border-color: transparent;
+  border-bottom-color: #3b414d;
+  background: transparent;
+  color: #e7e9ee;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-sidebar-suggestions button:hover {
+  border-color: transparent;
+  border-bottom-color: #6674a5;
+  background: #30364a;
+  color: #c4b5fd;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-sidebar-suggestions button svg {
+  color: #c4b5fd;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-sidebar-site-context {
+  color: #e7e9ee;
+}
+
 .foxy-results-content > a,
 .foxy-results-content > div {
   min-width: 0;

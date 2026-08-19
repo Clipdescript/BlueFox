@@ -314,7 +314,50 @@ function App() {
   const [shouldMountBackgroundTabs, setShouldMountBackgroundTabs] = useState(false);
   const activeAiSidebar = activeTabId === null ? null : aiSidebarTabs[activeTabId] || null;
   const isAiSidebarVisible = Boolean(activeAiSidebar?.open);
+  const [aiPageContext, setAiPageContext] = useState(null);
   const webviewRefs = useRef({});
+
+  useEffect(() => {
+    const pageUrl = activeTab?.url || '';
+    if (!isAiSidebarVisible || activeTab?.isSettings || activeTab?.isPdf || !/^https?:\/\//i.test(pageUrl)) {
+      setAiPageContext(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    let retryTimer = null;
+    const readPageContext = async (attempt = 0) => {
+      if (cancelled) return;
+      const webview = webviewRefs.current[activeTabId];
+      if (!webview?.executeJavaScript) {
+        if (attempt < 12) retryTimer = window.setTimeout(() => readPageContext(attempt + 1), 350);
+        return;
+      }
+      try {
+        const context = await webview.executeJavaScript(`(() => {
+          const clean = (value, max) => String(value || '').replace(/\\s+/g, ' ').trim().slice(0, max);
+          const description = document.querySelector('meta[name="description"]')?.content || document.querySelector('meta[property="og:description"]')?.content || '';
+          const headings = [...document.querySelectorAll('h1, h2, h3')].map((element) => element.innerText).filter(Boolean).join(' · ');
+          const main = document.querySelector('main, article, [role="main"]') || document.body;
+          return {
+            url: location.href,
+            title: clean(document.title, 240),
+            description: clean(description, 1000),
+            text: clean((headings ? headings + ' · ' : '') + (main?.innerText || document.body?.innerText || ''), 6000)
+          };
+        })()`, true);
+        if (!cancelled && context?.url && (context.url.startsWith('http://') || context.url.startsWith('https://'))) setAiPageContext(context);
+      } catch {
+        if (attempt < 12) retryTimer = window.setTimeout(() => readPageContext(attempt + 1), 350);
+      }
+    };
+
+    readPageContext();
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [activeTab?.isPdf, activeTab?.isSettings, activeTab?.url, activeTabId, isAiSidebarVisible]);
 
   useEffect(() => {
     setIsAiMode(Boolean(activeTab?.isAi));
@@ -1608,6 +1651,10 @@ function App() {
             initialPrompt={activeAiSidebar?.initialPrompt || ''}
             isDocumentMode={Boolean(activeAiSidebar?.isDocumentMode)}
             documentText={activeAiSidebar?.documentText || ''}
+            pageContext={aiPageContext}
+            currentTitle={activeTab?.title || ''}
+            currentUrl={activeTab?.url || ''}
+            currentFavicon={activeTab?.favicon || ''}
             onAnswer={handlePdfAiAnswer}
             onOpenMusic={openMusicInNewTab}
             onMusicControl={controlMusicInNewTab}
