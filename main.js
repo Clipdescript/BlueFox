@@ -2,9 +2,10 @@ const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme, shell }
 const path = require('path');
 const os = require('os');
 const http = require('http');
-const { randomBytes } = require('crypto');
+const { randomBytes, randomUUID } = require('crypto');
 const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
+const net = require('net');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
@@ -100,6 +101,107 @@ const isDev = !app.isPackaged;
 const APP_USER_MODEL_ID = 'com.bluefox.browser';
 const DISCORD_CLIENT_ID = '1539666175699583077';
 const DISCORD_REDIRECT_URI = 'http://127.0.0.1:42813/discord/callback';
+const DISCORD_RPC_PIPES = Array.from({ length: 10 }, (_value, index) => `\\\\?\\pipe\\discord-ipc-${index}`);
+const BLUEFOX_RICH_PRESENCE = Object.freeze({
+  details: 'Utilise cette pépite',
+  state: 'Navigateur français • privé • rapide',
+  large_image: 'bluefox-logo',
+  large_text: 'BlueFox Browser — le navigateur français privé et rapide',
+  small_image: 'bluefox-logo',
+  small_text: 'Recherche sur Internet avec Foxy'
+});
+
+class DiscordRichPresence {
+  constructor() {
+    this.socket = null;
+    this.connectionPromise = null;
+    this.retryTimer = null;
+    this.activity = BLUEFOX_RICH_PRESENCE;
+  }
+
+  setActivity(activity = {}) {
+    this.activity = { ...BLUEFOX_RICH_PRESENCE, ...activity };
+    if (this.socket?.writable) {
+      this.sendActivity();
+      return;
+    }
+    this.connect();
+  }
+
+  sendPacket(opcode, payload) {
+    if (!this.socket?.writable) return false;
+    const body = Buffer.from(JSON.stringify(payload));
+    const header = Buffer.alloc(8);
+    header.writeInt32LE(opcode, 0);
+    header.writeInt32LE(body.length, 4);
+    this.socket.write(Buffer.concat([header, body]));
+    return true;
+  }
+
+  sendActivity() {
+    this.sendPacket(1, {
+      cmd: 'SET_ACTIVITY',
+      args: { pid: process.pid, activity: this.activity },
+      nonce: randomUUID()
+    });
+  }
+
+  handleSocketClosed(socket) {
+    if (this.socket !== socket) return;
+    this.socket = null;
+    if (!this.retryTimer) {
+      this.retryTimer = setTimeout(() => {
+        this.retryTimer = null;
+        this.connect();
+      }, 5000);
+    }
+  }
+
+  connectFromPipe(index) {
+    if (index >= DISCORD_RPC_PIPES.length) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      const socket = net.createConnection(DISCORD_RPC_PIPES[index]);
+      let connected = false;
+      const tryNextPipe = () => {
+        if (connected) return;
+        connected = true;
+        socket.destroy();
+        this.connectFromPipe(index + 1).then(resolve);
+      };
+
+      socket.once('connect', () => {
+        if (connected) return;
+        connected = true;
+        this.socket = socket;
+        socket.on('error', () => this.handleSocketClosed(socket));
+        socket.on('close', () => this.handleSocketClosed(socket));
+        this.sendPacket(0, { v: 1, client_id: DISCORD_CLIENT_ID });
+        this.sendActivity();
+        log.info('[DISCORD RPC] Rich Presence connected.');
+        resolve();
+      });
+      socket.once('error', tryNextPipe);
+    });
+  }
+
+  connect() {
+    if (this.socket?.writable || this.connectionPromise) return;
+    this.connectionPromise = this.connectFromPipe(0).finally(() => {
+      this.connectionPromise = null;
+    });
+  }
+
+  disconnect() {
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    const socket = this.socket;
+    this.socket = null;
+    if (socket && !socket.destroyed) socket.end();
+  }
+}
+
+const discordRichPresence = new DiscordRichPresence();
 let discordLoginServer = null;
 let discordAuthWindow = null;
 if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -129,6 +231,10 @@ const forwardDiscordCallback = (url) => {
     .finally(() => closeDiscordAuthWindow());
   return true;
 };
+
+ipcMain.on('discord-rich-presence-update', (_event, activity) => {
+  discordRichPresence.setActivity(activity && typeof activity === 'object' ? activity : {});
+});
 
 ipcMain.handle('discord-login', async () => {
   if (discordLoginServer) return { ok: false, error: 'Une connexion Discord est déjà en cours.' };
@@ -1123,6 +1229,7 @@ app.whenReady().then(() => {
   if (!hasSingleInstanceLock) return;
 
   log.info(`[APP] BlueFox ${app.getVersion()} started; packaged=${app.isPackaged}`);
+  discordRichPresence.setActivity(BLUEFOX_RICH_PRESENCE);
   if (app.isPackaged) {
     try {
       logUpdate(`Log file: ${log.transports.file.getFile().path}`);
@@ -1176,6 +1283,10 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('before-quit', () => {
+  discordRichPresence.disconnect();
 });
 
 app.on('window-all-closed', () => {

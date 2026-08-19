@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
   getDefaultBrowserStatus: () => ipcRenderer.invoke('get-default-browser-status'),
   openDefaultBrowserSettings: () => ipcRenderer.invoke('open-default-browser-settings'),
   loginWithDiscord: () => ipcRenderer.invoke('discord-login'),
+  updateDiscordPresence: (activity) => ipcRenderer.send('discord-rich-presence-update', activity),
   getPerformanceMetrics: () => ipcRenderer.invoke('get-performance-metrics'),
   openPdf: () => ipcRenderer.invoke('open-pdf'),
   loadPdf: (filePath) => ipcRenderer.invoke('load-pdf', filePath),
