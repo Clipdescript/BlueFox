@@ -1,0 +1,64 @@
+name: Notify Discord about releases
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send release announcement to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          RELEASE_NAME: ${{ github.event_name == 'workflow_dispatch' && 'Test du webhook BlueFox' || github.event.release.name }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && 'test' || github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event_name == 'workflow_dispatch' && 'https://github.com/Clipdescript/BlueFox/releases' || github.event.release.html_url }}
+          RELEASE_BODY: ${{ github.event_name == 'workflow_dispatch' && 'Le webhook Discord BlueFox fonctionne correctement.' || github.event.release.body }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+          if not webhook_url:
+              raise SystemExit("Missing DISCORD_RELEASE_WEBHOOK repository secret")
+
+          release_body = os.environ.get("RELEASE_BODY", "").strip()
+          if len(release_body) > 3500:
+              release_body = release_body[:3497] + "..."
+
+          payload = {
+              "username": "BlueFox Releases",
+              "embeds": [{
+                  "title": f"🚀 {os.environ.get('RELEASE_NAME') or os.environ.get('RELEASE_TAG')}",
+                  "description": release_body or "Une nouvelle version de BlueFox est disponible.",
+                  "url": os.environ.get("RELEASE_URL"),
+                  "color": 0x8DB8F5,
+                  "fields": [{
+                      "name": "Version",
+                      "value": os.environ.get("RELEASE_TAG", "Version inconnue"),
+                      "inline": True,
+                  }],
+                  "footer": {"text": "BlueFox Browser"},
+              }],
+          }
+
+          request = urllib.request.Request(
+              webhook_url,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "BlueFox-Release-Notifier",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(request, timeout=15) as response:
+              if response.status not in (200, 204):
+                  raise SystemExit(f"Discord webhook failed with HTTP {response.status}")
+          PY
