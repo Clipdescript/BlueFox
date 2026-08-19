@@ -692,3 +692,9 @@
   background: rgba(127, 29, 29, 0.42) !important;
   color: #fecaca !important;
 }
+
+.bluefox-discord-profile-actions button { transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease; }
+.bluefox-discord-profile-actions button:hover { transform: translateY(-1px); }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button.is-secondary,
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button.is-secondary span { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button.is-secondary:hover { border-color: #60738a; background: #303b49; color: #ffffff !important; }

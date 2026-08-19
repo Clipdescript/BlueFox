@@ -1,44 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FaDiscord } from 'react-icons/fa';
 import {
-  MdAccountBalanceWallet,
+  MdApps,
+  MdAutoAwesome,
+  MdBookmarkBorder,
   MdAccountCircle,
-  MdAddBox,
+  MdCallSplit,
+  MdWallet,
+  MdCleaningServices,
+  MdFileOpen,
+  MdManageHistory,
+  MdOpenInBrowser,
+  MdShare,
+  MdTab,
   MdArrowBack,
   MdArrowForward,
-  MdConstruction,
-  MdChatBubbleOutline,
-  MdDeleteSweep,
+  MdMoreHoriz,
   MdDownload,
   MdExpandMore,
-  MdExitToApp,
-  MdWidgets,
-  MdFavoriteBorder,
+  MdExtension,
+  MdPowerSettingsNew,
   MdGamepad,
-  MdHelpOutline,
-  MdHistory,
   MdHomeFilled,
+  MdInfoOutline,
   MdKey,
-  MdLock,
   MdMic,
   MdMusicNote,
   MdPrint,
-  MdPictureAsPdf,
   MdPublic,
   MdRefresh,
   MdSearch,
-  MdSecurity,
   MdSettings,
+  MdTune,
+  MdWifi,
   MdMenu,
-  MdViewSidebar,
-  MdWindow,
+  MdVerticalSplit,
+  MdViewInAr,
   MdZoomIn,
 } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserSecret } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
 
 const ICON_COLOR = 'text-[#6d6e72]';
-const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
+const SecretAgentIcon = (props) => <FontAwesomeIcon icon={faUserSecret} {...props} />;
 
 const formatCompactAddress = (url) => {
   if (!url) return '';
@@ -52,25 +59,26 @@ const formatCompactAddress = (url) => {
   }
 };
 
-const MenuLogo = ({ className = '' }) => <img src={BLUEFOX_LOGO} alt="" className={`h-4 w-4 object-contain ${className}`} />;
-
 const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) => (
   <button type="button" onClick={onClick} className={`bluefox-topbar-menu-row flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed] ${className}`}>
-    <Icon className="shrink-0 text-[16px] text-[#5f6368]" />
+    <span className="flex h-4 w-4 shrink-0 items-center justify-center leading-none">
+      <Icon className="text-[16px] text-[#5f6368]" />
+    </span>
     <span className="min-w-0 flex-1 truncate">{children}</span>
     {shortcut && <span className="shrink-0 text-[11px] text-[#6d6e72]">{shortcut}</span>}
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onModeChange, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
+  const [isDiscordProfileOpen, setIsDiscordProfileOpen] = useState(false);
   const menuRef = useRef(null);
+  const discordProfileRef = useRef(null);
 
   useEffect(() => {
     if (!suggestions.length) return undefined;
@@ -98,10 +106,10 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
     if (!isMenuOpen) return undefined;
 
     const closeMenu = (event) => {
-      if (!menuRef.current?.contains(event.target)) setIsMenuOpen(false);
+      if (!menuRef.current?.contains(event.target)) onMenuChange?.(false);
     };
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setIsMenuOpen(false);
+      if (event.key === 'Escape') onMenuChange?.(false);
     };
     document.addEventListener('mousedown', closeMenu);
     document.addEventListener('keydown', closeOnEscape);
@@ -109,7 +117,20 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
       document.removeEventListener('mousedown', closeMenu);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, onMenuChange]);
+
+  useEffect(() => {
+    if (!isDiscordProfileOpen) return undefined;
+    const closeProfile = (event) => {
+      if (!discordProfileRef.current?.contains(event.target)) setIsDiscordProfileOpen(false);
+    };
+    document.addEventListener('mousedown', closeProfile);
+    return () => document.removeEventListener('mousedown', closeProfile);
+  }, [isDiscordProfileOpen]);
+
+  useEffect(() => {
+    if (!discordProfile) setIsDiscordProfileOpen(false);
+  }, [discordProfile]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -161,11 +182,11 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
       <div className="relative min-w-0 flex-1">
         <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && suggestions.length > 0 ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
           {isSettingsOpen ? (
-            <MdSettings className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
+            <MdTune className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Paramètres" />
           ) : isGame || isOfflineFallback ? (
             <MdGamepad className="bluefox-address-game-icon mr-2 h-[18px] w-[18px] shrink-0 text-[#7346bc]" aria-label="Jeu hors ligne" />
           ) : isAiMode ? (
-            <img src={BLUEFOX_LOGO} alt="BlueFox" className="mr-2 h-[18px] w-[18px] object-contain" />
+            <MdAutoAwesome className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Mode IA" />
           ) : currentFavicon && !isFaviconBroken ? (
             <img
               src={currentFavicon}
@@ -216,7 +237,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdChatBubbleOutline className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
+        <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdAutoAwesome className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
         <div className="hidden items-center gap-1.5 lg:flex" aria-label="Mode de navigation">
           <button
             type="button"
@@ -232,12 +253,31 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
             <span className={`bluefox-topbar-mode-label ${isAiMode ? 'is-active' : 'is-inactive'} relative z-10 flex w-1/2 justify-center`}>IA</span>
           </button>
         </div>
-        <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
-        <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdWidgets className="text-[21px]" /></button>
-        <div ref={menuRef} className={`relative ${isSettingsOpen ? 'hidden' : ''}`}>
+        <div ref={discordProfileRef} className="relative" onMouseEnter={() => discordProfile && setIsDiscordProfileOpen(true)} onMouseLeave={() => setIsDiscordProfileOpen(false)}>
+          <button type="button" onClick={() => discordProfile ? setIsDiscordProfileOpen((open) => !open) : onDiscordLogin?.()} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={discordProfile ? `Ouvrir le profil de ${discordProfile.globalName || discordProfile.username}` : 'Se connecter avec Discord'} aria-expanded={Boolean(discordProfile && isDiscordProfileOpen)} title={discordProfile ? `Connecté en tant que ${discordProfile.globalName || discordProfile.username}` : 'Se connecter avec Discord'}>{discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" /> : <MdAccountCircle className="text-[21px]" />}</button>
+          {discordProfile && isDiscordProfileOpen && (
+            <div className="bluefox-discord-profile-popover" role="dialog" aria-label="Profil Discord">
+              <div className="bluefox-discord-profile-heading">
+                <img src={discordProfile.avatarUrl} alt="" className="bluefox-discord-profile-avatar" />
+                <div className="min-w-0">
+                  <strong>Salut, {discordProfile.globalName || discordProfile.username} !</strong>
+                  <span>@{discordProfile.username}</span>
+                </div>
+              </div>
+              <div className="bluefox-discord-profile-status"><FaDiscord className="bluefox-discord-profile-status-icon" aria-hidden="true" /> Connecté avec Discord</div>
+              <p className="bluefox-discord-profile-note">Ton profil Discord est associé à BlueFox pour cette session.</p>
+              <div className="bluefox-discord-profile-actions">
+                <button type="button" onClick={() => { onSettings?.(); setIsDiscordProfileOpen(false); }}>Paramètres du compte</button>
+                <button type="button" className="is-secondary" onClick={() => { onDiscordLogout?.(); setIsDiscordProfileOpen(false); }}>Se déconnecter</button>
+              </div>
+            </div>
+          )}
+        </div>
+        <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdViewInAr className="text-[21px]" /></button>
+        <div ref={menuRef} className="relative">
           <button
             type="button"
-            onClick={() => setIsMenuOpen((open) => !open)}
+            onClick={() => onMenuChange?.(!isMenuOpen)}
             className={`bluefox-topbar-menu-trigger flex h-9 w-9 items-center justify-center rounded-full ${isMenuOpen ? 'bg-[#f0efed] text-[#292929]' : ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`}
             aria-label="Ouvrir le menu"
             aria-expanded={isMenuOpen}
@@ -247,24 +287,24 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
           {isMenuOpen && (
             <div className="bluefox-topbar-menu absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
-              <MenuRow icon={MdAddBox} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); setIsMenuOpen(false); }}>Nouvel onglet</MenuRow>
-              <MenuRow icon={MdPictureAsPdf} onClick={async () => { await onOpenPdf?.(); setIsMenuOpen(false); }}>Ouvrir un PDF</MenuRow>
-              <MenuRow icon={MdWindow} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); setIsMenuOpen(false); }}>Nouvelle fenêtre</MenuRow>
-              <MenuRow icon={MdLock} shortcut="Ctrl+Maj+N">Nouvelle fenêtre privée</MenuRow>
+              <MenuRow icon={MdTab} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); onMenuChange?.(false); }}>Nouvel onglet</MenuRow>
+              <MenuRow icon={MdFileOpen} onClick={async () => { await onOpenPdf?.(); onMenuChange?.(false); }}>Ouvrir un PDF</MenuRow>
+              <MenuRow icon={MdOpenInBrowser} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); onMenuChange?.(false); }}>Nouvelle fenêtre</MenuRow>
+              <MenuRow icon={SecretAgentIcon} shortcut="Ctrl+Maj+N" onClick={() => { onNewPrivateWindow?.(); onMenuChange?.(false); }}>Nouvelle fenêtre privée</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MenuLogo}>Foxy IA</MenuRow>
-              <MenuRow icon={MdAccountBalanceWallet}>Portefeuille</MenuRow>
-              <MenuRow icon={MdSecurity}>VPN BlueFox</MenuRow>
+              <MenuRow icon={MdHomeFilled} onClick={() => { onHome?.(); onMenuChange?.(false); }}>Accueil</MenuRow>
+              <MenuRow icon={MdWallet} onClick={() => { onSettingsSection?.('wallet'); onMenuChange?.(false); }}>Portefeuille</MenuRow>
+              <MenuRow icon={MdWifi} onClick={() => { onSettingsSection?.('vpn'); onMenuChange?.(false); }}>VPN BlueFox</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdViewSidebar} shortcut="Activé" onClick={() => { onAssistant?.(); setIsMenuOpen(false); }}>Barre latérale</MenuRow>
-              <MenuRow icon={MdKey}>Mots de passe et saisie automatique</MenuRow>
-              <MenuRow icon={MdHistory}>Historique</MenuRow>
-              <MenuRow icon={MdFavoriteBorder}>Favoris et listes</MenuRow>
-              <MenuRow icon={MdDownload} shortcut="Ctrl+J">Téléchargements</MenuRow>
-              <MenuRow icon={MdWidgets}>Extensions</MenuRow>
-              <MenuRow icon={MdDeleteSweep} shortcut="Ctrl+Maj+Suppr">Supprimer les données de navigation…</MenuRow>
+              <MenuRow icon={MdVerticalSplit} shortcut="Activé" onClick={() => { onAssistant?.(); onMenuChange?.(false); }}>Barre latérale</MenuRow>
+              <MenuRow icon={MdKey} onClick={() => { onSettingsSection?.('passwords'); onMenuChange?.(false); }}>Mots de passe et saisie automatique</MenuRow>
+              <MenuRow icon={MdManageHistory} onClick={() => { onSettingsSection?.('history'); onMenuChange?.(false); }}>Historique</MenuRow>
+              <MenuRow icon={MdBookmarkBorder}>Favoris et listes</MenuRow>
+              <MenuRow icon={MdDownload} shortcut="Ctrl+J" onClick={() => { onSettingsSection?.('downloads'); onMenuChange?.(false); }}>Téléchargements</MenuRow>
+              <MenuRow icon={MdViewInAr} onClick={() => { onSearch(BLUEFOX_ADDONS_URL); onMenuChange?.(false); }}>Extensions</MenuRow>
+              <MenuRow icon={MdCleaningServices} shortcut="Ctrl+Maj+Suppr" onClick={() => { onSettingsSection?.('clear-data'); onMenuChange?.(false); }}>Effacer les données de navigation…</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[12px]">
@@ -276,16 +316,16 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
               </div>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdPrint} shortcut="Ctrl+P" onClick={() => { onPrint?.(); setIsMenuOpen(false); }}>Imprimer…</MenuRow>
+              <MenuRow icon={MdPrint} shortcut="Ctrl+P" onClick={() => { onPrint?.(); onMenuChange?.(false); }}>Imprimer…</MenuRow>
               <MenuRow icon={MdSearch}>Rechercher et modifier</MenuRow>
-              <MenuRow icon={MdDownload}>Enregistrer et partager</MenuRow>
-              <MenuRow icon={MdConstruction}>Plus d’outils</MenuRow>
+              <MenuRow icon={MdShare}>Enregistrer et partager</MenuRow>
+              <MenuRow icon={MdCallSplit}>Plus d’options</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
-              <MenuRow icon={MdSettings} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
-              <MenuRow icon={MdGamepad} onClick={() => { onPlayGame?.(); setIsMenuOpen(false); }}>Jouer à Tetris</MenuRow>
-              <MenuRow icon={MdExitToApp} className="bluefox-topbar-menu-quit" onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
+              <MenuRow icon={MdInfoOutline}>Centre d’aide</MenuRow>
+              <MenuRow icon={MdTune} onClick={() => { onSettings?.(); onMenuChange?.(false); }}>Paramètres</MenuRow>
+              <MenuRow icon={MdGamepad} onClick={() => { onPlayGame?.(); onMenuChange?.(false); }}>Jouer à Tetris</MenuRow>
+              <MenuRow icon={MdPowerSettingsNew} className="bluefox-topbar-menu-quit" onClick={() => { window.electron?.close(); onMenuChange?.(false); }}>Quitter</MenuRow>
             </div>
           )}
         </div>

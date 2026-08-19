@@ -3,7 +3,7 @@ import { SidebarPanel } from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
-import { MdClose, MdMusicNote, MdPublic, MdSearch } from 'react-icons/md';
+import { MdClose, MdPublic, MdSearch, MdSkipNext } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
 import './styles/music.css';
 import { buildSearchUrl, DEFAULT_SEARCH_ENGINE_ID, extractSearchQuery, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from './utils/searchEngines.js';
@@ -16,6 +16,7 @@ const PdfEditor = React.lazy(() => import('./components/PdfEditor'));
 const OfflineGame = React.lazy(() => import('./components/OfflineGame'));
 const SETTINGS_URL = 'bluefox://parametres';
 const BROWSER_HISTORY_STORAGE_KEY = 'bluefox_history';
+const DISCORD_PROFILE_STORAGE_KEY = 'bluefox_discord_profile_v1';
 
 const readBrowserHistory = () => {
   try {
@@ -32,6 +33,15 @@ const isLocalDevelopmentAddress = (value) => /^(?:https?:\/\/)?(?:localhost|127(
 const isNetworkLoadError = (event) => {
   const networkErrorCodes = new Set([-7, -105, -106, -102, -118, -100, -109]);
   return networkErrorCodes.has(Number(event?.errorCode)) || /internet|network|name_not_resolved|timed_out|connection/i.test(String(event?.errorDescription || ''));
+};
+
+const readDiscordProfile = () => {
+  try {
+    const profile = JSON.parse(localStorage.getItem(DISCORD_PROFILE_STORAGE_KEY) || 'null');
+    return profile?.id && profile?.avatarUrl ? profile : null;
+  } catch {
+    return null;
+  }
 };
 
 const createSettingsTab = () => ({
@@ -102,7 +112,8 @@ function App() {
   const [isYouTubeOpen, setIsYouTubeOpen] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
+  const [discordProfile, setDiscordProfile] = useState(readDiscordProfile);
+  const [personalizationTabs, setPersonalizationTabs] = useState({});
   const [isCompactLayout, setIsCompactLayout] = useState(() => window.innerWidth <= 640);
   const [homeBackground, setHomeBackground] = useState(() => localStorage.getItem('bluefox_home_background_v1') || '');
   const [isAddSiteOpen, setIsAddSiteOpen] = useState(false);
@@ -111,7 +122,6 @@ function App() {
   const [addUrl, setAddUrl] = useState('');
   const [isWhatsAppOnline, setIsWhatsAppOnline] = useState(false);
   const [showMiniPlayer, setShowMiniPlayer] = useState(false);
-  const [musicPlayback, setMusicPlayback] = useState(null);
   const [miniPos, setMiniPos] = useState({ x: 960, y: 540 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -120,12 +130,16 @@ function App() {
   const waWebviewRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(() => Boolean(initialTabs.find((tab) => tab.id === activeTabId)?.isSettings));
+  const [settingsSection, setSettingsSection] = useState('general');
   const [history, setHistory] = useState(readBrowserHistory);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [connectionNotice, setConnectionNotice] = useState(null);
   const connectionNoticeTimerRef = useRef(null);
   const connectionStatusRef = useRef(navigator.onLine);
+  const keyboardActionsRef = useRef({ handleNewTab: null, handleReload: null });
   const [zoomFactor, setZoomFactor] = useState(1);
+  const [musicAdAvailable, setMusicAdAvailable] = useState(false);
+  const [musicPlayback, setMusicPlayback] = useState(null);
   const [activeSidebarApps, setActiveSidebarApps] = useState(new Set());
   const [tabColor, setTabColor] = useState(() => localStorage.getItem('bluefox_home_tab_color_v1') || (resolvedTheme === 'dark' ? '#1d2026' : '#f3f2f0'));
   // Keep the clean-startup migration for tabs, but preserve the real browsing history.
@@ -262,26 +276,31 @@ function App() {
 
   // Global Keyboard Shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
-        if (e.ctrlKey) {
-            switch(e.key.toLowerCase()) {
-                case 't':
-                    e.preventDefault();
-                    handleNewTab();
-                    break;
-                case 'r':
-                case 'f5':
-                    e.preventDefault();
-                    handleReload();
-                    break;
-                default:
-                    break;
-            }
+    const handleKeyDown = (event) => {
+      if (event.key === 'F5') {
+        event.preventDefault();
+        keyboardActionsRef.current.handleReload?.();
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key.toLowerCase()) {
+          case 't':
+            event.preventDefault();
+            keyboardActionsRef.current.handleNewTab?.();
+            break;
+          case 'r':
+            event.preventDefault();
+            keyboardActionsRef.current.handleReload?.();
+            break;
+          default:
+            break;
         }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Empty deps as handlers use refs or state setters
+  }, []);
 
   const toggleSidebarApp = (appName, isOpen, setIsOpen) => {
     if (!isOpen) {
@@ -291,6 +310,7 @@ function App() {
   };
   
   const activeTab = tabs.find(t => t.id === activeTabId) || null;
+  const isPersonalizationOpen = activeTabId !== null && Boolean(personalizationTabs[activeTabId]);
   const [shouldMountBackgroundTabs, setShouldMountBackgroundTabs] = useState(false);
   const activeAiSidebar = activeTabId === null ? null : aiSidebarTabs[activeTabId] || null;
   const isAiSidebarVisible = Boolean(activeAiSidebar?.open);
@@ -420,20 +440,28 @@ function App() {
     setIsAiMode(false);
   }, [tabs]);
 
-  const handleMusicPlaybackChange = useCallback((tabId, playback) => {
-    setMusicPlayback((currentPlayback) => {
-      if (!playback) return currentPlayback?.tabId === tabId ? null : currentPlayback;
-      return { ...playback, tabId };
-    });
-  }, []);
-
-  const handleAiMusicPlayback = useCallback((playback) => {
-    if (activeTabId === null) return;
-    handleMusicPlaybackChange(activeTabId, playback);
-  }, [activeTabId, handleMusicPlaybackChange]);
-
   const handleNewWindow = useCallback(() => {
     window.electron?.newWindow?.();
+  }, []);
+
+  const handleNewPrivateWindow = useCallback(() => {
+    window.electron?.newPrivateWindow?.();
+  }, []);
+
+  const handleDiscordLogin = useCallback(async () => {
+    const result = await window.electron?.loginWithDiscord?.();
+    if (!result?.ok || !result.profile) {
+      if (result?.error) window.alert(result.error);
+      return null;
+    }
+    setDiscordProfile(result.profile);
+    localStorage.setItem(DISCORD_PROFILE_STORAGE_KEY, JSON.stringify(result.profile));
+    return result.profile;
+  }, []);
+
+  const handleDiscordLogout = useCallback(() => {
+    setDiscordProfile(null);
+    localStorage.removeItem(DISCORD_PROFILE_STORAGE_KEY);
   }, []);
 
   const handleCloseTab = useCallback(async (id) => {
@@ -463,7 +491,16 @@ function App() {
       }
     }
 
-    if (musicPlayback?.tabId === id) setMusicPlayback(null);
+    if (tab?.isMusic) {
+      if (webview?.executeJavaScript) {
+        void webview.executeJavaScript('document.querySelector(\'video\')?.pause()', true).catch(() => {});
+      }
+      // Keep the last position available to the conversation player, but detach
+      // it from the closed tab so its play button cannot relaunch a dead webview.
+      setMusicPlayback((currentPlayback) => currentPlayback?.tabId === id
+        ? { ...currentPlayback, tabId: null, isPlaying: false }
+        : currentPlayback);
+    }
 
     setTabs(prev => {
         const newTabs = prev.filter(t => t.id !== id);
@@ -482,9 +519,20 @@ function App() {
         }
         return newTabs;
     });
+    setAiSidebarTabs((currentTabs) => {
+      const nextTabs = { ...currentTabs };
+      delete nextTabs[id];
+      return nextTabs;
+    });
+    setPersonalizationTabs((currentTabs) => {
+      if (!Object.prototype.hasOwnProperty.call(currentTabs, id)) return currentTabs;
+      const nextTabs = { ...currentTabs };
+      delete nextTabs[id];
+      return nextTabs;
+    });
     delete webviewRefs.current[id];
     return true;
-  }, [activeTabId, musicPlayback, tabs]);
+  }, [activeTabId, tabs]);
 
   const handleSearch = useCallback((query) => {
     const requestedUrl = query.trim();
@@ -529,6 +577,11 @@ function App() {
 
   const handleAssistantToggle = useCallback(() => {
     if (activeTabId === null) return;
+    const willOpen = !isAiSidebarVisible;
+    if (willOpen) {
+      setIsMenuOpen(false);
+      setPersonalizationTabs((currentTabs) => ({ ...currentTabs, [activeTabId]: false }));
+    }
     setAiInitialPrompt('');
     setAiSidebarTabs((currentTabs) => {
       const current = currentTabs[activeTabId] || {};
@@ -544,7 +597,7 @@ function App() {
         }
       };
     });
-  }, [activeTabId]);
+  }, [activeTabId, isAiSidebarVisible]);
 
   const openPdfPayloadInNewTab = useCallback((pdf) => {
     if (!pdf?.url) return;
@@ -599,6 +652,170 @@ function App() {
     }]);
     setActiveTabId(id);
   }, []);
+
+  const openMusicInNewTab = useCallback((video) => {
+    const youtubeUrl = video?.youtubeUrl || (video?.id ? `https://www.youtube.com/watch?v=${video.id}` : '');
+    if (!youtubeUrl) return;
+    const existingMusicTab = tabs.find((tab) => tab.isMusic && (tab.musicVideoId === video.id || tab.url === youtubeUrl));
+    if (existingMusicTab) {
+      setActiveTabId(existingMusicTab.id);
+      setMusicPlayback((currentPlayback) => currentPlayback?.tabId === existingMusicTab.id
+        ? { ...currentPlayback, isPlaying: true }
+        : { videoId: video.id, tabId: existingMusicTab.id, isPlaying: true, position: 0, duration: 0 });
+      return;
+    }
+    const id = Date.now();
+    tabs.filter((tab) => tab.isSearching).forEach((tab) => {
+      const webview = webviewRefs.current[tab.id];
+      if (webview?.executeJavaScript) {
+        void webview.executeJavaScript('document.querySelector(\'video\')?.pause()', true).catch(() => {});
+      }
+    });
+    setMusicPlayback({ videoId: video.id, tabId: id, isPlaying: true, position: 0, duration: 0 });
+    setTabs(prev => [...prev, {
+      id,
+      title: video.title || 'YouTube',
+      musicVideoId: video.id,
+      url: youtubeUrl,
+      initialUrl: youtubeUrl,
+      isSearching: true,
+      isMusic: true,
+      isPdf: false,
+      isAi: false,
+      favicon: '',
+      isLoading: true,
+      offlineFallback: !navigator.onLine
+    }]);
+  }, [tabs]);
+
+  const skipYouTubeAd = useCallback(async () => {
+    const musicTab = musicPlayback?.tabId === null || musicPlayback?.tabId === undefined
+      ? null
+      : tabs.find((tab) => tab.id === musicPlayback.tabId);
+    const webview = musicTab ? webviewRefs.current[musicTab.id] : null;
+    if (!webview?.executeJavaScript) return;
+    try {
+      const skipped = await webview.executeJavaScript(`(() => {
+        const selectors = ['.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', '.ytp-ad-skip-button-container button'];
+        const button = selectors.map((selector) => document.querySelector(selector)).find((element) => element && !element.disabled);
+        if (!button) return false;
+        button.click();
+        return true;
+      })()`, true);
+      if (skipped) setMusicAdAvailable(false);
+    } catch {
+      // The YouTube page can be navigating while the ad control is created.
+    }
+  }, [musicPlayback?.tabId, tabs]);
+
+  const controlMusicInNewTab = useCallback((command = {}) => {
+    const musicTab = musicPlayback?.tabId === null || musicPlayback?.tabId === undefined
+      ? null
+      : tabs.find((tab) => tab.id === musicPlayback.tabId);
+    const webview = musicTab ? webviewRefs.current[musicTab.id] : null;
+    if (!webview?.executeJavaScript) return;
+
+    const serializedCommand = JSON.stringify({ type: command.type, value: command.value });
+    void webview.executeJavaScript(`(() => {
+      const command = ${serializedCommand};
+      const video = document.querySelector('video');
+      if (command.type === 'seek' && video && Number.isFinite(video.duration)) {
+        video.currentTime = Math.max(0, Math.min(video.duration, video.duration * Number(command.value || 0)));
+        return true;
+      }
+      if (command.type === 'play' && video) {
+        void video.play().catch(() => {});
+        return true;
+      }
+      if (command.type === 'pause' && video) {
+        video.pause();
+        return true;
+      }
+      const labels = command.type === 'next' ? ['Next', 'Suivant'] : ['Previous', 'Précédent'];
+      const button = [...document.querySelectorAll('button')].find((element) => labels.some((label) => ((element.getAttribute('aria-label') || '') + ' ' + (element.title || '')).toLocaleLowerCase().includes(label.toLocaleLowerCase())));
+      button?.click();
+      return Boolean(button);
+    })()`, true).catch(() => {});
+  }, [musicPlayback?.tabId, tabs]);
+
+  const musicTabId = musicPlayback ? musicPlayback.tabId : [...tabs].reverse().find((tab) => tab.isMusic)?.id;
+  useEffect(() => {
+    if (musicTabId === undefined || musicTabId === null) {
+      setMusicAdAvailable(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const inspectAd = async () => {
+      const webview = webviewRefs.current[musicTabId];
+      if (!webview?.executeJavaScript) return;
+      try {
+        const canSkip = await webview.executeJavaScript(`(() => {
+          const selectors = ['.ytp-ad-skip-button', '.ytp-ad-skip-button-modern', '.ytp-ad-skip-button-container button'];
+          return selectors.some((selector) => {
+            const element = document.querySelector(selector);
+            return Boolean(element && !element.disabled);
+          });
+        })()`, true);
+        if (!cancelled) setMusicAdAvailable(Boolean(canSkip));
+      } catch {
+        if (!cancelled) setMusicAdAvailable(false);
+      }
+    };
+
+    const interval = window.setInterval(inspectAd, 700);
+    inspectAd();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [musicTabId]);
+
+  // Read the real YouTube position instead of estimating it in the AI card.
+  // The webview stays mounted while another tab is active, so this preserves
+  // both playback and the exact resume position across tab switches.
+  useEffect(() => {
+    const musicTabId = musicPlayback?.tabId;
+    if (musicTabId === undefined || musicTabId === null) return undefined;
+
+    let cancelled = false;
+    const syncMusicPlayback = async () => {
+      const webview = webviewRefs.current[musicTabId];
+      if (!webview?.executeJavaScript) return;
+      try {
+        const state = await webview.executeJavaScript(`(() => {
+          const video = document.querySelector('video');
+          if (!video) return null;
+          return {
+            currentTime: Number(video.currentTime) || 0,
+            duration: Number.isFinite(video.duration) ? video.duration : 0,
+            isPlaying: !video.paused && !video.ended
+          };
+        })()`, true);
+        if (cancelled || !state) return;
+        setMusicPlayback((currentPlayback) => {
+          if (!currentPlayback || currentPlayback.tabId !== musicTabId) return currentPlayback;
+          const nextPosition = Number.isFinite(state.currentTime) ? state.currentTime : currentPlayback.position || 0;
+          const nextDuration = Number.isFinite(state.duration) && state.duration > 0 ? state.duration : currentPlayback.duration || 0;
+          if (Math.abs((currentPlayback.position || 0) - nextPosition) < 0.2
+            && (currentPlayback.duration || 0) === nextDuration
+            && currentPlayback.isPlaying === Boolean(state.isPlaying)) {
+            return currentPlayback;
+          }
+          return { ...currentPlayback, position: nextPosition, duration: nextDuration, isPlaying: Boolean(state.isPlaying) };
+        });
+      } catch {
+        // The webview can be navigating or closing while it is inspected.
+      }
+    };
+
+    const interval = window.setInterval(syncMusicPlayback, 500);
+    syncMusicPlayback();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [musicPlayback?.tabId]);
 
   useEffect(() => {
     const unsubscribe = window.electron?.onOpenUrlInNewTab?.(openUrlInNewTab);
@@ -657,6 +874,10 @@ function App() {
       }
     }
   }, [activeTabId, handleOfflineRetry, tabs]);
+
+  useEffect(() => {
+    keyboardActionsRef.current = { handleNewTab, handleReload };
+  }, [handleNewTab, handleReload]);
 
   const handlePrint = useCallback(() => {
     const webview = webviewRefs.current[activeTabId];
@@ -817,7 +1038,67 @@ function App() {
   const handleWhatsAppToggle = useCallback(() => toggleSidebarApp('whatsapp', isWhatsAppOpen, setIsWhatsAppOpen), [isWhatsAppOpen]);
   const handleChatToggle = useCallback(() => toggleSidebarApp('chatgpt', isChatOpen, setIsChatOpen), [isChatOpen]);
   const handleAddSiteToggle = useCallback(() => setIsAddSiteOpen(prev => !prev), []);
-  const handleMenuToggle = useCallback(() => setIsMenuOpen(prev => !prev), []);
+  const handleMusicPlaybackChange = useCallback(({ videoId, isPlaying, position }) => {
+    if (!videoId) return;
+    setMusicPlayback((currentPlayback) => {
+      if (isPlaying) {
+        if (!tabs.some((tab) => tab.isMusic && tab.id === currentPlayback?.tabId)) return currentPlayback;
+        return {
+          ...(currentPlayback || {}),
+          videoId,
+          isPlaying: true,
+          ...(Number.isFinite(Number(position)) ? { position: Number(position) } : {})
+        };
+      }
+      if (!currentPlayback || currentPlayback.videoId !== videoId) return currentPlayback;
+      return {
+        ...currentPlayback,
+        isPlaying: false,
+        ...(Number.isFinite(Number(position)) ? { position: Number(position) } : {})
+      };
+    });
+  }, [tabs]);
+
+  const hasMusicTab = Boolean(musicPlayback?.tabId !== null
+    && musicPlayback?.tabId !== undefined
+    && tabs.some((tab) => tab.isMusic && tab.id === musicPlayback.tabId));
+
+  const handleMenuChange = useCallback((isOpen) => {
+    const nextOpen = Boolean(isOpen);
+    setIsMenuOpen(nextOpen);
+    if (nextOpen && activeTabId !== null) {
+      setPersonalizationTabs((currentTabs) => ({ ...currentTabs, [activeTabId]: false }));
+      setAiSidebarTabs((currentTabs) => {
+        const current = currentTabs[activeTabId];
+        if (!current?.open) return currentTabs;
+        return { ...currentTabs, [activeTabId]: { ...current, open: false } };
+      });
+    }
+  }, [activeTabId]);
+  const handlePersonalizationChange = useCallback((isOpen) => {
+    if (activeTabId === null) return;
+    const nextOpen = Boolean(isOpen);
+    if (nextOpen) {
+      setIsMenuOpen(false);
+      setAiSidebarTabs((currentTabs) => {
+        const current = currentTabs[activeTabId];
+        if (!current?.open) return currentTabs;
+        return { ...currentTabs, [activeTabId]: { ...current, open: false } };
+      });
+    }
+    setPersonalizationTabs((currentTabs) => ({
+      ...currentTabs,
+      [activeTabId]: nextOpen
+    }));
+  }, [activeTabId]);
+  const updateAiConversation = useCallback((tabId, conversation) => {
+    if (tabId === null || tabId === undefined) return;
+    setAiSidebarTabs((currentTabs) => ({
+      ...currentTabs,
+      [tabId]: { ...(currentTabs[tabId] || {}), conversation }
+    }));
+  }, []);
+
   const handleAskFoxySelection = useCallback((selection) => {
     const prompt = String(selection || '').trim().slice(0, 4000);
     if (!prompt) return;
@@ -827,7 +1108,7 @@ function App() {
     setIsAiMode(false);
     setAiSidebarTabs((currentTabs) => ({
       ...currentTabs,
-      [activeTabId]: { open: true, isDocumentMode: false, documentText: '', initialPrompt: prompt, request: null }
+      [activeTabId]: { ...(currentTabs[activeTabId] || {}), open: true, isDocumentMode: false, documentText: '', initialPrompt: prompt, request: null }
     }));
   }, [activeTabId]);
 
@@ -861,7 +1142,8 @@ function App() {
     });
   }, [activeTabId]);
 
-  const handleSettingsOpen = useCallback(() => {
+  const handleSettingsOpen = useCallback((section = 'general') => {
+    setSettingsSection(section);
     const existingSettingsTab = tabs.find((tab) => tab.isSettings);
     if (existingSettingsTab) {
       setActiveTabId(existingSettingsTab.id);
@@ -1141,59 +1423,6 @@ function App() {
         </div>
       </SidebarPanel>
 
-      {/* Menu Panel */}
-      <SidebarPanel title="Menu" isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
-        <div className="h-full w-full overflow-y-auto bg-white p-0 text-[#202124]">
-            <div className="px-4 py-3 text-xs font-semibold tracking-[0.2em] text-[#73737d]">MENU</div>
-            <div className="px-2 py-1">
-              <button className="flex w-full items-center justify-between rounded px-3 py-2 text-[#4f4f59] transition-colors hover:bg-[#eef4ff] hover:text-[#0060df]" onClick={handleNewTab}>
-                <span>Nouvel onglet</span>
-                <span className="text-gray-500 text-[10px]">Ctrl + T</span>
-              </button>
-              <div className="mt-1 border-t border-gray-200" />
-              <div className="px-3 py-2 text-[#73737d]">Zoom</div>
-              <div className="flex items-center px-3 pb-2 space-x-2">
-                <button 
-                  className="rounded bg-[#eef0f4] px-3 py-1 text-[#4f4f59] transition-colors hover:bg-[#dfeaff] hover:text-[#0060df]" 
-                  onClick={() => {
-                    const nv = Math.max(0.25, +(zoomFactor - 0.1).toFixed(2));
-                    setZoomFactor(nv);
-                    const w = webviewRefs.current[activeTabId];
-                    if (w && w.setZoomFactor) w.setZoomFactor(nv);
-                  }}
-                >
-                  -
-                </button>
-                <button 
-                  className="rounded bg-[#eef0f4] px-3 py-1 text-[#4f4f59] transition-colors hover:bg-[#dfeaff] hover:text-[#0060df]" 
-                  onClick={() => {
-                    setZoomFactor(1);
-                    const w = webviewRefs.current[activeTabId];
-                    if (w && w.setZoomFactor) w.setZoomFactor(1);
-                  }}
-                >
-                  100%
-                </button>
-                <button 
-                  className="rounded bg-[#eef0f4] px-3 py-1 text-[#4f4f59] transition-colors hover:bg-[#dfeaff] hover:text-[#0060df]" 
-                  onClick={() => {
-                    const nv = Math.min(3, +(zoomFactor + 0.1).toFixed(2));
-                    setZoomFactor(nv);
-                    const w = webviewRefs.current[activeTabId];
-                    if (w && w.setZoomFactor) w.setZoomFactor(nv);
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              <div className="mt-1 border-t border-gray-200" />
-              <button className="flex w-full items-center justify-between rounded px-3 py-2 text-[#4f4f59] transition-colors hover:bg-[#eef4ff] hover:text-[#0060df]" onClick={() => window.electron?.close()}>
-                <span>Quitter</span>
-              </button>
-            </div>
-        </div>
-      </SidebarPanel>
-
       <div className="relative z-0 flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         <TabBar 
             tabs={tabs} 
@@ -1210,10 +1439,13 @@ function App() {
             onSearch={handleSearch}
             onAssistant={handleAssistantToggle}
             onSettings={handleSettingsOpen}
+            onSettingsSection={handleSettingsOpen}
             onModeChange={handleModeChange}
             showHomeButton={Boolean(activeTab?.isSearching) && !isAiMode && !isSettingsOpen}
             onHome={goHome}
             isAssistantActive={isAiSidebarVisible}
+            isMenuOpen={isMenuOpen}
+            onMenuChange={handleMenuChange}
             currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.isGame ? 'bluefox://tetris' : activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
             isGame={Boolean(activeTab?.isGame)}
@@ -1228,9 +1460,13 @@ function App() {
             onOpenPdf={handleOpenPdf}
             onPrint={handlePrint}
             onNewWindow={handleNewWindow}
+            onNewPrivateWindow={handleNewPrivateWindow}
             onZoomOut={handleZoomOut}
             onZoomIn={handleZoomIn}
             zoomFactor={zoomFactor}
+            discordProfile={discordProfile}
+            onDiscordLogin={handleDiscordLogin}
+            onDiscordLogout={handleDiscordLogout}
         />
 
         <main
@@ -1251,7 +1487,18 @@ function App() {
                        ) : null
                    ) : tab.isSettings ? (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement des paramètres…</div>}>
-                         <SettingsPage onClose={handleSettingsClose} />
+                         <SettingsPage
+                           onClose={handleSettingsClose}
+                           initialSection={settingsSection}
+                           onPrint={handlePrint}
+                           onNewWindow={handleNewWindow}
+                           onNewPrivateWindow={handleNewPrivateWindow}
+                           onOpenPdf={handleOpenPdf}
+                           onOpenExtensions={() => handleSearch('https://bluefox-add-ons.pages.dev/')}
+                           discordProfile={discordProfile}
+                           onDiscordLogin={handleDiscordLogin}
+                           onDiscordLogout={handleDiscordLogout}
+                         />
                        </Suspense>
                    ) : tab.isPdf ? (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">Ouverture de l’éditeur PDF…</div>}>
@@ -1269,6 +1516,7 @@ function App() {
                             </Suspense>
                           ) : null
                         ) : !tab.hibernated ? (
+                          <>
                           <webview
                               key={`${tab.id}-${tab.loadCount || 0}`}
                               ref={el => {
@@ -1278,6 +1526,8 @@ function App() {
                               className="w-full h-full"
                               useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
                           />
+                          {tab.isMusic && tab.id === activeTabId && musicAdAvailable && <button type="button" className="bluefox-youtube-skip-ad" onClick={skipYouTubeAd}><MdSkipNext aria-hidden="true" /> Passer la publicité</button>}
+                          </>
                         ) : (
                           <div className="flex h-full w-full flex-col items-center justify-center bg-[#f4f4f6] text-[#73737d]">
                               <p className="text-lg font-medium mb-2">Onglet en veille</p>
@@ -1287,27 +1537,14 @@ function App() {
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts hideModeSwitch hideThemeToggle onMusicPlayback={handleAiMusicPlayback} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideModeSwitch hideThemeToggle conversation={aiSidebarTabs[tab.id]?.conversation} conversationKey={tab.id} onConversationChange={updateAiConversation} onOpenMusic={openMusicInNewTab} onMusicControl={controlMusicInNewTab} musicPlayback={musicPlayback} onMusicPlaybackChange={handleMusicPlaybackChange} hasMusicTab={hasMusicTab} />
                          ) : (
-                           <SpeedDial onNavigate={handleSearch} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={isPersonalizationOpen} onPersonalizationChange={setIsPersonalizationOpen} homeBackground={homeBackground} />
+                           <SpeedDial onNavigate={handleSearch} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={tab.id === activeTabId && isPersonalizationOpen} onPersonalizationChange={handlePersonalizationChange} homeBackground={homeBackground} />
                          )}
                        </Suspense>
                    )}
                </div>
            )))}
-
-           {musicPlayback && activeTabId !== musicPlayback.tabId && !activeTab?.isPdf && !activeTab?.isSettings && !activeTab?.isSearching && (
-             <button
-               type="button"
-               className="bluefox-music-background-dock"
-               onClick={() => setActiveTabId(musicPlayback.tabId)}
-               title={`Revenir à ${musicPlayback.title || musicPlayback.service}`}
-               aria-label={`Musique en arrière-plan : ${musicPlayback.title || musicPlayback.service}`}
-             >
-               <MdMusicNote aria-hidden="true" />
-               <span>{musicPlayback.title || musicPlayback.service}</span>
-             </button>
-           )}
 
            {/* Floating Mini YouTube Player */}
            {!isSettingsOpen && isYouTubeOpen && showMiniPlayer && miniSrc && (
@@ -1366,12 +1603,20 @@ function App() {
       {isAiSidebarVisible && (
         <Suspense fallback={null}>
           <AiSidebar
+            key={activeTabId}
             isOpen={isAiSidebarVisible}
             initialPrompt={activeAiSidebar?.initialPrompt || ''}
             isDocumentMode={Boolean(activeAiSidebar?.isDocumentMode)}
             documentText={activeAiSidebar?.documentText || ''}
             onAnswer={handlePdfAiAnswer}
-            onMusicPlayback={handleAiMusicPlayback}
+            onOpenMusic={openMusicInNewTab}
+            onMusicControl={controlMusicInNewTab}
+            musicPlayback={musicPlayback}
+            onMusicPlaybackChange={handleMusicPlaybackChange}
+            hasMusicTab={hasMusicTab}
+            conversation={activeAiSidebar?.conversation}
+            conversationKey={activeTabId}
+            onConversationChange={updateAiConversation}
             onClose={() => {
               if (activeTabId === null) return;
               setAiSidebarTabs((currentTabs) => ({
@@ -1392,7 +1637,7 @@ function App() {
           tabColor={tabColor}
           onTabColorChange={setTabColor}
           resolvedTheme={resolvedTheme}
-          onClose={() => setIsPersonalizationOpen(false)}
+          onClose={() => handlePersonalizationChange(false)}
         />
       </Suspense>
     </div>

@@ -109,45 +109,51 @@
 .bluefox-music-site-name { overflow: hidden; color: var(--theme-text-strong) !important; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .bluefox-music-site-webview { display: block; width: 100%; height: calc(100% - 44px); min-height: 0; flex: 0 0 auto; border: 0; background: var(--theme-bg); }
 
-/* Dock de lecture en arrière-plan */
-.bluefox-music-background-dock {
-  position: fixed;
-  z-index: 80;
-  bottom: 18px;
-  left: 18px;
-  display: flex;
-  width: 43px;
-  height: 43px;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 22px;
-  background: var(--theme-surface);
-  color: #8b5cf6 !important;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(33, 29, 60, .13);
-  transition: width 220ms cubic-bezier(.22, 1, .36, 1), background-color 160ms ease;
-  white-space: nowrap;
-}
+.bluefox-youtube-skip-ad { position: absolute; right: 24px; bottom: 24px; z-index: 30; display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border: 1px solid rgba(255, 255, 255, .28); border-radius: 9px; background: #202124; color: #fff; cursor: pointer; box-shadow: 0 5px 18px rgba(0, 0, 0, .28); font-size: 12px; font-weight: 700; }
+.bluefox-youtube-skip-ad:hover { background: #34363a; }
+.bluefox-youtube-skip-ad svg { width: 17px; height: 17px; }
 
-.bluefox-music-background-dock:hover,
-.bluefox-music-background-dock:focus-visible { width: min(300px, calc(100vw - 36px)); background: var(--theme-surface-hover); outline: none; }
-.bluefox-music-background-dock svg { width: 19px; height: 19px; flex: 0 0 19px; }
-.bluefox-music-background-dock span { max-width: 0; overflow: hidden; opacity: 0; color: var(--theme-text-strong) !important; font-size: 11px; font-weight: 600; text-overflow: ellipsis; transition: max-width 180ms ease, opacity 160ms ease; }
-.bluefox-music-background-dock:hover span,
-.bluefox-music-background-dock:focus-visible span { max-width: 240px; opacity: 1; }
-
-/* Lecteur musical de Foxy */
-.foxy-music-conversation-player { width: min(100%, 760px); margin: 16px 0 4px; overflow: hidden; border: 1px solid var(--theme-border); border-radius: 8px; background: var(--theme-surface-muted); }
-.foxy-music-conversation-heading { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--theme-border); }
-.foxy-music-conversation-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 6px; background: rgba(139, 92, 246, .1); color: #8b5cf6 !important; }
+/* Lecteur musical de Foxy : l’audio est lu dans un onglet YouTube. */
+.foxy-music-conversation-player { width: min(100%, 760px); margin: 16px 0 4px; overflow: hidden; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; }
+.foxy-music-conversation-main { display: flex; min-width: 0; gap: 14px; padding: 12px; }
+.foxy-music-conversation-cover { width: 92px; height: 92px; flex: 0 0 92px; border-radius: 6px; background: #f1f1f1; object-fit: cover; }
+.foxy-music-conversation-copy { min-width: 0; flex: 1; }
+.foxy-music-conversation-heading { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.foxy-music-conversation-icon { display: grid; width: 28px; height: 28px; place-items: center; flex: 0 0 28px; border-radius: 8px; background: #c9ddfb; color: #1769e8 !important; }
 .foxy-music-conversation-heading div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.foxy-music-conversation-heading strong { color: var(--theme-text-strong) !important; font-size: 11px; }
-.foxy-music-conversation-heading span:not(.foxy-music-conversation-icon) { overflow: hidden; color: var(--theme-text-muted) !important; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.foxy-music-conversation-player iframe { display: block; width: 100%; height: min(380px, 42vw); min-height: 210px; border: 0; background: #000; }
-.foxy-music-conversation-fallback { display: inline-flex; margin: 9px 12px 11px; color: #8b5cf6 !important; font-size: 10px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.foxy-music-conversation-heading strong { color: #183b69 !important; font-size: 11px; }
+.foxy-music-conversation-heading span:not(.foxy-music-conversation-icon) { overflow: hidden; color: #41658f !important; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.foxy-music-conversation-progress { margin-top: 14px; }
+.foxy-music-conversation-progress input { display: block; width: 100%; height: 4px; accent-color: #9fc5f5; cursor: pointer; }
+.foxy-music-conversation-progress > div { display: flex; justify-content: space-between; margin-top: 5px; color: #52749f !important; font-size: 9px; }
+.foxy-music-conversation-controls { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+.foxy-music-conversation-controls button { display: inline-flex; height: 28px; min-width: 28px; align-items: center; justify-content: center; gap: 4px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; color: #37699d !important; cursor: pointer; font-size: 10px; }
+.foxy-music-conversation-controls button:hover { background: #c9ddfb; color: #1259c4 !important; }
+.foxy-music-conversation-controls button svg { width: 17px; height: 17px; }
+.foxy-music-conversation-controls button.is-main { width: 32px; height: 32px; border-radius: 50%; background: #9fc5f5; color: #fff !important; }
+.foxy-music-conversation-controls button.is-main:hover { background: #8bb7ed; color: #fff !important; }
+.foxy-music-conversation-controls button.foxy-music-conversation-open { min-width: 0; margin-left: auto; color: #1769e8 !important; font-weight: 650; }
+
+:root[data-theme='dark'] .bluefox-app .bluefox-youtube-skip-ad { border-color: #536fc4; background: linear-gradient(135deg, #294dba, #6b42b8); }
+:root[data-theme='dark'] .bluefox-app .bluefox-youtube-skip-ad:hover { background: linear-gradient(135deg, #3766e8, #8053d5); }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-player { border-color: #d9d9d9; background: #fff; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-cover { background: #f1f1f1; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-icon { background: rgba(174, 112, 255, .2); color: #d09aff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-heading strong { color: #f4f6ff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-heading span:not(.foxy-music-conversation-icon),
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress > div { color: #d7baf3 !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress input { accent-color: #9fc5f5; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button { color: #dfc5ff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button:hover { background: rgba(177, 101, 255, .22); color: #f0ddff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main { background: #9fc5f5; color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main:hover { background: #8bb7ed; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.foxy-music-conversation-open { color: #d4a9ff !important; }
+
+@media (max-width: 520px) {
+  .foxy-music-conversation-cover { width: 70px; height: 70px; flex-basis: 70px; }
+  .foxy-music-conversation-main { gap: 10px; padding: 10px; }
+  .foxy-music-conversation-controls button.foxy-music-conversation-open { padding-inline: 3px; font-size: 0; }
+}
 
 @media (max-width: 620px) {
   .bluefox-music-launcher h1 { font-size: 30px; }
@@ -158,7 +164,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bluefox-music-launcher-service,
-  .bluefox-music-launcher-service svg,
-  .bluefox-music-background-dock,
-  .bluefox-music-background-dock span { transition: none; }
+  .bluefox-music-launcher-service svg { transition: none; }
 }

@@ -21,14 +21,37 @@ export const ToggleButton = ({ enabled, onClick, label }) => (
   <button type="button" className={`bluefox-settings-toggle ${enabled ? 'is-enabled' : ''}`} onClick={onClick} aria-label={label} aria-pressed={enabled}><i aria-hidden="true" /></button>
 );
 
-export const ThemeCard = ({ themeOption, selected, onClick }) => {
+export const ThemeCard = ({ themeOption, selected, onClick, compact = false }) => {
   const ThemeIcon = themeOption.icon;
-  return <button type="button" className={`bluefox-settings-theme ${selected ? 'is-selected' : ''}`} onClick={onClick} aria-pressed={selected}><ThemeIcon /><span><strong>{themeOption.name}</strong><small>{themeOption.description}</small></span>{selected && <b>Actuel</b>}</button>;
+  return <button type="button" className={`bluefox-settings-theme ${compact ? 'is-compact' : ''} ${selected ? 'is-selected' : ''}`} onClick={onClick} aria-pressed={selected}><ThemeIcon /><span><strong>{themeOption.name}</strong>{!compact && <small>{themeOption.description}</small>}</span>{selected && <b>Actuel</b>}</button>;
 };
 
 export const ModeCard = ({ mode, selected, onClick }) => {
   const ModeIcon = mode.icon;
   return <button type="button" className={`bluefox-settings-mode ${selected ? 'is-selected' : ''}`} style={{ '--mode-color': mode.color }} onClick={onClick} aria-pressed={selected}><ModeIcon /><span><strong>{mode.name}</strong><small>{mode.description}</small></span>{selected && <b>Actuel</b>}</button>;
+};
+
+export const RuntimeInfoCard = ({ runtimeInfo }) => {
+  const details = [
+    ['Electron', runtimeInfo?.electron ? `v${runtimeInfo.electron}` : '—'],
+    ['Chromium', runtimeInfo?.chromium ? `v${runtimeInfo.chromium}` : '—'],
+    ['Node.js', runtimeInfo?.node ? `v${runtimeInfo.node}` : '—'],
+    ['Moteur JavaScript', runtimeInfo?.v8 ? `V8 ${runtimeInfo.v8}` : '—'],
+    ['Système', runtimeInfo?.platform && runtimeInfo?.arch ? `${runtimeInfo.platform} · ${runtimeInfo.arch}` : '—']
+  ];
+
+  return (
+    <div className="bluefox-settings-runtime">
+      <div className="bluefox-settings-runtime-header">
+        <div><strong>Spécifications Electron</strong><p>Versions réellement utilisées par cette installation de BlueFox.</p></div>
+        <span>Runtime</span>
+      </div>
+      <div className="bluefox-settings-runtime-grid">
+        {details.map(([label, value]) => <div className="bluefox-settings-runtime-item" key={label}><span>{label}</span><strong>{value}</strong></div>)}
+      </div>
+      <p className="bluefox-settings-runtime-note">Electron intègre Chromium pour l’affichage, Node.js pour les fonctions de l’application et V8 pour exécuter JavaScript. Ces versions sont indépendantes du navigateur installé sur votre système.</p>
+    </div>
+  );
 };
 
 export const VersionCard = ({ version, updateState, onCheck }) => {

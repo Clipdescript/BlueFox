@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.50",
+  "version": "2.0.57",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -79,7 +79,7 @@
     ],
     "directories": {
       "buildResources": "assets",
-      "output": "release-240"
+      "output": "release-247"
     },
     "artifactName": "BlueFox-Browser-Setup-${version}.${ext}",
     "fileAssociations": [
@@ -137,7 +137,7 @@
       "uninstallerIcon": "public/Logo.ico",
       "installerHeaderIcon": "public/Logo.ico",
       "deleteAppDataOnUninstall": true,
-      "runAfterFinish": true,
+      "runAfterFinish": false,
       "perMachine": false,
       "allowElevation": true
     }

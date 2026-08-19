@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { MdArrowBack, MdCheck, MdClose, MdContrast, MdDarkMode, MdImage, MdLightMode, MdPalette, MdUpload } from 'react-icons/md';
+import { MdArrowBack, MdBrush, MdCheck, MdClose, MdComputer, MdFlashOn, MdNightsStay, MdUpload, MdWallpaper } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
+import { ThemeCard } from './settings/SettingsPrimitives.jsx';
 import '../styles/personalization.css';
+import '../styles/settings.css';
 
 const LIGHT_DEFAULT_TAB_COLOR = '#f3f2f0';
 const DARK_DEFAULT_TAB_COLOR = '#1d2026';
+const THEME_OPTIONS = [
+  { id: 'light', name: 'Clair', description: 'Interface blanche et lumineuse.', icon: MdFlashOn },
+  { id: 'dark', name: 'Sombre', description: 'Interface sombre pour réduire la luminosité.', icon: MdNightsStay },
+  { id: 'system', name: 'Appareil', description: 'Suit automatiquement le thème de Windows.', icon: MdComputer },
+];
 
 const BASE_TAB_STYLES = [
   { label: 'Défaut clair', color: '#f3f2f0', accent: '#a6a7ab' },
@@ -474,7 +481,7 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
       <aside className="bluefox-personalization-sidebar" aria-hidden={!isOpen} aria-label="Personnaliser la page d’accueil">
         <header className="bluefox-personalization-header">
           <div className="bluefox-personalization-heading">
-            {selectedCategory ? <button type="button" className="bluefox-personalization-back" onClick={() => setActiveCategory(null)} aria-label="Retour aux catégories"><MdArrowBack /></button> : <MdPalette aria-hidden="true" />}
+            {selectedCategory ? <button type="button" className="bluefox-personalization-back" onClick={() => setActiveCategory(null)} aria-label="Retour aux catégories"><MdArrowBack /></button> : <MdBrush aria-hidden="true" />}
             <span>{selectedCategory ? selectedCategory.label : 'Personnaliser'}</span>
           </div>
           <button type="button" onClick={onClose} className="bluefox-personalization-close" aria-label="Fermer la personnalisation" title="Fermer"><MdClose aria-hidden="true" /></button>
@@ -485,20 +492,12 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
             <>
               <h1 className="bluefox-personalization-title">Apparence</h1>
               <p className="bluefox-personalization-intro">Choisissez les couleurs du navigateur et le fond de votre page Nouvel onglet.</p>
-              <div className="bluefox-theme-selector" role="group" aria-label="Choisir le thème de BlueFox">
-                {[
-                  { value: 'light', label: 'Clair', icon: MdLightMode },
-                  { value: 'dark', label: 'Sombre', icon: MdDarkMode },
-                  { value: 'system', label: 'Appareil', icon: MdContrast }
-                ].map(({ value, label, icon: Icon }) => (
-                  <button type="button" key={value} onClick={() => setMode(value)} className={mode === value ? 'is-active' : ''} aria-pressed={mode === value}>
-                    <Icon aria-hidden="true" /><span>{label}</span>
-                  </button>
-                ))}
+              <div className="bluefox-settings-theme-grid bluefox-personalization-theme-grid" role="group" aria-label="Choisir le thème de BlueFox">
+                {THEME_OPTIONS.map((themeOption) => <ThemeCard key={themeOption.id} themeOption={themeOption} compact selected={themeOption.id === mode} onClick={() => setMode(themeOption.id)} />)}
               </div>
               <div className="bluefox-settings-switcher bluefox-personalization-tabs" role="tablist" aria-label="Options de personnalisation">
-                <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdPalette aria-hidden="true" /> Onglets</button>
-                <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdImage aria-hidden="true" /> Fonds de page</button>
+                <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdBrush aria-hidden="true" /> Onglets</button>
+                <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdWallpaper aria-hidden="true" /> Fonds de page</button>
               </div>
 
               {activeSection === 'tabs' ? (

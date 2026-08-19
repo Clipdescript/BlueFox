@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme, shell } = require('electron');
 const path = require('path');
 const os = require('os');
+const http = require('http');
+const { randomBytes } = require('crypto');
 const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -96,7 +98,152 @@ autoUpdater.on('update-downloaded', (info) => {
 
 const isDev = !app.isPackaged;
 const APP_USER_MODEL_ID = 'com.bluefox.browser';
+const DISCORD_CLIENT_ID = '1539666175699583077';
+const DISCORD_REDIRECT_URI = 'http://127.0.0.1:42813/discord/callback';
+let discordLoginServer = null;
+let discordAuthWindow = null;
 if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
+
+const toBase64Url = (value) => Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+const createDiscordAvatarUrl = (user) => user?.avatar
+  ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+  : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+const closeDiscordLoginServer = () => {
+  if (!discordLoginServer) return;
+  discordLoginServer.close();
+  discordLoginServer = null;
+};
+
+const closeDiscordAuthWindow = () => {
+  const authWindow = discordAuthWindow;
+  discordAuthWindow = null;
+  if (authWindow && !authWindow.isDestroyed()) authWindow.close();
+};
+
+const isDiscordCallbackUrl = (url) => String(url || '').startsWith(`${DISCORD_REDIRECT_URI}?`);
+const forwardDiscordCallback = (url) => {
+  if (!isDiscordCallbackUrl(url)) return false;
+  void fetch(url)
+    .catch((error) => log.warn(`[DISCORD] Callback forwarding failed: ${error.message}`))
+    .finally(() => closeDiscordAuthWindow());
+  return true;
+};
+
+ipcMain.handle('discord-login', async () => {
+  if (discordLoginServer) return { ok: false, error: 'Une connexion Discord est déjà en cours.' };
+
+  const state = toBase64Url(randomBytes(24));
+  const authorizationUrl = new URL('https://discord.com/oauth2/authorize');
+  authorizationUrl.search = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: DISCORD_REDIRECT_URI,
+    scope: 'identify',
+    state
+  }).toString();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      closeDiscordLoginServer();
+      closeDiscordAuthWindow();
+      resolve(result);
+    };
+    const server = http.createServer(async (request, response) => {
+      const callbackUrl = new URL(request.url || '/', DISCORD_REDIRECT_URI);
+      if (callbackUrl.pathname !== '/discord/callback') {
+        response.writeHead(404);
+        response.end('Not found');
+        return;
+      }
+
+      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      response.end('<!doctype html><meta charset="utf-8"><title>BlueFox</title><p>Connexion Discord terminée. Vous pouvez fermer cette fenêtre.</p>');
+      if (callbackUrl.searchParams.get('state') !== state) {
+        finish({ ok: false, error: 'La vérification Discord a échoué.' });
+        return;
+      }
+      if (callbackUrl.searchParams.get('error')) {
+        finish({ ok: false, error: 'La connexion Discord a été annulée.' });
+        return;
+      }
+
+      try {
+        const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+        if (!clientSecret) throw new Error('DISCORD_CLIENT_SECRET is missing from .env');
+        const tokenBody = new URLSearchParams({
+          client_id: DISCORD_CLIENT_ID,
+          client_secret: clientSecret,
+          grant_type: 'authorization_code',
+          code: callbackUrl.searchParams.get('code') || '',
+          redirect_uri: DISCORD_REDIRECT_URI
+        });
+        const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenBody
+        });
+        if (!tokenResponse.ok) {
+          const errorBody = (await tokenResponse.text()).slice(0, 240);
+          throw new Error(`Discord token exchange failed: ${tokenResponse.status} ${errorBody}`);
+        }
+        const tokenData = await tokenResponse.json();
+        const userResponse = await fetch('https://discord.com/api/users/@me', {
+          headers: { Authorization: `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}` }
+        });
+        if (!userResponse.ok) throw new Error(`Discord profile request failed: ${userResponse.status}`);
+        const user = await userResponse.json();
+        finish({ ok: true, profile: {
+          id: user.id,
+          username: user.username,
+          globalName: user.global_name || user.username,
+          avatarUrl: createDiscordAvatarUrl(user)
+        } });
+      } catch (error) {
+        log.warn(`[DISCORD] Login failed: ${error.message}`);
+        finish({ ok: false, error: isDev ? `Connexion Discord impossible : ${error.message}` : 'La connexion Discord est indisponible pour le moment.' });
+      }
+    });
+
+    discordLoginServer = server;
+    server.once('error', (error) => {
+      log.warn(`[DISCORD] Callback server failed: ${error.message}`);
+      finish({ ok: false, error: 'Le retour de connexion Discord ne peut pas être ouvert.' });
+    });
+    server.listen(42813, '127.0.0.1', () => {
+      discordAuthWindow = new BrowserWindow({
+        width: 520,
+        height: 760,
+        minWidth: 420,
+        minHeight: 600,
+        show: true,
+        autoHideMenuBar: true,
+        icon: path.join(__dirname, 'public/Logo.ico'),
+        title: 'Connexion Discord — BlueFox',
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true
+        }
+      });
+      let callbackForwarded = false;
+      const handleAuthNavigation = (event, url) => {
+        if (!isDiscordCallbackUrl(url)) return;
+        event.preventDefault();
+        if (callbackForwarded) return;
+        callbackForwarded = true;
+        forwardDiscordCallback(url);
+      };
+      discordAuthWindow.webContents.on('will-redirect', handleAuthNavigation);
+      discordAuthWindow.webContents.on('will-navigate', handleAuthNavigation);
+      void discordAuthWindow.loadURL(authorizationUrl.toString());
+    });
+    setTimeout(() => finish({ ok: false, error: 'La connexion Discord a expiré.' }), 180000);
+  });
+});
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 const initialJumpListArgs = process.argv;
@@ -235,6 +382,16 @@ if (hasSingleInstanceLock) {
       return;
     }
 
+    // OAuth callbacks can be routed back through BlueFox when it is the
+    // default browser. Forward them to the temporary local Discord server.
+    const discordCallbackUrl = commandLine.find(isDiscordCallbackUrl);
+    if (discordCallbackUrl) {
+      log.info('[DISCORD] Forwarding OAuth callback to the login server.');
+      focusMainWindow();
+      forwardDiscordCallback(discordCallbackUrl);
+      return;
+    }
+
     // Check if there's a URL passed in the command line (from external browser link)
     const urlArg = commandLine.find(arg => /^https?:\/\//i.test(arg));
     if (urlArg) {
@@ -349,6 +506,15 @@ ipcMain.handle('get-performance-metrics', async () => {
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('get-electron-runtime-info', () => ({
+  electron: process.versions.electron,
+  chromium: process.versions.chrome,
+  node: process.versions.node,
+  v8: process.versions.v8,
+  platform: process.platform,
+  arch: process.arch
+}));
 
 ipcMain.handle('get-default-browser-status', () => {
   const supported = process.platform === 'win32' || process.platform === 'darwin' || process.platform === 'linux';
@@ -502,11 +668,11 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
         body: JSON.stringify({
           model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
           temperature: 0.1,
-          max_tokens: 1800,
+          max_tokens: 2600,
           messages: [
             {
               role: 'system',
-              content: 'Tu es Foxy, l’assistant PDF de BlueFox. Travaille exclusivement à partir du document fourni, sans recherche Internet, sans sources externes et sans inventer. Pour une demande de résumé, donne d’abord un résumé clair et fidèle, puis les idées importantes. Pour une demande de modification, propose une version réécrite prête à insérer et explique brièvement ce qui a changé. Réponds en français avec des paragraphes courts et du Markdown. Utilise `**...**` avec modération et `==...==` uniquement pour une information essentielle. Termine par exactement quatre questions de suivi courtes dans des balises <foxy_followup>question</foxy_followup>.'
+              content: 'Tu es Foxy, l’assistant PDF de BlueFox. Travaille exclusivement à partir du document fourni, sans recherche Internet, sans sources externes et sans inventer. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour une demande de résumé, donne d’abord un résumé clair et fidèle, puis les idées importantes. Pour une demande de modification, propose une version réécrite prête à insérer et explique brièvement ce qui a changé. Réponds en français avec des paragraphes courts et du Markdown. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` avec modération et `==...==` uniquement pour une information essentielle. Termine par exactement quatre questions de suivi courtes dans des balises <foxy_followup>question</foxy_followup>.'
             },
             {
               role: 'user',
@@ -580,12 +746,11 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
       },
       body: JSON.stringify({
         model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
-        temperature: 0.1,
-        max_tokens: 1400,
+        temperature: 0.1,          max_tokens: 2600,
         messages: [
           {
             role: 'system',
-            content: 'Tu es Foxy, l’assistant de BlueFox. Réponds en français, directement et honnêtement. Pour les faits récents ou vérifiables, utilise exclusivement les extraits web numérotés fournis : ne complète jamais avec une supposition et ne fabrique aucun fait, nom, chiffre, citation ou lien. Si les extraits ne permettent pas de répondre, dis clairement que l’information n’est pas vérifiable avec les éléments disponibles. N’écris jamais de section « Sources », ne dis pas « selon les sources » et ne mentionne pas Exa. Ajoute uniquement des citations numérotées au format [1], [2] après les affirmations réellement soutenues par l’extrait correspondant ; n’invente jamais de numéro. Structure la réponse avec Markdown : réponse directe d’abord, paragraphes courts, titres utiles et listes à puces quand plusieurs éléments sont nécessaires. Utilise `**...**` pour un mot ou une expression en gras quand c’est utile, mais pas pour toute une phrase ni pour tous les noms. Utilise `==...==` uniquement pour une ou deux informations vraiment essentielles à retenir ; ce sera affiché avec un petit surlignage bleu doux. Laisse le texte ordinaire sans surlignage et n’ajoute aucune mise en forme si elle n’apporte rien. Ne produis jamais un gros pavé. Termine par exactement quatre questions de suivi courtes et directement liées à la question, chacune dans une balise <foxy_followup>question</foxy_followup>, sans répondre à ces questions et sans ajouter d’information nouvelle.'
+            content: 'Tu es Foxy, l’assistant de BlueFox. Réponds en français, directement et honnêtement. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour les faits récents ou vérifiables, utilise exclusivement les extraits web numérotés fournis : ne complète jamais avec une supposition et ne fabrique aucun fait, nom, chiffre, citation ou lien. Si les extraits ne permettent pas de répondre, dis clairement que l’information n’est pas vérifiable avec les éléments disponibles. N’écris jamais de section « Sources », ne dis pas « selon les sources » et ne mentionne pas Exa. Ajoute uniquement des citations numérotées au format [1], [2] après les affirmations réellement soutenues par l’extrait correspondant ; n’invente jamais de numéro. Structure la réponse avec Markdown : réponse directe d’abord, paragraphes courts, titres utiles et listes à puces quand plusieurs éléments sont nécessaires. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` pour un mot ou une expression en gras quand c’est utile, mais pas pour toute une phrase ni pour tous les noms. Utilise `==...==` uniquement pour une ou deux informations vraiment essentielles à retenir ; ce sera affiché avec un petit surlignage bleu doux. Laisse le texte ordinaire sans surlignage. Sois suffisamment détaillé pour terminer correctement ta réponse et ne coupe pas une explication en cours ; évite seulement les répétitions. Termine par exactement quatre questions de suivi courtes et directement liées à la question, chacune dans une balise <foxy_followup>question</foxy_followup>, sans répondre à ces questions et sans ajouter d’information nouvelle.'
           },
           {
             role: 'user',
@@ -788,6 +953,7 @@ function createWindow({ privateMode = false } = {}) {
   };
 
   const routeNewWindowToTab = (url) => {
+    if (forwardDiscordCallback(url)) return { action: 'deny' };
     if (/^https?:\/\//i.test(url)) {
       mainWindow.webContents.send('open-url-in-new-tab', url);
     }
@@ -942,6 +1108,9 @@ function createWindow({ privateMode = false } = {}) {
 
 ipcMain.on('window-new', () => {
   createWindow();
+});
+ipcMain.on('window-new-private', () => {
+  createWindow({ privateMode: true });
 });
 
 // HTTP/HTTPS protocol registration. The packaged installer registers the .pdf file association.

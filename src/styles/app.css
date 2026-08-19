@@ -624,6 +624,58 @@ html[data-theme='dark'] ::-moz-selection {
   animation: foxy-action-pop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.foxy-message {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.foxy-user-message {
+  max-width: 78%;
+  border: 1px solid #e3e3e1;
+  border-radius: 12px;
+  background: #f3f3f1;
+  padding: 6px 12px;
+  color: #292929;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.foxy-user-message p {
+  margin: 0;
+}
+
+.foxy-assistant-message {
+  width: 100%;
+  max-width: 760px;
+  padding: 4px 0;
+  color: #3f4042;
+}
+
+.foxy-results-content {
+  min-width: 0;
+  padding-bottom: 36px;
+}
+
+.foxy-results-content > a,
+.foxy-results-content > div {
+  min-width: 0;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-user-message {
+  border-color: #3b414d;
+  background: #303640;
+  color: #f4f5f7;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-assistant-message {
+  color: #f4f5f7;
+}
+
+:root[data-theme='dark'] .bluefox-app .foxy-reasoning-icon {
+  color: #c4b5fd;
+}
+
 .foxy-interface h1,
 .foxy-interface h2,
 .foxy-interface h3,
@@ -746,6 +798,21 @@ html[data-theme='dark'] ::-moz-selection {
   color: var(--theme-text-strong) !important;
 }
 
+.bluefox-discord-profile-popover { position: absolute; top: 43px; right: 0; z-index: 250; width: 270px; padding: 14px; border: 1px solid #d8e3e8; border-radius: 8px; background: rgba(255, 255, 255, .98); color: #202124; box-shadow: 0 16px 34px rgba(32, 33, 36, .16); }
+.bluefox-discord-profile-popover::before { content: ''; position: absolute; top: -8px; right: 0; left: 0; height: 8px; }
+.bluefox-discord-profile-heading { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.bluefox-discord-profile-avatar { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; object-fit: cover; }
+.bluefox-discord-profile-heading strong { display: block; overflow: hidden; color: #202124 !important; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-discord-profile-heading span { display: block; margin-top: 3px; overflow: hidden; color: #6b7780 !important; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-discord-profile-status { display: flex; align-items: center; gap: 7px; margin-top: 13px; color: #137b8b !important; font-size: 11px; font-weight: 700; }
+.bluefox-discord-profile-status-icon { width: 15px; height: 15px; color: #5865f2 !important; fill: currentColor; }
+.bluefox-discord-profile-note { margin: 8px 0 12px; color: #6b7780 !important; font-size: 11px; line-height: 1.45; }
+.bluefox-discord-profile-actions { display: grid; gap: 6px; }
+.bluefox-discord-profile-actions button { width: 100%; padding: 8px 9px; border: 1px solid #c9e0e5; border-radius: 6px; background: #eef8fa; color: #137b8b !important; cursor: pointer; font-size: 11px; font-weight: 700; text-align: left; }
+.bluefox-discord-profile-actions button:hover { background: #d9f0f3; }
+.bluefox-discord-profile-actions button.is-secondary { border-color: #e0e3e5; background: #fff; color: #5f6368 !important; }
+.bluefox-discord-profile-actions button.is-secondary:hover { background: #f4f5f6; }
+
 .bluefox-topbar-utility-button {
   border: 1px solid transparent !important;
   background-color: transparent !important;
@@ -761,6 +828,15 @@ html[data-theme='dark'] ::-moz-selection {
   color: #292929 !important;
   transform: none !important;
 }
+
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-popover { border-color: #3d4a58; background: rgba(28, 34, 43, .98); color: #fff; box-shadow: 0 16px 34px rgba(0, 0, 0, .35); }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-heading strong { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-heading span,
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-note { color: #b7c0ca !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button { border-color: #42626a; background: #223b41; color: #bcecf1 !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button:hover { background: #2a4a51; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-actions button.is-secondary { border-color: #46515d; background: #1d2026; color: #d5dbe5 !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-discord-profile-status-icon { color: #b9c0ff !important; }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-topbar-utility-button {
   border-color: transparent !important;

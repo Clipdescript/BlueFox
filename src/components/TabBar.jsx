@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdGamepad, MdPictureAsPdf, MdPublic, MdSettings } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdGamepad, MdPictureAsPdf, MdPublic, MdTune } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
@@ -56,7 +56,7 @@ const TabVisual = ({
       {tab.isGame || tab.offlineFallback ? (
         <MdGamepad className="bluefox-tab-game-icon h-full w-full text-[#7346bc]" aria-label="Jeu hors ligne" />
       ) : tab.isSettings ? (
-        <MdSettings className="h-full w-full text-[#137b8b]" aria-hidden="true" />
+        <MdTune className="h-full w-full text-[#137b8b]" aria-hidden="true" />
       ) : tab.isPdf ? (
         <MdPictureAsPdf className="h-full w-full text-[#d14b4b]" aria-label="Document PDF" />
       ) : tab.url && tab.favicon && !faviconError ? (

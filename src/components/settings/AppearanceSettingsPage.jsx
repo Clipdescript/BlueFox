@@ -1,10 +1,10 @@
 import React from 'react';
-import { MdComputer, MdDarkMode, MdLightMode, MdPalette } from 'react-icons/md';
+import { MdComputer, MdFlashOn, MdNightsStay, MdPalette } from 'react-icons/md';
 import { InfoCard, SectionShell, ThemeCard } from './SettingsPrimitives.jsx';
 
 const THEME_OPTIONS = [
-  { id: 'light', name: 'Clair', description: 'Interface blanche et lumineuse.', icon: MdLightMode },
-  { id: 'dark', name: 'Sombre', description: 'Interface sombre pour réduire la luminosité.', icon: MdDarkMode },
+  { id: 'light', name: 'Clair', description: 'Interface blanche et lumineuse.', icon: MdFlashOn },
+  { id: 'dark', name: 'Sombre', description: 'Interface sombre pour réduire la luminosité.', icon: MdNightsStay },
   { id: 'system', name: 'Système', description: 'Suit automatiquement le thème de Windows.', icon: MdComputer },
 ];
 

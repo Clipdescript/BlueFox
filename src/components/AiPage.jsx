@@ -16,17 +16,20 @@ import {
   MdGraphicEq,
   MdImage,
   MdLanguage,
-  MdLaptop,
+  MdLightbulbOutline,
   MdMenu,
   MdMic,
   MdMoreHoriz,
   MdMusicNote,
   MdNewspaper,
-  MdPsychology,
+  MdPause,
+  MdPlayArrow,
   MdReply,
   MdSearch,
   MdSettings,
   MdShare,
+  MdSkipNext,
+  MdSkipPrevious,
   MdThumbDown,
   MdThumbUp,
 } from 'react-icons/md';
@@ -167,35 +170,81 @@ const FastMarkdownMessage = ({ content, sources = [], messageKey, onTypingComple
   );
 };
 
-const MusicConversationPlayer = ({ video }) => {
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`;
+const formatMusicTime = (seconds) => {
+  const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(2, '0')}`;
+};
+
+const parseMusicDuration = (value) => {
+  const parts = String(value || '').split(':').map(Number);
+  if (parts.some((part) => !Number.isFinite(part))) return 0;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return 0;
+};
+
+const MusicConversationPlayer = ({ video, onOpenMusic, onMusicControl, musicPlayback, onMusicPlaybackChange, hasMusicTab }) => {
+  const playbackForVideo = musicPlayback?.videoId === video.id ? musicPlayback : null;
+  const duration = Math.max(parseMusicDuration(video.duration), Number(playbackForVideo?.duration) || 0);
+  const position = Math.min(duration || Number.MAX_SAFE_INTEGER, Math.max(0, Number(playbackForVideo?.position) || 0));
+  const isPlaying = playbackForVideo?.isPlaying === true;
+  const canControl = Boolean(hasMusicTab && playbackForVideo);
+
+
+  const sendMusicControl = (type, value) => {
+    onMusicControl?.({ type, value });
+  };
+
+  const togglePlayback = () => {
+    if (!canControl) return;
+    const nextPlaying = !isPlaying;
+    onMusicPlaybackChange?.({ videoId: video.id, isPlaying: nextPlaying, position });
+    sendMusicControl(nextPlaying ? 'play' : 'pause');
+  };
+
+  const seek = (event) => {
+    if (!canControl) return;
+    const nextPosition = duration ? Number(event.target.value) : 0;
+    onMusicPlaybackChange?.({ videoId: video.id, isPlaying, position: nextPosition });
+    sendMusicControl('seek', duration ? nextPosition / duration : 0);
+  };
 
   return (
     <div className="foxy-music-conversation-player">
-      <div className="foxy-music-conversation-heading">
-        <span className="foxy-music-conversation-icon"><MdMusicNote /></span>
-        <div>
-          <strong>Lecture lancée par Foxy</strong>
-          <span>{video.title}</span>
+      <div className="foxy-music-conversation-main">
+        <img
+          className="foxy-music-conversation-cover"
+          src={video.thumbnail || BLUEFOX_LOGO}
+          alt=""
+          onError={(event) => { event.currentTarget.src = BLUEFOX_LOGO; }}
+        />
+        <div className="foxy-music-conversation-copy">
+          <div className="foxy-music-conversation-heading">
+            <span className="foxy-music-conversation-icon"><MdMusicNote /></span>
+            <div>
+              <strong>Lecture lancée par Foxy</strong>
+              <span>{video.title}</span>
+            </div>
+          </div>
+          <div className="foxy-music-conversation-progress">
+            <input type="range" min="0" max={duration || 100} step="1" value={duration ? position : 0} onChange={seek} aria-label="Position de la musique" />
+            <div><span>{formatMusicTime(position)}</span><span>{formatMusicTime(duration)}</span></div>
+          </div>
+          <div className="foxy-music-conversation-controls">
+            <button type="button" onClick={() => sendMusicControl('previous')} aria-label="Musique précédente"><MdSkipPrevious /></button>
+            {canControl && <button type="button" className="is-main" onClick={togglePlayback} aria-label={isPlaying ? 'Mettre en pause' : 'Reprendre la musique'}>{isPlaying ? <MdPause /> : <MdPlayArrow />}</button> }
+            <button type="button" onClick={() => sendMusicControl('next')} aria-label="Musique suivante"><MdSkipNext /></button>
+            <button type="button" className="foxy-music-conversation-open" onClick={() => onOpenMusic?.(video)}>Ouvrir YouTube</button>
+          </div>
         </div>
       </div>
-      <iframe
-        key={video.id}
-        src={embedUrl}
-        title={`Lecture YouTube : ${video.title}`}
-        referrerPolicy="strict-origin-when-cross-origin"
-        allow="autoplay; encrypted-media; picture-in-picture"
-        allowFullScreen        />
-      <a className="foxy-music-conversation-fallback" href={video.url} target="_blank" rel="noreferrer">
-        Ouvrir la vidéo directement sur YouTube
-      </a>
     </div>
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, onAnswer, onMusicPlayback }) => {
+const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, onAnswer, onOpenMusic, onMusicControl, musicPlayback, onMusicPlaybackChange, hasMusicTab = false, conversation, conversationKey, onConversationChange }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => Array.isArray(conversation?.messages) ? conversation.messages : []);
   const [isLoading, setIsLoading] = useState(false);
   const [showSearchProgress, setShowSearchProgress] = useState(false);
   const [searchSources, setSearchSources] = useState([]);
@@ -207,13 +256,23 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
   const [activeAction, setActiveAction] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isAnswerTyping, setIsAnswerTyping] = useState(false);
-  const [followUps, setFollowUps] = useState([]);
+  const [followUps, setFollowUps] = useState(() => Array.isArray(conversation?.followUps) ? conversation.followUps : []);
   const progressTimers = useRef([]);
   const [visibleResultCount, setVisibleResultCount] = useState(12);
 
   useEffect(() => {
     setPrompt(initialPrompt);
   }, [initialPrompt]);
+
+  useEffect(() => {
+    if (!conversation) return;
+    setMessages(Array.isArray(conversation.messages) ? conversation.messages : []);
+    setFollowUps(Array.isArray(conversation.followUps) ? conversation.followUps : []);
+  }, [conversation]);
+
+  useEffect(() => {
+    onConversationChange?.(conversationKey, { messages, followUps });
+  }, [conversationKey, followUps, messages, onConversationChange]);
 
   const clearProgressTimers = () => {
     progressTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -318,7 +377,9 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           title: result.title || musicQuery,
           channel: result.channel || 'YouTube',
           thumbnail: result.thumbnail || '',
-          url: result.url || `https://www.youtube.com/watch?v=${result.id}`
+          duration: result.duration || '',
+          url: result.url || `https://www.youtube.com/watch?v=${result.id}`,
+          youtubeUrl: `https://www.youtube.com/watch?v=${result.id}`
         };
         const answer = `Je lance **${video.title}**${video.channel ? ` de **${video.channel}**` : ''}.`;
 
@@ -328,7 +389,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           sources: [],
           music: video
         }]);
-        onMusicPlayback?.({ service: 'YouTube', title: video.title, tabTitle: 'YouTube' });
+        onOpenMusic?.(video);
         setFollowUps(['Lance une autre musique', 'Ouvre cette musique sur YouTube', 'Recherche un remix']);
       } else {
         const result = await window.electron?.askAi(question, isDocumentMode ? {
@@ -370,8 +431,8 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
   const handleTypingComplete = useCallback(() => setIsAnswerTyping(false), []);
 
   useEffect(() => {
-    setVisibleResultCount(12);
-  }, [activeView]);
+    setVisibleResultCount(sources.length || 12);
+  }, [activeView, sources.length]);
 
   const handleResultsScroll = (event) => {
     if (!['links', 'images', 'news'].includes(activeView)) return;
@@ -471,10 +532,10 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
                 <React.Fragment key={`${message.role}-${index}`}>
                   {!(message.role === 'user' && hideUserPrompts) && (
                     <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`text-[14px] leading-6 ${message.role === 'assistant' ? 'w-full max-w-[760px] py-1 text-[#3f4042]' : 'max-w-[78%] rounded-xl bg-[#f3f3f1] px-3 py-1.5 text-[13px] leading-5 text-[#292929]'}`}>
+                      <div className={`foxy-message ${message.role === 'assistant' ? 'foxy-assistant-message' : 'foxy-user-message'}`}>
                         {message.role === 'assistant' ? <>
                           <FastMarkdownMessage content={message.content} sources={message.sources} messageKey={`${message.role}-${index}`} onTypingComplete={handleTypingComplete} />
-                          {message.music && <MusicConversationPlayer video={message.music} />}
+                          {message.music && <MusicConversationPlayer video={message.music} onOpenMusic={onOpenMusic} onMusicControl={onMusicControl} musicPlayback={musicPlayback} onMusicPlaybackChange={onMusicPlaybackChange} hasMusicTab={hasMusicTab} />}
                         </> : <p className="whitespace-pre-wrap">{message.content}</p>}
                       </div>
                     </div>
@@ -498,7 +559,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
                       )}
                       {showReasoning && (
                         <div className={`foxy-reasoning-step ${isLoading ? 'foxy-reasoning-active' : 'foxy-reasoning-complete'}`}>
-                          <span className="foxy-reasoning-icon"><MdPsychology /></span>
+                          <span className="foxy-reasoning-icon"><MdLightbulbOutline /></span>
                           <p>Raisonnement</p>
                         </div>
                       )}
@@ -535,8 +596,8 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           )}
 
           {activeView === 'links' && hasConversation && (
-            <div className="space-y-1">              <p className="mb-3 text-[15px] text-[#85868a]">Résultats de recherche pour: <span className="font-medium text-[#4b4c4f]">{hideUserPrompts ? 'votre demande' : (latestUser?.content || 'votre recherche')}</span></p>
-              {sources.slice(0, visibleResultCount).map((source) => (
+            <div className="foxy-results-content space-y-1">              <p className="mb-3 text-[15px] text-[#85868a]">Résultats de recherche pour: <span className="font-medium text-[#4b4c4f]">{hideUserPrompts ? 'votre demande' : (latestUser?.content || 'votre recherche')}</span></p>
+              {sources.map((source) => (
                 <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block border-b border-[#ecebe8] py-3 first:pt-1 hover:bg-[#fcfcfa]">
                   <div className="flex items-start gap-3">
                     <img src={getFaviconUrl(source.url)} alt="" className="mt-1 h-8 w-8 shrink-0 rounded-full border border-[#e3e2df] bg-white p-1 object-contain" />
@@ -554,7 +615,7 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           )}
 
           {activeView === 'news' && hasConversation && (
-            <div className="space-y-6">
+            <div className="foxy-results-content space-y-6">
               <p className="text-sm text-[#77787b]">Actualités liées à votre recherche</p>
               {sources.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
@@ -576,10 +637,10 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           )}
 
           {activeView === 'images' && hasConversation && (
-            <div>
+            <div className="foxy-results-content">
               <p className="mb-3 text-[15px] text-[#85868a]">Résultats d’images pour : <span className="font-medium text-[#4b4c4f]">{hideUserPrompts ? 'votre demande' : (latestUser?.content || 'votre recherche')}</span></p>
               {sources.some((source) => source.image) ? (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">{imageSources.slice(0, visibleResultCount).map((source) => <a data-image-result key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block min-w-0"><img src={source.image} alt={source.title} onLoad={hideUnusableImage} onError={hideBrokenImage} loading="lazy" className="aspect-[4/3] w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.015]" /><div className="mt-1.5 flex min-w-0 items-center gap-2 text-[13px] text-[#77787b]"><img src={getFaviconUrl(source.url)} alt="" className="h-5 w-5 shrink-0 rounded-full object-contain" /><span className="truncate">{getSiteName(source.url)}</span></div></a>)}</div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">{imageSources.map((source) => <a data-image-result key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block min-w-0"><img src={source.image} alt={source.title} onLoad={hideUnusableImage} onError={hideBrokenImage} loading="lazy" className="aspect-[4/3] w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.015]" /><div className="mt-1.5 flex min-w-0 items-center gap-2 text-[13px] text-[#77787b]"><img src={getFaviconUrl(source.url)} alt="" className="h-5 w-5 shrink-0 rounded-full object-contain" /><span className="truncate">{getSiteName(source.url)}</span></div></a>)}</div>
               ) : <div className="px-5 py-10 text-center text-sm text-[#85868a]">Aucun résultat image n’a été fourni pour cette recherche.</div>}
             </div>
           )}
@@ -595,8 +656,8 @@ const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = f
           {!hasConversation && (
             <>
             <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => setPrompt('Explique-moi les actualités importantes du jour.')} className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] p-5 text-left hover:bg-[#f0f0f1]"><span className="flex items-center gap-2 text-[15px] font-medium"><MdSearch /> Demandez à Foxy</span><span className="mt-2 block text-[13px] leading-5 text-[#85868a]">Obtenez des réponses à partir de sources web récentes.</span></button>
-              <button type="button" onClick={() => setPrompt('Aide-moi à organiser mon travail.')} className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] p-5 text-left hover:bg-[#f0f0f1]"><span className="flex items-center gap-2 text-[15px] font-medium"><MdLaptop /> Accomplissez votre travail</span><span className="mt-2 block text-[13px] leading-5 text-[#85868a]">Foxy peut vous aider à préparer, comparer et organiser vos tâches.</span></button>
+              <button type="button" onClick={() => setPrompt('Explique-moi les actualités importantes du jour.')} className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] p-5 text-left hover:bg-[#f0f0f1]"><span className="flex items-center gap-2 text-[15px] font-medium"><MdSearch /> Recherche et organisation</span><span className="mt-2 block text-[13px] leading-5 text-[#85868a]">Foxy ouvre des onglets et organise vos recherches.</span></button>
+              <button type="button" onClick={() => setPrompt('Aide-moi à organiser mon travail.')} className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] p-5 text-left hover:bg-[#f0f0f1]"><span className="flex items-center gap-2 text-[15px] font-medium"><MdMusicNote /> Foxy peut lancer des musiques YouTube</span><span className="mt-2 block text-[13px] leading-5 text-[#85868a]">Foxy lance vos musiques YouTube et garde la lecture.</span></button>
             </div>
             <div className="mt-10 flex justify-center"><button type="button" className="flex items-center gap-2 rounded-full border border-[#deddd9] px-4 py-2 text-[13px] text-[#55565a] hover:bg-[#f4f3f1]"><MdSettings /> Personnaliser</button></div>
             </>

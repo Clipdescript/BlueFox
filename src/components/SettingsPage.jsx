@@ -1,16 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   MdAutoAwesome,
+  MdCleaningServices,
   MdDownload,
-  MdHistory,
+  MdKey,
+  MdManageHistory,
   MdLanguage,
   MdPalette,
+  MdAccountCircle,
   MdSearch,
   MdSecurity,
-  MdSettings,
   MdSpeed,
+  MdKeyboard,
+  MdWifi,
   MdTune,
-  MdUpdate,
+  MdSystemUpdateAlt,
+  MdToggleOn,
+  MdViewInAr,
+  MdWallet,
 } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
 import { DEFAULT_SEARCH_ENGINE_ID, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
@@ -18,6 +25,7 @@ import GeneralSettingsPage from './settings/GeneralSettingsPage.jsx';
 import AppearanceSettingsPage from './settings/AppearanceSettingsPage.jsx';
 import PrivacySettingsPage from './settings/PrivacySettingsPage.jsx';
 import HistorySettingsPage from './settings/HistorySettingsPage.jsx';
+import ClearBrowsingDataSettingsPage from './settings/ClearBrowsingDataSettingsPage.jsx';
 import SafeSearchSettingsPage from './settings/SafeSearchSettingsPage.jsx';
 import ModesSettingsPage from './settings/ModesSettingsPage.jsx';
 import FoxySettingsPage from './settings/FoxySettingsPage.jsx';
@@ -26,22 +34,33 @@ import SearchEngineSettingsPage from './settings/SearchEngineSettingsPage.jsx';
 import DownloadsSettingsPage from './settings/DownloadsSettingsPage.jsx';
 import LanguagesSettingsPage from './settings/LanguagesSettingsPage.jsx';
 import UpdatesSettingsPage from './settings/UpdatesSettingsPage.jsx';
+import ActionsSettingsPage from './settings/ActionsSettingsPage.jsx';
+import ExtensionsSettingsPage from './settings/ExtensionsSettingsPage.jsx';
+import PasswordsSettingsPage from './settings/PasswordsSettingsPage.jsx';
+import VpnSettingsPage from './settings/VpnSettingsPage.jsx';
+import WalletSettingsPage from './settings/WalletSettingsPage.jsx';
 import { InfoCard } from './settings/SettingsPrimitives.jsx';
 import '../styles/settings.css';
 
 const NAV_ITEMS = [
-  { id: 'general', label: 'BlueFox et vous', keywords: 'général navigateur réglages', icon: MdSettings },
+  { id: 'general', label: 'BlueFox et vous', keywords: 'général navigateur réglages', icon: MdAccountCircle },
   { id: 'appearance', label: 'Apparence', keywords: 'thème clair sombre système couleur', icon: MdPalette },
   { id: 'privacy', label: 'Confidentialité et sécurité', keywords: 'vie privée sécurité données', icon: MdSecurity },
-  { id: 'history', label: 'Historique', keywords: 'navigation données historique', icon: MdHistory },
+  { id: 'history', label: 'Historique', keywords: 'navigation données historique consulter visites', icon: MdManageHistory },
+  { id: 'clear-data', label: 'Effacer les données de navigation', keywords: 'supprimer effacer historique cache cookies données navigation', icon: MdCleaningServices },
   { id: 'safe-search', label: 'Safe Search', keywords: 'recherche sécurisée contenu filtrage', icon: MdSearch },
-  { id: 'modes', label: 'Modes', keywords: 'familial codage travail étude gaming concentration standard', icon: MdTune },
+  { id: 'modes', label: 'Modes', keywords: 'familial codage travail étude gaming concentration standard', icon: MdToggleOn },
   { id: 'foxy', label: 'Mode IA Foxy', keywords: 'intelligence artificielle pdf résumé écrire assistant', icon: MdAutoAwesome },
   { id: 'performance', label: 'Performances', keywords: 'vitesse mémoire onglets rapide', icon: MdSpeed },
   { id: 'search', label: 'Moteur de recherche', keywords: 'google bing qwant ecosia wikipedia perplexity navigateur', icon: MdSearch },
   { id: 'downloads', label: 'Téléchargements', keywords: 'fichiers dossier', icon: MdDownload },
+  { id: 'actions', label: 'Raccourcis clavier', keywords: 'clavier raccourcis touches ctrl contrôle actualiser nouvel onglet pdf enregistrer annuler échap', icon: MdKeyboard },
+  { id: 'extensions', label: 'Extensions', keywords: 'modules add-ons catalogue outils', icon: MdViewInAr },
+  { id: 'passwords', label: 'Mots de passe et saisie automatique', keywords: 'identifiants remplir automatiquement sécurité', icon: MdKey },
+  { id: 'vpn', label: 'VPN BlueFox', keywords: 'réseau connexion protection tunnel', icon: MdWifi },
+  { id: 'wallet', label: 'Portefeuille BlueFox', keywords: 'wallet crypto paiement récupération', icon: MdWallet },
   { id: 'languages', label: 'Langues', keywords: 'français traduction', icon: MdLanguage },
-  { id: 'updates', label: 'Mise à jour', keywords: 'version update nouvelle', icon: MdUpdate },
+  { id: 'updates', label: 'Mise à jour', keywords: 'version update nouvelle', icon: MdSystemUpdateAlt },
 ];
 
 const MODE_STORAGE_KEY = 'bluefox_browser_mode_v1';
@@ -57,11 +76,12 @@ const readBrowserHistory = () => {
   }
 };
 
-const SettingsPage = () => {
+const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindow, onNewPrivateWindow, onOpenPdf, onOpenExtensions, onQuit, discordProfile, onDiscordLogin, onDiscordLogout }) => {
   const { mode, resolvedTheme, setMode } = useTheme();
-  const [activeSection, setActiveSection] = useState('general');
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [searchQuery, setSearchQuery] = useState('');
   const [version, setVersion] = useState('—');
+  const [runtimeInfo, setRuntimeInfo] = useState(null);
   const [updateState, setUpdateState] = useState({ status: 'idle', availableVersion: '' });
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const [safeSearchEnabled, setSafeSearchEnabled] = useState(() => localStorage.getItem(SAFE_SEARCH_STORAGE_KEY) !== 'false');
@@ -72,8 +92,12 @@ const SettingsPage = () => {
   const [historyQuery, setHistoryQuery] = useState('');
 
   useEffect(() => {
-    window.electron?.getAppVersion?.().then((appVersion) => {
+    Promise.all([
+      window.electron?.getAppVersion?.(),
+      window.electron?.getRuntimeInfo?.()
+    ]).then(([appVersion, info]) => {
       if (appVersion) setVersion(appVersion);
+      if (info) setRuntimeInfo(info);
     }).catch(() => {});
   }, []);
 
@@ -112,6 +136,10 @@ const SettingsPage = () => {
   useEffect(() => {
     if (searchQuery.trim() && filteredNavItems.length > 0 && !filteredNavItems.some(({ id }) => id === activeSection)) setActiveSection(filteredNavItems[0].id);
   }, [activeSection, filteredNavItems, searchQuery]);
+
+  useEffect(() => {
+    setActiveSection(initialSection);
+  }, [initialSection]);
 
   const openDefaultBrowserSettings = async () => {
     await window.electron?.openDefaultBrowserSettings?.();
@@ -171,25 +199,31 @@ const SettingsPage = () => {
       case 'appearance': return <AppearanceSettingsPage mode={mode} resolvedTheme={resolvedTheme} onSetMode={setMode} />;
       case 'privacy': return <PrivacySettingsPage />;
       case 'history': return <HistorySettingsPage history={browserHistory} query={historyQuery} onQueryChange={setHistoryQuery} onClear={clearBrowserHistory} onRemove={removeHistoryEntry} />;
+      case 'clear-data': return <ClearBrowsingDataSettingsPage historyCount={browserHistory.length} onClear={clearBrowserHistory} />;
       case 'safe-search': return <SafeSearchSettingsPage enabled={safeSearchEnabled} onToggle={toggleSafeSearch} />;
       case 'modes': return <ModesSettingsPage selectedMode={selectedMode} onSelect={chooseMode} />;
       case 'foxy': return <FoxySettingsPage enabled={foxyEnabled} onToggle={toggleFoxy} />;
       case 'performance': return <PerformanceSettingsPage />;
+      case 'actions': return <ActionsSettingsPage onQuit={onQuit || (() => window.electron?.close?.())} onPrint={onPrint} onNewWindow={onNewWindow} onNewPrivateWindow={onNewPrivateWindow} onOpenPdf={onOpenPdf} />;
+      case 'extensions': return <ExtensionsSettingsPage onOpenExtensions={onOpenExtensions} />;
+      case 'passwords': return <PasswordsSettingsPage />;
+      case 'vpn': return <VpnSettingsPage />;
+      case 'wallet': return <WalletSettingsPage />;
       case 'search': return <SearchEngineSettingsPage selectedEngineId={searchEngineId} onSelect={selectSearchEngine} />;
       case 'downloads': return <DownloadsSettingsPage />;
       case 'languages': return <LanguagesSettingsPage />;
-      case 'updates': return <UpdatesSettingsPage version={version} updateState={updateState} onCheck={checkForUpdates} />;
+      case 'updates': return <UpdatesSettingsPage version={version} updateState={updateState} onCheck={checkForUpdates} runtimeInfo={runtimeInfo} />;
       case 'general':
-      default: return <GeneralSettingsPage defaultBrowserState={defaultBrowserState} onOpenDefaultBrowserSettings={openDefaultBrowserSettings} />;
+      default: return <GeneralSettingsPage defaultBrowserState={defaultBrowserState} onOpenDefaultBrowserSettings={openDefaultBrowserSettings} discordProfile={discordProfile} onDiscordLogin={onDiscordLogin} onDiscordLogout={onDiscordLogout} />;
     }
   };
 
   return (
     <div className="bluefox-settings-page">
       <aside className="bluefox-settings-sidebar">
-        <div className="bluefox-settings-brand"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" /><h1>Paramètres</h1></div>
+        <div className="bluefox-settings-brand"><MdTune className="h-[34px] w-[34px] shrink-0 text-[#137b8b]" aria-hidden="true" /><h1>Paramètres</h1></div>
         <nav className="bluefox-settings-nav" aria-label="Catégories des paramètres">
-          {filteredNavItems.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveSection(id)} className={`bluefox-settings-nav-item ${activeSection === id ? 'is-active' : ''}`} aria-current={activeSection === id ? 'page' : undefined}><Icon aria-hidden="true" /><span>{label}</span></button>)}
+          {filteredNavItems.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveSection(id)} className={`bluefox-settings-nav-item ${activeSection === id ? 'is-active' : ''}`} aria-current={activeSection === id ? 'page' : undefined}>{id === 'general' && discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="bluefox-settings-nav-avatar" /> : <Icon aria-hidden="true" />}<span>{label}</span></button>)}
         </nav>
       </aside>
       <div className="bluefox-settings-content">
