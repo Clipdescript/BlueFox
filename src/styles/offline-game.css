@@ -1,0 +1,163 @@
+.bluefox-offline-page {
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  padding: 16px 0 0;
+  color: #17151d;
+  background: #fff;
+}
+
+.bluefox-offline-redirect {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0 20px;
+  color: #6f6878;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.bluefox-offline-redirect code {
+  display: block;
+  width: min(100%, 760px);
+  overflow: hidden;
+  color: #7346bc;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bluefox-offline-header {
+  width: 100%;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 20px 13px;
+  border-bottom: 1px solid #e7e1ef;
+  text-align: center;
+}
+
+.bluefox-offline-header h1 {
+  margin: 0;
+  color: #17151d;
+  font-size: clamp(25px, 3vw, 36px);
+  font-weight: 760;
+  letter-spacing: -.055em;
+  line-height: 1.05;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-offline-header h1 span,
+:root[data-theme='dark'] .bluefox-app .bluefox-offline-header h1 span {
+  color: #7346bc !important;
+  -webkit-text-fill-color: #7346bc !important;
+}
+
+.bluefox-offline-subtitle { margin: 5px 0 0; color: #77717e; font-size: 12px; line-height: 1.5; }
+
+.bluefox-offline-actions { display: flex; flex: 0 0 auto; gap: 9px; margin-top: 18px; }
+
+.bluefox-offline-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bluefox-offline-primary { color: #fff !important; border: 1px solid #7346bc; background: #7346bc; }
+.bluefox-offline-primary:hover { background: #6035a6; }
+.bluefox-offline-secondary { color: #514b59 !important; border: 1px solid #ded9e7; background: #fff; }
+.bluefox-offline-secondary:hover { color: #7346bc !important; border-color: #cdb9e8; background: #fbf9ff; }
+
+.bluefox-offline-url {
+  width: min(600px, 100%);
+  margin: 12px auto 0;
+  overflow: hidden;
+  color: #938d99;
+  font-size: 11px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bluefox-offline-tetris-heading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  margin-top: 18px;
+  padding: 0 20px;
+  color: #7346bc;
+  font-size: 12px;
+}
+
+.bluefox-offline-tetris-heading strong { color: #7346bc !important; }
+
+.bluefox-offline-tetris-heading button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7346bc !important;
+  cursor: pointer;
+}
+
+.bluefox-offline-tetris-heading button:hover { background: #f1e8fb; }
+.bluefox-offline-tetris-heading button svg { font-size: 20px; }
+
+.bluefox-offline-tetris-stage {
+  display: flex;
+  width: min(100%, 440px);
+  min-height: 0;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10px;
+  overflow: hidden;
+}
+
+.bluefox-offline-tetris-stage canvas {
+  display: block;
+  width: min(100%, 360px);
+  height: auto;
+  max-height: 100%;
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+
+:root[data-theme='dark'] .bluefox-offline-page { color: #f5f1f8; background: #15131a; }
+:root[data-theme='dark'] .bluefox-offline-redirect { color: #b8aabe; }
+:root[data-theme='dark'] .bluefox-offline-redirect code { color: #c59aef; }
+:root[data-theme='dark'] .bluefox-offline-header { border-color: #33283e; }
+:root[data-theme='dark'] .bluefox-offline-header h1 { color: #f5f1f8; }
+:root[data-theme='dark'] .bluefox-offline-subtitle { color: #aaa2b5; }
+:root[data-theme='dark'] .bluefox-offline-secondary { color: #e6deef !important; border-color: #44394f; background: transparent; }
+:root[data-theme='dark'] .bluefox-offline-secondary:hover { background: #28202f; }
+:root[data-theme='dark'] .bluefox-offline-url { color: #928899; }
+:root[data-theme='dark'] .bluefox-offline-tetris-heading button { background: transparent; color: #c59aef !important; }
+
+@media (max-width: 760px) {
+  .bluefox-offline-page { padding: 12px 0 0; }
+  .bluefox-offline-redirect { padding-right: 12px; padding-left: 12px; }
+  .bluefox-offline-header { padding-right: 12px; padding-left: 12px; }
+  .bluefox-offline-header h1 { font-size: clamp(28px, 9vw, 42px); }
+  .bluefox-offline-tetris-stage { width: 100%; }
+}
+
+.bluefox-offline-page:fullscreen { padding-top: 24px; background: #fff; }
+.bluefox-offline-page:fullscreen .bluefox-offline-tetris-stage canvas { width: min(42vh, 440px); }

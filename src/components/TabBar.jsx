@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdMusicNote, MdPictureAsPdf, MdPublic, MdSettingsSuggest } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdGamepad, MdPictureAsPdf, MdPublic, MdSettings } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
@@ -53,10 +53,10 @@ const TabVisual = ({
     style={{ '--bluefox-tab-color-value': tabColor }}
   >
     <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
-      {tab.isSettings ? (
-        <MdSettingsSuggest className="h-full w-full text-[#137b8b]" aria-hidden="true" />
-      ) : tab.isMusic ? (
-        <MdMusicNote className="bluefox-tab-music-icon h-full w-full" />
+      {tab.isGame || tab.offlineFallback ? (
+        <MdGamepad className="bluefox-tab-game-icon h-full w-full text-[#7346bc]" aria-label="Jeu hors ligne" />
+      ) : tab.isSettings ? (
+        <MdSettings className="h-full w-full text-[#137b8b]" aria-hidden="true" />
       ) : tab.isPdf ? (
         <MdPictureAsPdf className="h-full w-full text-[#d14b4b]" aria-label="Document PDF" />
       ) : tab.url && tab.favicon && !faviconError ? (
@@ -76,9 +76,11 @@ const TabVisual = ({
     </div>
 
     <span className="bluefox-tab-title flex-1 truncate text-[12px] font-normal">
-      {tab.isSettings
-        ? 'Paramètres'
-        : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
+      {tab.isGame
+        ? 'Tetris'
+        : tab.isSettings
+          ? 'Paramètres'
+          : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
     </span>
 
     {!isPreview && (

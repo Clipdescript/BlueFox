@@ -3,20 +3,36 @@ import { SidebarPanel } from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
-import { MdClose, MdMusicNote, MdSearch } from 'react-icons/md';
+import { MdClose, MdMusicNote, MdPublic, MdSearch } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
+import './styles/music.css';
+import { buildSearchUrl, DEFAULT_SEARCH_ENGINE_ID, extractSearchQuery, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from './utils/searchEngines.js';
 
-const MusicPage = React.lazy(() => import('./components/MusicPage'));
 const SettingsPage = React.lazy(() => import('./components/SettingsPage'));
 const PersonalizationPanel = React.lazy(() => import('./components/PersonalizationPanel'));
 const AiPage = React.lazy(() => import('./components/AiPage'));
 const AiSidebar = React.lazy(() => import('./components/AiSidebar'));
 const PdfEditor = React.lazy(() => import('./components/PdfEditor'));
+const OfflineGame = React.lazy(() => import('./components/OfflineGame'));
 const SETTINGS_URL = 'bluefox://parametres';
+const BROWSER_HISTORY_STORAGE_KEY = 'bluefox_history';
+
+const readBrowserHistory = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(BROWSER_HISTORY_STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
 
 // Local development servers commonly omit a domain suffix (for example,
 // "localhost:3000"). Treat them as addresses rather than search queries.
 const isLocalDevelopmentAddress = (value) => /^(?:https?:\/\/)?(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\])(?::\d{1,5})?(?:[/?#].*)?$/i.test(value);
+const isNetworkLoadError = (event) => {
+  const networkErrorCodes = new Set([-7, -105, -106, -102, -118, -100, -109]);
+  return networkErrorCodes.has(Number(event?.errorCode)) || /internet|network|name_not_resolved|timed_out|connection/i.test(String(event?.errorDescription || ''));
+};
 
 const createSettingsTab = () => ({
   id: Date.now(),
@@ -25,7 +41,19 @@ const createSettingsTab = () => ({
   isSearching: false,
   isAi: false,
   isSettings: true,
-  isMusic: false,
+  isGame: false,
+  favicon: '',
+  isLoading: false
+});
+
+const createGameTab = () => ({
+  id: Date.now(),
+  title: 'Tetris',
+  url: 'bluefox://tetris',
+  isSearching: false,
+  isAi: false,
+  isSettings: false,
+  isGame: true,
   favicon: '',
   isLoading: false
 });
@@ -46,13 +74,14 @@ function App() {
   const savedTabs = hasCleanStartup ? localStorage.getItem('bluefox_tabs') : null;
   const savedActiveId = hasCleanStartup ? localStorage.getItem('bluefox_active_tab_id') : null;
   const restoredTabs = savedTabs
-    ? JSON.parse(savedTabs).map((tab) => ({
+    ? JSON.parse(savedTabs).filter((tab) => !tab.isMusic).map((tab) => ({
         ...tab,
         initialUrl: tab.initialUrl || tab.url,
         isAi: Boolean(tab.isAi || (!tab.isSearching && tab.title === 'Foxy IA')),
         isPdf: Boolean(tab.isPdf),
         pdfPath: tab.pdfPath || '',
-        isSettings: Boolean(tab.isSettings || tab.url === SETTINGS_URL || tab.title === 'Paramètres')
+        isSettings: Boolean(tab.isSettings || tab.url === SETTINGS_URL || tab.title === 'Paramètres'),
+        isGame: Boolean(tab.isGame || tab.url === 'bluefox://tetris' || tab.url === 'bluefox://chrome-dino' || tab.title === 'Tetris' || tab.title === 'Chrome Dino' || tab.title === 'Dig Dug')
       }))
     : [];
   const initialTabs = restoredTabs.length > 0 ? restoredTabs : [createHomeTab()];
@@ -65,6 +94,8 @@ function App() {
       : initialTabs[0]?.id ?? null
   ));
   const [isAiMode, setIsAiMode] = useState(false);
+  const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
+  const [safeSearchEnabled, setSafeSearchEnabled] = useState(() => localStorage.getItem(SAFE_SEARCH_STORAGE_KEY) !== 'false');
   const [aiInitialPrompt, setAiInitialPrompt] = useState('');
   const [aiSidebarTabs, setAiSidebarTabs] = useState({});
   const [isSpotifyOpen, setIsSpotifyOpen] = useState(false);
@@ -89,20 +120,145 @@ function App() {
   const waWebviewRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(() => Boolean(initialTabs.find((tab) => tab.id === activeTabId)?.isSettings));
-  // BlueFox never stores browsing history.
-  const [history] = useState([]);
+  const [history, setHistory] = useState(readBrowserHistory);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [connectionNotice, setConnectionNotice] = useState(null);
+  const connectionNoticeTimerRef = useRef(null);
+  const connectionStatusRef = useRef(navigator.onLine);
   const [zoomFactor, setZoomFactor] = useState(1);
   const [activeSidebarApps, setActiveSidebarApps] = useState(new Set());
   const [tabColor, setTabColor] = useState(() => localStorage.getItem('bluefox_home_tab_color_v1') || (resolvedTheme === 'dark' ? '#1d2026' : '#f3f2f0'));
-  // Clear legacy history and ignore previously saved tabs on the first clean startup.
+  // Keep the clean-startup migration for tabs, but preserve the real browsing history.
   useEffect(() => {
-     localStorage.removeItem('bluefox_history');
      if (!hasCleanStartup) {
          localStorage.removeItem('bluefox_tabs');
          localStorage.removeItem('bluefox_active_tab_id');
          localStorage.setItem('bluefox_clean_startup_v1', 'true');
      }
   }, [hasCleanStartup]);
+
+  const recordHistoryVisit = useCallback((entry) => {
+    if (!entry?.url || !String(entry.url).startsWith('http')) return;
+    setHistory((currentHistory) => {
+      const nextEntry = {
+        id: `${Date.now()}-${entry.url}`,
+        url: entry.url,
+        title: entry.title && !String(entry.title).startsWith('http') ? entry.title : '',
+        favicon: entry.favicon || '',
+        timestamp: Date.now(),
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      };
+      const nextHistory = [nextEntry, ...currentHistory.filter((item) => item.url !== nextEntry.url)].slice(0, 500);
+      localStorage.setItem(BROWSER_HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+      window.dispatchEvent(new CustomEvent('bluefox-history-changed'));
+      return nextHistory;
+    });
+  }, []);
+
+  const updateHistoryEntry = useCallback((entry) => {
+    if (!entry?.url) return;
+    setHistory((currentHistory) => {
+      let changed = false;
+      const nextHistory = currentHistory.map((item) => {
+        if (item.url !== entry.url) return item;
+        changed = true;
+        return {
+          ...item,
+          title: entry.title && !String(entry.title).startsWith('http') ? entry.title : item.title,
+          favicon: entry.favicon || item.favicon
+        };
+      });
+      if (!changed) return currentHistory;
+      localStorage.setItem(BROWSER_HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+      window.dispatchEvent(new CustomEvent('bluefox-history-changed'));
+      return nextHistory;
+    });
+  }, []);
+
+  const showConnectionNotice = useCallback((status) => {
+    if (connectionNoticeTimerRef.current) window.clearTimeout(connectionNoticeTimerRef.current);
+    setConnectionNotice({ status, id: Date.now() });
+    connectionNoticeTimerRef.current = window.setTimeout(() => {
+      setConnectionNotice(null);
+      connectionNoticeTimerRef.current = null;
+    }, 9000);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let requestTimeout;
+
+    const publishConnectionStatus = (nextStatus) => {
+      if (cancelled || connectionStatusRef.current === nextStatus) return;
+      connectionStatusRef.current = nextStatus;
+      setIsOnline(nextStatus);
+      showConnectionNotice(nextStatus ? 'online' : 'offline');
+    };
+
+    const checkConnection = async () => {
+      let connected = navigator.onLine;
+      if (connected) {
+        const controller = new AbortController();
+        requestTimeout = window.setTimeout(() => controller.abort(), 2500);
+        try {
+          await fetch('https://www.gstatic.com/generate_204', {
+            cache: 'no-store',
+            mode: 'no-cors',
+            signal: controller.signal
+          });
+        } catch {
+          connected = false;
+        } finally {
+          window.clearTimeout(requestTimeout);
+        }
+      }
+      publishConnectionStatus(connected);
+    };
+
+    const handleOnline = () => publishConnectionStatus(true);
+    const handleOffline = () => publishConnectionStatus(false);
+    const interval = window.setInterval(checkConnection, 4000);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    if (!navigator.onLine) showConnectionNotice('offline');
+    checkConnection();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.clearTimeout(requestTimeout);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (connectionNoticeTimerRef.current) window.clearTimeout(connectionNoticeTimerRef.current);
+    };
+  }, [showConnectionNotice]);
+
+  useEffect(() => {
+    const handleHistoryChanged = () => setHistory(readBrowserHistory());
+    const handleSearchEngineChange = (event) => {
+      const nextEngineId = event.detail || DEFAULT_SEARCH_ENGINE_ID;
+      const safeSearch = localStorage.getItem(SAFE_SEARCH_STORAGE_KEY) !== 'false';
+      setSearchEngineId(nextEngineId);
+      setTabs((currentTabs) => currentTabs.map((tab) => {
+        if (!tab.isSearching) return tab;
+        const query = extractSearchQuery(tab.url || tab.initialUrl || '');
+        if (!query) return tab;
+        const nextUrl = buildSearchUrl(nextEngineId, query, safeSearch);
+        return { ...tab, url: nextUrl, initialUrl: nextUrl, title: query, isLoading: true, loadCount: (tab.loadCount || 0) + 1 };
+      }));
+    };
+    const handleSafeSearchChange = (event) => {
+      setSafeSearchEnabled(event.detail !== false);
+    };
+    window.addEventListener('bluefox-history-changed', handleHistoryChanged);
+    window.addEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+    window.addEventListener('bluefox-safe-search-changed', handleSafeSearchChange);
+    return () => {
+      window.removeEventListener('bluefox-history-changed', handleHistoryChanged);
+      window.removeEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+      window.removeEventListener('bluefox-safe-search-changed', handleSafeSearchChange);
+    };
+  }, []);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -221,8 +377,8 @@ function App() {
         localStorage.removeItem('bluefox_active_tab_id');
         return;
     }
-    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isPdf, pdfPath, isSettings, isMusic }) => ({
-        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isPdf: Boolean(isPdf), ...(isPdf && pdfPath ? { pdfPath } : {}), isSettings: Boolean(isSettings), isMusic: Boolean(isMusic), isLoading: false
+    const tabsToSave = tabs.map(({ id, title, url, isSearching, favicon, isAi, isPdf, pdfPath, isSettings, isGame }) => ({
+        id, title, url, isSearching, favicon, isAi: Boolean(isAi), isPdf: Boolean(isPdf), ...(isPdf && pdfPath ? { pdfPath } : {}), isSettings: Boolean(isSettings), isGame: Boolean(isGame), isLoading: false
     }));
     localStorage.setItem('bluefox_tabs', JSON.stringify(tabsToSave));
     if (activeTabId !== null) {
@@ -233,7 +389,7 @@ function App() {
   const handleModeChange = useCallback((nextMode) => {
     setIsAiMode(nextMode);
     setTabs((currentTabs) => currentTabs.map((tab) => {
-      if (tab.id !== activeTabId || tab.isSearching || tab.isMusic) return tab;
+      if (tab.id !== activeTabId || tab.isSearching) return tab;
       const nextTitle = nextMode ? 'Foxy IA' : 'Accès rapide';
       return tab.isAi === nextMode && tab.title === nextTitle
         ? tab
@@ -245,17 +401,24 @@ function App() {
     setIsSettingsOpen(false);
     setIsAiMode(false);
     const newId = Date.now();
-    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', initialUrl: '', isSearching: false, isAi: false, isMusic: false, favicon: '', isLoading: false }]);
+    setTabs(prev => [...prev, { id: newId, title: 'Accès rapide', url: '', initialUrl: '', isSearching: false, isAi: false, isGame: false, favicon: '', isLoading: false }]);
     setActiveTabId(newId);
   }, []);
 
-  const handleMusicTab = useCallback(() => {
+  const handleOpenGame = useCallback(() => {
+    const existingGameTab = tabs.find((tab) => tab.isGame);
+    if (existingGameTab) {
+      setActiveTabId(existingGameTab.id);
+      setIsSettingsOpen(false);
+      setIsAiMode(false);
+      return;
+    }
+    const gameTab = createGameTab();
+    setTabs((currentTabs) => [...currentTabs, gameTab]);
+    setActiveTabId(gameTab.id);
     setIsSettingsOpen(false);
-    const newId = Date.now();
     setIsAiMode(false);
-    setTabs(prev => [...prev, { id: newId, title: 'BlueMusic', url: '', initialUrl: '', isSearching: false, isAi: false, isMusic: true, favicon: '', isLoading: false }]);
-    setActiveTabId(newId);
-  }, []);
+  }, [tabs]);
 
   const handleMusicPlaybackChange = useCallback((tabId, playback) => {
     setMusicPlayback((currentPlayback) => {
@@ -345,13 +508,13 @@ function App() {
       return;
     }
     if (isSearchQuery) {
-      url = `https://www.google.com/search?q=${encodeURIComponent(url)}&safe=active`;
+      url = buildSearchUrl(searchEngineId, url, safeSearchEnabled);
     } else if (!/^https?:\/\//i.test(url)) {
       // Dev servers generally expose HTTP, whereas public hosts default to HTTPS.
       url = `${isLocalAddress ? 'http' : 'https'}://${url}`;
     }
 
-    const tab = { id: Date.now(), title: query, url, initialUrl: url, isSearching: true, favicon: '', isLoading: true, loadCount: 0 };
+    const tab = { id: Date.now(), title: query, url, initialUrl: url, isSearching: true, favicon: '', isLoading: true, offlineFallback: !navigator.onLine, loadCount: 0 };
     if (activeTabId === null) {
       setTabs([tab]);
       setActiveTabId(tab.id);
@@ -359,10 +522,10 @@ function App() {
     }
 
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isPdf: false, isSettings: false, isMusic: false, title: query, favicon: '', isLoading: true, loadCount: (t.loadCount || 0) + 1 }
+      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isPdf: false, isSettings: false, isGame: false, title: query, favicon: '', isLoading: true, offlineFallback: !navigator.onLine, loadCount: (t.loadCount || 0) + 1 }
         : t
     ));
-  }, [activeTabId, isAiMode, tabs]);
+  }, [activeTabId, isAiMode, safeSearchEnabled, searchEngineId, tabs]);
 
   const handleAssistantToggle = useCallback(() => {
     if (activeTabId === null) return;
@@ -399,8 +562,7 @@ function App() {
       pdfPath: pdf.filePath || '',
       pdfFile: pdf,
       isAi: false,
-      isMusic: false,
-      favicon: '',
+          favicon: '',
       isLoading: true
     }]);
     setActiveTabId(id);
@@ -432,7 +594,8 @@ function App() {
       isPdf: false,
       isAi: false,
       favicon: '',
-      isLoading: true
+      isLoading: true,
+      offlineFallback: !navigator.onLine
     }]);
     setActiveTabId(id);
   }, []);
@@ -462,12 +625,23 @@ function App() {
   const goHome = useCallback(() => {
      setTabs(prev => prev.map(t => 
         t.id === activeTabId 
-          ? { ...t, url: '', isSearching: false, isPdf: false, isSettings: false, isMusic: false, title: 'Accès rapide', favicon: '', isLoading: false }
+          ? { ...t, url: '', isSearching: false, isPdf: false, isSettings: false, isGame: false, title: 'Accès rapide', favicon: '', isLoading: false, offlineFallback: false }
           : t
       ));
   }, [activeTabId]);
 
+  const handleOfflineRetry = useCallback(() => {
+    setTabs((currentTabs) => currentTabs.map((tab) => tab.id === activeTabId
+      ? { ...tab, offlineFallback: false, isLoading: true, loadCount: (tab.loadCount || 0) + 1 }
+      : tab));
+  }, [activeTabId]);
+
   const handleReload = useCallback(() => {
+    const activeTabForReload = tabs.find((tab) => tab.id === activeTabId);
+    if (activeTabForReload?.offlineFallback) {
+      handleOfflineRetry();
+      return;
+    }
     const webview = webviewRefs.current[activeTabId];
     if (webview) {
       try {
@@ -482,7 +656,7 @@ function App() {
         setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, loadCount: (t.loadCount || 0) + 1 } : t));
       }
     }
-  }, [activeTabId]);
+  }, [activeTabId, handleOfflineRetry, tabs]);
 
   const handlePrint = useCallback(() => {
     const webview = webviewRefs.current[activeTabId];
@@ -524,26 +698,18 @@ function App() {
                   const lastUpdate = lastUpdateRef.current[tab.id] || 0;
                   
                   // Throttle updates to once every 2000ms for title/URL state to prevent flickering
-                  // But we allow the webview to handle its own internal navigation
                   if (now - lastUpdate < 2000) return;
                   lastUpdateRef.current[tab.id] = now;
+                  const newTitle = tab.isPdf ? tab.title : webview.getTitle();
+                  const newUrl = tab.isPdf ? tab.url : webview.getURL();
 
                   setTabs(prev => prev.map(t => {
-                      if (t.id === tab.id) {
-                          const newTitle = t.isPdf ? t.title : webview.getTitle();
-                          const newUrl = t.isPdf ? t.url : webview.getURL();
-                          
-                          // CRITICAL: Only update state title/url, do NOT let this trigger a re-render of webview src
-                          if (t.title !== newTitle || t.url !== newUrl) {
-                              return { 
-                                  ...t, 
-                                  title: newTitle,
-                                  url: newUrl
-                              };
-                          }
+                      if (t.id === tab.id && (t.title !== newTitle || t.url !== newUrl)) {
+                          return { ...t, title: newTitle, url: newUrl };
                       }
                       return t;
                   }));
+                  if (!tab.isSettings && !tab.isPdf) updateHistoryEntry({ url: newUrl, title: newTitle });
               };
 
               const setLoading = (loading) => {
@@ -559,6 +725,10 @@ function App() {
               webview.addEventListener('did-fail-load', (e) => {
                   // Ignore harmless aborts and common errors
                   if (e.errorCode !== -3) {
+                      const shouldShowOfflineGame = !navigator.onLine || isNetworkLoadError(e);
+                      setTabs(prev => prev.map(t => t.id === tab.id
+                        ? { ...t, isLoading: false, offlineFallback: shouldShowOfflineGame }
+                        : t));
                       setLoading(false);
                       console.log('Webview load failed:', e.errorCode, e.errorDescription);
                   }
@@ -572,6 +742,7 @@ function App() {
                        }
                        return t;
                    }));
+                   if (!tab.isSettings && !tab.isPdf) recordHistoryVisit({ url: event.url, title: tab.title, favicon: tab.favicon });
               };
 
               webview.addEventListener('did-navigate', updateNavigatedUrl);
@@ -581,11 +752,12 @@ function App() {
               webview.addEventListener('page-favicon-updated', (e) => {
                   if (e.favicons && e.favicons.length > 0) {
                       setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, favicon: e.favicons[0] } : t));
+                      if (!tab.isSettings && !tab.isPdf) updateHistoryEntry({ url: webview.getURL(), favicon: e.favicons[0] });
                   }
               });
           }
       });
-  }, [tabs]);
+  }, [recordHistoryVisit, tabs, updateHistoryEntry]);
 
   useEffect(() => {
     const w = ytWebviewRef.current;
@@ -749,6 +921,16 @@ function App() {
 
   return (
     <div className="bluefox-app relative flex h-screen w-screen overflow-hidden border border-[#d7d7dc] bg-[#f7f7f9] text-[#202124]">
+      {connectionNotice && (
+        <div key={connectionNotice.id} className={`bluefox-connection-notice is-${connectionNotice.status}`} role="status" aria-live="polite">
+          <MdPublic aria-hidden="true" style={{ color: '#ffffff', fill: '#ffffff' }} />
+          <span>
+            {connectionNotice.status === 'offline'
+              ? 'Vous êtes hors ligne — Erreur réseau : ERR_INTERNET_DISCONNECTED. Vérifiez votre connexion Internet pour reprendre votre navigation.'
+              : 'Vous êtes en ligne — Connexion Internet rétablie. Vous pouvez reprendre votre navigation.'}
+          </span>
+        </div>
+      )}
       {/* Spotify Sidebar Panel (Persistent Webview) */}
       <SidebarPanel title="Spotify" isOpen={isSpotifyOpen} onClose={() => setIsSpotifyOpen(false)}>
          {/* Persistent Webview for Spotify - Loaded only when activated once */}
@@ -1028,13 +1210,15 @@ function App() {
             onSearch={handleSearch}
             onAssistant={handleAssistantToggle}
             onSettings={handleSettingsOpen}
-            onMusicOpen={handleMusicTab}
             onModeChange={handleModeChange}
             showHomeButton={Boolean(activeTab?.isSearching) && !isAiMode && !isSettingsOpen}
             onHome={goHome}
             isAssistantActive={isAiSidebarVisible}
-            currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.url || ''}
+            currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.isGame ? 'bluefox://tetris' : activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
+            isGame={Boolean(activeTab?.isGame)}
+            isOfflineFallback={Boolean(activeTab?.offlineFallback || (!isOnline && activeTab?.isLoading))}
+            onPlayGame={handleOpenGame}
             isAiMode={isAiMode}
             isSettingsOpen={isSettingsOpen}
             onReload={handleReload}
@@ -1053,13 +1237,19 @@ function App() {
           className="relative flex-1 overflow-hidden bg-white transition-[margin-right] duration-300 ease-out"
           style={{ marginRight: (isAiSidebarVisible || isPersonalizationOpen) && !isCompactLayout ? 'min(560px, 100vw)' : '0px' }}
         >
-           {tabs.map(tab => (!shouldMountBackgroundTabs && tab.id !== activeTabId && !tab.isMusic ? null : (
+           {tabs.map(tab => (!shouldMountBackgroundTabs && tab.id !== activeTabId ? null : (
                <div 
                 key={tab.id} 
                 className={`absolute inset-0 w-full h-full ${tab.id === activeTabId ? 'z-10 visible' : 'z-0 invisible'}`}
                 style={{ visibility: tab.id === activeTabId ? 'visible' : 'hidden' }}
                >
-                   {tab.isSettings ? (
+                   {tab.isGame ? (
+                       tab.id === activeTabId ? (
+                         <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Tetris…</div>}>
+                           <OfflineGame standalone />
+                         </Suspense>
+                       ) : null
+                   ) : tab.isSettings ? (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement des paramètres…</div>}>
                          <SettingsPage onClose={handleSettingsClose} />
                        </Suspense>
@@ -1072,33 +1262,32 @@ function App() {
                          />
                        </Suspense>
                    ) : tab.isSearching ? (
-                        !tab.hibernated ? (
-                            <webview 
-                                key={`${tab.id}-${tab.loadCount || 0}`}
-                                ref={el => {
-                                  webviewRefs.current[tab.id] = el;
-                                }}
-                                src={tab.initialUrl || tab.url} 
-                                className="w-full h-full"
-                                useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-                            />
+                        (tab.offlineFallback || (!isOnline && tab.isLoading)) ? (
+                          tab.id === activeTabId ? (
+                            <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">Chargement du mini-jeu hors ligne…</div>}>
+                              <OfflineGame attemptedUrl={tab.url} onRetry={handleOfflineRetry} onGoHome={goHome} />
+                            </Suspense>
+                          ) : null
+                        ) : !tab.hibernated ? (
+                          <webview
+                              key={`${tab.id}-${tab.loadCount || 0}`}
+                              ref={el => {
+                                webviewRefs.current[tab.id] = el;
+                              }}
+                              src={tab.initialUrl || tab.url}
+                              className="w-full h-full"
+                              useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+                          />
                         ) : (
-                            <div className="flex h-full w-full flex-col items-center justify-center bg-[#f4f4f6] text-[#73737d]">
-                                <p className="text-lg font-medium mb-2">Onglet en veille</p>
-                                <p className="text-sm">Cliquez pour réactiver</p>
-                            </div>
+                          <div className="flex h-full w-full flex-col items-center justify-center bg-[#f4f4f6] text-[#73737d]">
+                              <p className="text-lg font-medium mb-2">Onglet en veille</p>
+                              <p className="text-sm">Cliquez pour réactiver</p>
+                          </div>
                         )
-                   ) : tab.isMusic ? (
-                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de BlueMusic…</div>}>
-                         <MusicPage
-                           musicTabId={tab.id}
-                           onPlaybackChange={handleMusicPlaybackChange}
-                         />
-                       </Suspense>
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts hideModeSwitch hideThemeToggle onMusicOpen={handleMusicTab} onMusicPlayback={handleAiMusicPlayback} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideUserPrompts hideModeSwitch hideThemeToggle onMusicPlayback={handleAiMusicPlayback} />
                          ) : (
                            <SpeedDial onNavigate={handleSearch} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={isPersonalizationOpen} onPersonalizationChange={setIsPersonalizationOpen} homeBackground={homeBackground} />
                          )}
@@ -1171,6 +1360,7 @@ function App() {
              />
            )}
         </main>
+
       </div>
 
       {isAiSidebarVisible && (

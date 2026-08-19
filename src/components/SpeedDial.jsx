@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { MdApps, MdClose, MdPalette, MdSearch } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
+import { useTheme } from '../utils/theme.js';
+import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
-const GOOGLE_SEARCH_ICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
 const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
 const NEWS_CACHE_MAX_AGE = 15 * 60 * 1000;
 const NEWS_MAX_AGE = 36 * 60 * 60 * 1000;
@@ -179,8 +180,8 @@ const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
   const domain = title;
 
   return (
-    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="bluefox-home-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
-      <span className="bluefox-home-favorite-icon flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
+    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="bluefox-home-favorite-tile bluefox-image-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
+      <span className="bluefox-home-favorite-icon bluefox-image-favorite-icon flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
         <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
@@ -203,15 +204,17 @@ const SuggestionCard = ({ article }) => (
       </span>
     </div>
     <div className="absolute right-2.5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[6px] border border-[#e1e1e4] bg-white p-1.5">
-      {article.image ? <img src={article.image} alt="" loading="lazy" onError={hideArticleImage} className="h-full w-full rounded-[4px] object-cover" /> : <span className="text-xl font-semibold text-[#9b9ca1]">{article.source?.charAt(0).toUpperCase()}</span>}
+      {article.image ? <img src={article.image} alt="" loading="lazy" onError={hideArticleImage} className="h-full w-full rounded-[4px] object-cover" /> : <img src={article.logo || getFaviconUrl(article.link)} alt={article.source || ''} className="h-8 w-8 object-contain" onError={hideArticleImage} />}
     </div>
   </a>
 );
 
 const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
+  const { resolvedTheme } = useTheme();
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [homeSearch, setHomeSearch] = useState('');
   const [homeSearchSuggestions, setHomeSearchSuggestions] = useState([]);
+  const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const [isHomeSearchFocused, setIsHomeSearchFocused] = useState(false);
   const [homeSearchFocusOffset, setHomeSearchFocusOffset] = useState(12);
   const [articles, setArticles] = useState([]);
@@ -279,6 +282,14 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
     document.addEventListener('pointerdown', handleHomeSearchOutsidePointerDown);
     return () => document.removeEventListener('pointerdown', handleHomeSearchOutsidePointerDown);
   }, [isHomeSearchFocused]);
+
+  useEffect(() => {
+    const handleSearchEngineChange = (event) => {
+      setSearchEngineId(event.detail || DEFAULT_SEARCH_ENGINE_ID);
+    };
+    window.addEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+    return () => window.removeEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+  }, []);
 
   useEffect(() => {
     const query = homeSearch.trim();
@@ -477,6 +488,8 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
   const homeSearchResults = homeSearchSuggestions.length > 0
     ? homeSearchSuggestions
     : (homeSearch.trim() ? [homeSearch.trim()] : []);
+  const activeSearchEngine = getSearchEngine(searchEngineId);
+  const activeSearchEngineIcon = getSearchEngineIcon(activeSearchEngine);
 
   return (
     <div
@@ -533,7 +546,7 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
           </div>
         </section>
 
-        <section ref={homeSearchRef} style={{ '--bluefox-home-search-focus-offset': `${homeSearchFocusOffset}px` }} className={`bluefox-home-search-section mb-10 ${isHomeSearchFocused ? 'is-focused' : ''}`}>
+        <section ref={homeSearchRef} style={{ '--bluefox-home-search-focus-offset': `${homeSearchFocusOffset}px` }} className={`bluefox-home-search-section ${resolvedTheme === 'dark' ? 'is-dark' : ''} mb-10 ${isHomeSearchFocused ? 'is-focused' : ''}`}>
           <form className="bluefox-home-search-bar" onSubmit={submitHomeSearch}>
 
             <input
@@ -544,8 +557,8 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
               aria-label="Rechercher sur le Web ou saisir une adresse"
               onFocus={activateHomeSearch}
             />
-            <button type="submit" aria-label="Lancer la recherche" title="Rechercher avec Google">
-              <img src={GOOGLE_SEARCH_ICON} alt="Google" />
+            <button type="submit" aria-label="Lancer la recherche" title={`Rechercher avec ${activeSearchEngine.name}`}>
+              <img src={activeSearchEngineIcon} alt={activeSearchEngine.name} title={`Rechercher avec ${activeSearchEngine.name}`} />
             </button>
           </form>
           {isHomeSearchFocused && homeSearchResults.length > 0 && (
@@ -560,7 +573,7 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
                   onClick={() => submitHomeSearchValue(suggestion)}
                 >
                   <MdSearch aria-hidden="true" />
-                  <span><strong>{suggestion}</strong>{index === 0 && <small>Recherche Google</small>}</span>
+                  <span><strong>{suggestion}</strong>{index === 0 && <small>Recherche {activeSearchEngine.name}</small>}</span>
                 </button>
               ))}
             </div>

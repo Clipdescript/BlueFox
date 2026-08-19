@@ -193,7 +193,7 @@ const MusicConversationPlayer = ({ video }) => {
   );
 };
 
-const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, hideMusicToggle = false, onMusicOpen, onAnswer, onMusicPlayback }) => {
+const AiPage = ({ isAiMode, onModeChange, initialPrompt = '', isDocumentMode = false, documentText = '', hideUserPrompts = false, hideModeSwitch = false, hideThemeToggle = false, onAnswer, onMusicPlayback }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

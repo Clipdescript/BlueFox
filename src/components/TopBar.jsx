@@ -13,6 +13,7 @@ import {
   MdExitToApp,
   MdWidgets,
   MdFavoriteBorder,
+  MdGamepad,
   MdHelpOutline,
   MdHistory,
   MdHomeFilled,
@@ -26,18 +27,18 @@ import {
   MdRefresh,
   MdSearch,
   MdSecurity,
-  MdSettingsSuggest,
+  MdSettings,
   MdMenu,
   MdViewSidebar,
   MdWindow,
   MdZoomIn,
 } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
+import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_LOGO = `${import.meta.env.BASE_URL}Logo.ico`;
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
-const SEARCH_ENGINE_ICON = 'https://www.google.com/s2/favicons?domain=google.com&sz=64';
 
 const formatCompactAddress = (url) => {
   if (!url) return '';
@@ -53,21 +54,22 @@ const formatCompactAddress = (url) => {
 
 const MenuLogo = ({ className = '' }) => <img src={BLUEFOX_LOGO} alt="" className={`h-4 w-4 object-contain ${className}`} />;
 
-const MenuRow = ({ icon: Icon, children, shortcut, onClick }) => (
-  <button type="button" onClick={onClick} className="flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed]">
+const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) => (
+  <button type="button" onClick={onClick} className={`bluefox-topbar-menu-row flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed] ${className}`}>
     <Icon className="shrink-0 text-[16px] text-[#5f6368]" />
     <span className="min-w-0 flex-1 truncate">{children}</span>
     {shortcut && <span className="shrink-0 text-[11px] text-[#6d6e72]">{shortcut}</span>}
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onMusicOpen, onModeChange, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onModeChange, isAssistantActive, onNewTab, onOpenPdf, onPrint, onNewWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1 }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -83,6 +85,14 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
   useEffect(() => setInputVal(currentUrl || ''), [currentUrl]);
   useEffect(() => setIsFaviconBroken(false), [currentFavicon, currentUrl, isAiMode, isSettingsOpen]);
+  useEffect(() => {
+    const handleSearchEngineChange = (event) => {
+      setSearchEngineId(event.detail || DEFAULT_SEARCH_ENGINE_ID);
+      setIsFaviconBroken(false);
+    };
+    window.addEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+    return () => window.removeEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
+  }, []);
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -136,8 +146,11 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
     setShowSuggestions(false);
   };
 
+  const activeSearchEngine = getSearchEngine(searchEngineId);
+  const activeSearchEngineIcon = getSearchEngineIcon(activeSearchEngine);
+
   return (
-    <div className="sticky top-0 z-50 flex h-12 items-center gap-2 border-b border-[#e1e0dd] bg-[#fffefe] px-3 text-[#202124]">
+    <div className="bluefox-topbar sticky top-0 z-50 flex h-12 items-center gap-2 border-b border-[#e1e0dd] bg-[#fffefe] px-3 text-[#202124]">
       <div className="flex shrink-0 items-center gap-0.5">
         <button type="button" onClick={onBack} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page précédente"><MdArrowBack className="text-[19px]" /></button>
         <button type="button" onClick={onForward} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page suivante"><MdArrowForward className="text-[19px]" /></button>
@@ -146,9 +159,11 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
       </div>
 
       <div className="relative min-w-0 flex-1">
-        <div className="bluefox-address-bar flex h-9 items-center rounded-[9px] border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3]">
+        <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && suggestions.length > 0 ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
           {isSettingsOpen ? (
-            <MdSettingsSuggest className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
+            <MdSettings className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-hidden="true" />
+          ) : isGame || isOfflineFallback ? (
+            <MdGamepad className="bluefox-address-game-icon mr-2 h-[18px] w-[18px] shrink-0 text-[#7346bc]" aria-label="Jeu hors ligne" />
           ) : isAiMode ? (
             <img src={BLUEFOX_LOGO} alt="BlueFox" className="mr-2 h-[18px] w-[18px] object-contain" />
           ) : currentFavicon && !isFaviconBroken ? (
@@ -160,13 +175,13 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
             />
           ) : !currentUrl && !isFaviconBroken ? (
             <img
-              src={SEARCH_ENGINE_ICON}
-              alt="Moteur de recherche Google"
+              src={activeSearchEngineIcon}
+              alt={`Moteur de recherche ${activeSearchEngine.name}`}
               className="mr-2 h-[18px] w-[18px] object-contain"
               onError={() => setIsFaviconBroken(true)}
             />
           ) : (
-            <MdSearch className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Moteur de recherche" />
+            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Site sans favicon" />
           )}
           <input
             type="text"
@@ -190,9 +205,9 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
         </div>
 
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-11 z-[100] overflow-hidden rounded-b-[10px] border border-[#d7d6d3] bg-white py-1 shadow-lg">
+          <div className="bluefox-address-suggestions absolute left-0 right-0 top-9 z-[100] overflow-hidden rounded-b-[12px] border border-t-0 border-[#8fcbd4] bg-white/90 py-1.5 shadow-[0_16px_34px_rgba(32,33,36,0.14)]">
             {suggestions.map((suggestion, index) => (
-              <button type="button" key={`${suggestion}-${index}`} className="flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] hover:bg-[#f2f7f8] hover:text-[#202124]" onMouseDown={() => selectSuggestion(suggestion)}>
+              <button type="button" key={`${suggestion}-${index}`} className="bluefox-address-suggestion flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] transition-colors duration-150 hover:bg-[#eef8fa] hover:text-[#202124]" onMouseDown={() => selectSuggestion(suggestion)}>
                 <MdSearch className={`mr-3 ${ICON_COLOR}`} />{suggestion}
               </button>
             ))}
@@ -218,13 +233,12 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           </button>
         </div>
         <button type="button" className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Profil"><MdAccountCircle className="text-[21px]" /></button>
-        <button type="button" onClick={onMusicOpen} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueMusic" title="BlueMusic"><MdMusicNote className="text-[21px]" /></button>
         <button type="button" onClick={() => onSearch(BLUEFOX_ADDONS_URL)} className="bluefox-topbar-utility-button flex h-9 w-9 items-center justify-center rounded-full" aria-label="Ouvrir BlueFox Add Ons" title="Extensions BlueFox"><MdWidgets className="text-[21px]" /></button>
         <div ref={menuRef} className={`relative ${isSettingsOpen ? 'hidden' : ''}`}>
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
-            className={`flex h-9 w-9 items-center justify-center rounded-full ${isMenuOpen ? 'bg-[#f0efed] text-[#292929]' : ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`}
+            className={`bluefox-topbar-menu-trigger flex h-9 w-9 items-center justify-center rounded-full ${isMenuOpen ? 'bg-[#f0efed] text-[#292929]' : ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`}
             aria-label="Ouvrir le menu"
             aria-expanded={isMenuOpen}
           >
@@ -232,7 +246,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
+            <div className="bluefox-topbar-menu absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
               <MenuRow icon={MdAddBox} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); setIsMenuOpen(false); }}>Nouvel onglet</MenuRow>
               <MenuRow icon={MdPictureAsPdf} onClick={async () => { await onOpenPdf?.(); setIsMenuOpen(false); }}>Ouvrir un PDF</MenuRow>
               <MenuRow icon={MdWindow} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); setIsMenuOpen(false); }}>Nouvelle fenêtre</MenuRow>
@@ -269,8 +283,9 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <MenuRow icon={MdHelpOutline}>Aide</MenuRow>
-              <MenuRow icon={MdSettingsSuggest} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
-              <MenuRow icon={MdExitToApp} onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
+              <MenuRow icon={MdSettings} onClick={() => { onSettings?.(); setIsMenuOpen(false); }}>Paramètres</MenuRow>
+              <MenuRow icon={MdGamepad} onClick={() => { onPlayGame?.(); setIsMenuOpen(false); }}>Jouer à Tetris</MenuRow>
+              <MenuRow icon={MdExitToApp} className="bluefox-topbar-menu-quit" onClick={() => { window.electron?.close(); setIsMenuOpen(false); }}>Quitter</MenuRow>
             </div>
           )}
         </div>

@@ -1,0 +1,405 @@
+/*
+ * Homepage styles.
+ * Loaded after app.css and theme.css so homepage layout and surfaces have one
+ * clear source of truth instead of competing overrides in global stylesheets.
+ */
+
+/* Remove the artificial vertical space that used to create an unnecessary scrollbar. */
+.bluefox-reference-home > div:last-child {
+  min-height: 0 !important;
+  padding-bottom: 16px !important;
+}
+
+.bluefox-reference-home .bluefox-home-search-section {
+  margin-bottom: 24px !important;
+}
+
+/* Layout and search behavior. */
+.bluefox-home-favorites,
+.bluefox-home-news {
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease, transform 380ms cubic-bezier(0.22, 1, 0.36, 1), margin 380ms cubic-bezier(0.22, 1, 0.36, 1), filter 380ms ease;
+}
+
+.bluefox-home-favorites { max-height: 240px; }
+.bluefox-home-news { max-height: 920px; }
+
+.bluefox-home-favorites.is-search-hidden,
+.bluefox-home-news.is-search-hidden {
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-14px);
+  filter: blur(1px);
+}
+
+.bluefox-home-search-section {
+  position: relative;
+  display: flex;
+  width: min(460px, calc(100% - 32px));
+  margin-inline: auto;
+  justify-content: center;
+  transition: width 380ms cubic-bezier(0.22, 1, 0.36, 1), transform 380ms cubic-bezier(0.22, 1, 0.36, 1), filter 380ms ease;
+}
+
+.bluefox-home-search-section.is-focused {
+  width: min(560px, calc(100% - 32px));
+  transform: translateY(var(--bluefox-home-search-focus-offset, 12px));
+  filter: blur(0);
+}
+
+.bluefox-home-search-bar {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(219, 225, 232, 0.82);
+  border-radius: 14px;
+  padding: 0 8px 0 15px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #59616c;
+  box-shadow: 0 8px 22px rgba(32, 33, 36, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.bluefox-home-search-bar:focus-within {
+  border-color: #a9d5dd;
+  box-shadow: 0 0 0 3px rgba(217, 240, 243, 0.72), 0 6px 20px rgba(32, 33, 36, 0.1);
+}
+
+.bluefox-home-search-bar input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #202124 !important;
+  font-size: 13px;
+}
+
+.bluefox-home-search-bar input::placeholder { color: #858b95; opacity: 1; }
+
+.bluefox-home-search-bar button {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6d7480;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.bluefox-home-search-bar button img { width: 21px; height: 21px; object-fit: contain; }
+.bluefox-home-search-bar button:hover { background: #f0efed; color: #292929; }
+
+.bluefox-home-search-results {
+  position: absolute;
+  z-index: 20;
+  top: 58px;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(219, 225, 232, 0.82);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 14px 30px rgba(32, 33, 36, 0.12);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+  animation: bluefox-home-search-results-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bluefox-home-search-results button {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  padding: 9px 16px;
+  background: transparent;
+  color: #30343a;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.bluefox-home-search-results button:hover { background: #f1f2f5; color: #202124; }
+.bluefox-home-search-results button > svg { width: 19px; height: 19px; flex: 0 0 19px; color: #30343a !important; }
+.bluefox-home-search-results button > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.bluefox-home-search-results strong { overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-home-search-results small { color: #8a9099; font-size: 11px; }
+
+@keyframes bluefox-home-search-results-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.bluefox-home-favorite-tile,
+.bluefox-home-favorite-icon {
+  transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, color 240ms ease !important;
+}
+
+/* Light mode without an image keeps the ordinary search surface translucent. */
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar:focus-within {
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results {
+  background: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(16px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(120%) !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button:hover {
+  background: rgba(217, 240, 243, 0.72) !important;
+  color: #174f59 !important;
+}
+
+/* Light image mode: shortcut cards, icon tiles and search surfaces are clear. */
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-favorite-tile {
+  border-color: transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-favorite-icon {
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  border-radius: 7px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 5px 14px rgba(8, 14, 24, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar:focus-within {
+  border-color: rgba(255, 255, 255, 0.46) !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar button:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-favorite-tile {
+  border-color: rgba(255, 255, 255, 0.34) !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-favorite-tile:hover {
+  border-color: rgba(255, 255, 255, 0.44) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 6px 16px rgba(8, 14, 24, 0.1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-favorite-tile:hover .bluefox-home-favorite-icon {
+  border-color: rgba(255, 255, 255, 0.44) !important;
+  border-radius: 7px !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results {
+  border-color: rgba(255, 255, 255, 0.46) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 12px 28px rgba(8, 14, 24, 0.14) !important;
+  backdrop-filter: blur(14px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(115%) !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar input,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar input::placeholder,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar button,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results button,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results button > svg,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results strong,
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results small {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results button > svg {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-results button:hover {
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Dark mode: deep gray surfaces keep the page readable without pure black blocks. */
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-favorite-tile {
+  border-color: transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-favorite-icon {
+  border-color: #3b4452 !important;
+  border-radius: 7px !important;
+  background: #151a21 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-favorite-tile:hover {
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: rgba(20, 24, 31, 0.88) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-favorite-tile:hover .bluefox-home-favorite-icon {
+  border-color: #657286 !important;
+  background: #353b46 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-article-card {
+  border-color: #343b47 !important;
+  border-radius: 8px !important;
+  background: #20252d !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-article-card:hover {
+  border-color: #596577 !important;
+  background: #2b313b !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-favorite-tile :where(span),
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar input,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar input::placeholder,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar button,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button > svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar input::placeholder {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar:focus-within {
+  border-color: #3a4350 !important;
+  border-radius: 12px !important;
+  background: #151a21 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.52) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results {
+  border-color: #3a4350 !important;
+  border-radius: 12px !important;
+  background: #1b2028 !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.58) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button > svg {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results small {
+  color: #aeb7c5 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button:hover {
+  background: #303844 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-bar button:hover {
+  background: #3b424d !important;
+  color: #ffffff !important;
+}
+
+/* The Applications BlueFox popup keeps every shortcut title white in dark mode. */
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-links:hover .bluefox-home-quick-link:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-link:hover {
+  border-radius: 10px !important;
+  background: #2a3545 !important;
+  box-shadow: inset 0 0 0 1px #3c506d !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-link:hover .bluefox-home-quick-link-icon {
+  border-color: #4a6384 !important;
+  background: #344a65 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-links-heading,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-link,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-quick-link-label {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Image-backed article area: never add a gray panel behind the cards. */
+.bluefox-reference-home.bluefox-home-customized > div:last-child,
+.bluefox-reference-home.bluefox-home-customized .bluefox-home-news,
+.bluefox-reference-home.bluefox-home-customized .bluefox-home-news > div,
+.bluefox-home-customized .bluefox-home-news::before,
+.bluefox-home-customized .bluefox-home-news::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Dark image mode: remove the inherited surface behind the news grid only. */
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized > div:last-child,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-news,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-news > div {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  row-gap: 8px !important;
+}

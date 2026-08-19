@@ -386,6 +386,94 @@ h1 {
 
 .feature-story-media img { width: 100%; display: block; }
 
+/* ─── Foxy capabilities ─────────────────────────────────────── */
+.foxy-capabilities-section {
+  padding: 56px 0 72px;
+}
+
+.foxy-capabilities-heading {
+  max-width: 700px;
+  margin-bottom: 34px;
+}
+
+.foxy-capabilities-heading h2 {
+  margin-bottom: 16px;
+  color: var(--ink);
+  font-size: clamp(30px, 4vw, 46px);
+}
+
+.foxy-capabilities-heading > p:not(.section-label) {
+  max-width: 620px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.foxy-capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.foxy-capability-card {
+  position: relative;
+  min-height: 250px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  box-shadow: 4px 4px 0 rgba(26, 115, 232, .06);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.foxy-capability-card:hover {
+  border-color: rgba(26, 115, 232, .3);
+  box-shadow: 5px 5px 0 rgba(26, 115, 232, .1);
+  transform: translate(-1px, -1px);
+}
+
+.foxy-capability-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  margin-bottom: 24px;
+  border: 1px solid rgba(26, 115, 232, .24);
+  border-radius: 8px;
+  background: rgba(26, 115, 232, .1);
+  color: var(--blue);
+  font-size: 24px;
+}
+
+.foxy-capability-number {
+  position: absolute;
+  top: 28px;
+  right: 24px;
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.foxy-capability-card h3 {
+  margin-bottom: 10px;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.foxy-capability-card > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.foxy-capabilities-link {
+  margin-top: 26px;
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -767,6 +855,14 @@ h1 {
 
 
 .footer-brand-section { max-width: 320px; }
+.footer-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font: 600 18px 'Space Grotesk', sans-serif;
+}
+.footer-brand-logo .logo-image { width: 24px; height: 24px; object-fit: contain; }
 .footer-tagline { margin-top: 16px; color: var(--muted); font-size: 15px; line-height: 1.6; }
 
 .footer-socials { display: flex; gap: 12px; margin-top: 24px; }
@@ -996,6 +1092,7 @@ body { top: 0 !important; }
   .france-copy h2, .france-copy p:not(.section-label) { margin-inline: auto; }
   .france-values { grid-template-columns: repeat(3, 1fr); }
   .feature-grid { grid-template-columns: 1fr; }
+  .foxy-capabilities-grid { grid-template-columns: 1fr; }
   .feature-story { grid-template-columns: 1fr; text-align: center; gap: 32px; }
   .feature-story-reverse { grid-template-columns: 1fr; }
   .pros-cons-grid { grid-template-columns: 1fr; }

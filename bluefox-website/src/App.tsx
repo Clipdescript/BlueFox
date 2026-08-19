@@ -18,6 +18,9 @@ import {
   MdPayment,
   MdShield,
   MdSpeed,
+  MdPictureAsPdf,
+  MdEditNote,
+  MdMenuBook,
 } from 'react-icons/md';
 import logoUrl from './assets/Logo.ico';
 import captureUrl from './assets/captureclair1.png';
@@ -461,6 +464,35 @@ function App() {
           </article>
         </section>
 
+        <section className="foxy-capabilities-section section-shell reveal" id="foxy" aria-labelledby="foxy-capabilities-title">
+          <div className="foxy-capabilities-heading">
+            <p className="section-label">Foxy IA, quand vous le décidez</p>
+            <h2 id="foxy-capabilities-title">Analysez, écrivez et avancez avec vos documents.</h2>
+            <p>Foxy peut travailler avec vos PDF et les pages que vous lisez : comprendre un contenu, répondre à vos questions et vous aider à produire une version plus claire. L’IA reste toujours facultative.</p>
+          </div>
+          <div className="foxy-capabilities-grid">
+            <article className="foxy-capability-card">
+              <div className="foxy-capability-icon"><MdPictureAsPdf aria-hidden="true" /></div>
+              <p className="foxy-capability-number">01</p>
+              <h3>Analyser vos PDF</h3>
+              <p>Importez un document, demandez un résumé ou posez une question. Foxy s’appuie sur le contenu du PDF pour vous répondre plus directement.</p>
+            </article>
+            <article className="foxy-capability-card">
+              <div className="foxy-capability-icon"><MdEditNote aria-hidden="true" /></div>
+              <p className="foxy-capability-number">02</p>
+              <h3>Modifier et écrire</h3>
+              <p>Corrigez, reformulez, résumez ou préparez un texte avec Foxy. Vous relisez toujours les propositions et gardez la décision finale.</p>
+            </article>
+            <article className="foxy-capability-card">
+              <div className="foxy-capability-icon"><MdMenuBook aria-hidden="true" /></div>
+              <p className="foxy-capability-number">03</p>
+              <h3>Lire plus vite</h3>
+              <p>Une interface claire et légère pour rester concentré sur l’essentiel. Foxy peut vous aider à comprendre, mais il ne s’impose jamais.</p>
+            </article>
+          </div>
+          <a className="text-link foxy-capabilities-link" href="#download">Découvrir BlueFox <MdNorthEast aria-hidden="true" /></a>
+        </section>
+
         <section className="pros-cons-section section-shell reveal" id="benefits" aria-labelledby="benefits-title">
           <div className="content-heading">
             <p className="section-label">BlueFox, en toute transparence</p>
@@ -613,7 +645,10 @@ function App() {
         <div className="footer-content section-shell">
           <div className="footer-main">
             <div className="footer-brand-section">
-              <Brand />
+              <div className="footer-brand-logo">
+                <Logo />
+                <span>BlueFox</span>
+              </div>
               <p className="footer-tagline">Plus d'autonomie, moins de pistage, et une IA qui sait rester facultative.</p>
               <div className="footer-socials">
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer"><FaGithub /></a>

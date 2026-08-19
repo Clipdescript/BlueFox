@@ -761,3 +761,16 @@
   color: #5f8dff !important;
   fill: #5f8dff !important;
 }
+
+/* Dark mode tab palette: hide the black default and keep selection checks black. */
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-style-choice[aria-label='Choisir Défaut sombre'] {
+  display: none !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-tab-color-check,
+:root[data-theme='dark'] .bluefox-app .bluefox-custom-tab-color > svg {
+  color: #000000 !important;
+  fill: #000000 !important;
+  stroke: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}

@@ -1,38 +1,75 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  MdArrowBack,
-  MdAutorenew,
-  MdCheckCircle,
+  MdAutoAwesome,
   MdDownload,
-  MdErrorOutline,
-  MdInfoOutline,
+  MdHistory,
   MdLanguage,
   MdPalette,
   MdSearch,
   MdSecurity,
+  MdSettings,
   MdSpeed,
   MdTune,
   MdUpdate,
 } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
+import { DEFAULT_SEARCH_ENGINE_ID, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
+import GeneralSettingsPage from './settings/GeneralSettingsPage.jsx';
+import AppearanceSettingsPage from './settings/AppearanceSettingsPage.jsx';
+import PrivacySettingsPage from './settings/PrivacySettingsPage.jsx';
+import HistorySettingsPage from './settings/HistorySettingsPage.jsx';
+import SafeSearchSettingsPage from './settings/SafeSearchSettingsPage.jsx';
+import ModesSettingsPage from './settings/ModesSettingsPage.jsx';
+import FoxySettingsPage from './settings/FoxySettingsPage.jsx';
+import PerformanceSettingsPage from './settings/PerformanceSettingsPage.jsx';
+import SearchEngineSettingsPage from './settings/SearchEngineSettingsPage.jsx';
+import DownloadsSettingsPage from './settings/DownloadsSettingsPage.jsx';
+import LanguagesSettingsPage from './settings/LanguagesSettingsPage.jsx';
+import UpdatesSettingsPage from './settings/UpdatesSettingsPage.jsx';
+import { InfoCard } from './settings/SettingsPrimitives.jsx';
+import '../styles/settings.css';
 
 const NAV_ITEMS = [
-  { id: 'general', label: 'BlueFox et vous', icon: MdTune },
-  { id: 'appearance', label: 'Apparence', icon: MdPalette },
-  { id: 'privacy', label: 'Confidentialité et sécurité', icon: MdSecurity },
-  { id: 'performance', label: 'Performances', icon: MdSpeed },
-  { id: 'search', label: 'Moteur de recherche', icon: MdSearch },
-  { id: 'downloads', label: 'Téléchargements', icon: MdDownload },
-  { id: 'languages', label: 'Langues', icon: MdLanguage },
-  { id: 'updates', label: 'Mise à jour', icon: MdUpdate },
+  { id: 'general', label: 'BlueFox et vous', keywords: 'général navigateur réglages', icon: MdSettings },
+  { id: 'appearance', label: 'Apparence', keywords: 'thème clair sombre système couleur', icon: MdPalette },
+  { id: 'privacy', label: 'Confidentialité et sécurité', keywords: 'vie privée sécurité données', icon: MdSecurity },
+  { id: 'history', label: 'Historique', keywords: 'navigation données historique', icon: MdHistory },
+  { id: 'safe-search', label: 'Safe Search', keywords: 'recherche sécurisée contenu filtrage', icon: MdSearch },
+  { id: 'modes', label: 'Modes', keywords: 'familial codage travail étude gaming concentration standard', icon: MdTune },
+  { id: 'foxy', label: 'Mode IA Foxy', keywords: 'intelligence artificielle pdf résumé écrire assistant', icon: MdAutoAwesome },
+  { id: 'performance', label: 'Performances', keywords: 'vitesse mémoire onglets rapide', icon: MdSpeed },
+  { id: 'search', label: 'Moteur de recherche', keywords: 'google bing qwant ecosia wikipedia perplexity navigateur', icon: MdSearch },
+  { id: 'downloads', label: 'Téléchargements', keywords: 'fichiers dossier', icon: MdDownload },
+  { id: 'languages', label: 'Langues', keywords: 'français traduction', icon: MdLanguage },
+  { id: 'updates', label: 'Mise à jour', keywords: 'version update nouvelle', icon: MdUpdate },
 ];
 
-const SettingsPage = ({ onClose }) => {
-  const { resolvedTheme } = useTheme();
+const MODE_STORAGE_KEY = 'bluefox_browser_mode_v1';
+const FOXY_MODE_STORAGE_KEY = 'bluefox_foxy_mode_v1';
+const BROWSER_HISTORY_STORAGE_KEY = 'bluefox_history';
+
+const readBrowserHistory = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(BROWSER_HISTORY_STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
+
+const SettingsPage = () => {
+  const { mode, resolvedTheme, setMode } = useTheme();
   const [activeSection, setActiveSection] = useState('general');
   const [searchQuery, setSearchQuery] = useState('');
   const [version, setVersion] = useState('—');
   const [updateState, setUpdateState] = useState({ status: 'idle', availableVersion: '' });
+  const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
+  const [safeSearchEnabled, setSafeSearchEnabled] = useState(() => localStorage.getItem(SAFE_SEARCH_STORAGE_KEY) !== 'false');
+  const [selectedMode, setSelectedMode] = useState(() => localStorage.getItem(MODE_STORAGE_KEY) || 'standard');
+  const [foxyEnabled, setFoxyEnabled] = useState(() => localStorage.getItem(FOXY_MODE_STORAGE_KEY) !== 'false');
+  const [defaultBrowserState, setDefaultBrowserState] = useState({ checked: false, isDefault: false });
+  const [browserHistory, setBrowserHistory] = useState(readBrowserHistory);
+  const [historyQuery, setHistoryQuery] = useState('');
 
   useEffect(() => {
     window.electron?.getAppVersion?.().then((appVersion) => {
@@ -40,141 +77,125 @@ const SettingsPage = ({ onClose }) => {
     }).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refreshDefaultBrowserStatus = async () => {
+      try {
+        const status = await window.electron?.getDefaultBrowserStatus?.();
+        if (!cancelled && status) setDefaultBrowserState({ checked: true, isDefault: Boolean(status.isDefault) });
+      } catch {
+        if (!cancelled) setDefaultBrowserState({ checked: true, isDefault: false });
+      }
+    };
+    refreshDefaultBrowserStatus();
+    const interval = window.setInterval(refreshDefaultBrowserStatus, 2500);
+    window.addEventListener('focus', refreshDefaultBrowserStatus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshDefaultBrowserStatus);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshHistory = () => setBrowserHistory(readBrowserHistory());
+    window.addEventListener('bluefox-history-changed', refreshHistory);
+    return () => window.removeEventListener('bluefox-history-changed', refreshHistory);
+  }, []);
+
   const filteredNavItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase('fr-FR');
     if (!normalizedQuery) return NAV_ITEMS;
-    return NAV_ITEMS.filter(({ label }) => label.toLocaleLowerCase('fr-FR').includes(normalizedQuery));
+    return NAV_ITEMS.filter(({ label, keywords = '' }) => `${label} ${keywords}`.toLocaleLowerCase('fr-FR').includes(normalizedQuery));
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (searchQuery.trim() && filteredNavItems.length > 0 && !filteredNavItems.some(({ id }) => id === activeSection)) setActiveSection(filteredNavItems[0].id);
+  }, [activeSection, filteredNavItems, searchQuery]);
+
+  const openDefaultBrowserSettings = async () => {
+    await window.electron?.openDefaultBrowserSettings?.();
+  };
+
+  const clearBrowserHistory = () => {
+    localStorage.removeItem(BROWSER_HISTORY_STORAGE_KEY);
+    setBrowserHistory([]);
+    window.dispatchEvent(new CustomEvent('bluefox-history-changed'));
+  };
+
+  const removeHistoryEntry = (entryId) => {
+    const nextHistory = browserHistory.filter((entry) => (entry.id || `${entry.url}-${entry.timestamp}`) !== entryId);
+    localStorage.setItem(BROWSER_HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+    setBrowserHistory(nextHistory);
+    window.dispatchEvent(new CustomEvent('bluefox-history-changed'));
+  };
+
+  const selectSearchEngine = (engineId) => {
+    setSearchEngineId(engineId);
+    localStorage.setItem(SEARCH_ENGINE_STORAGE_KEY, engineId);
+    window.dispatchEvent(new CustomEvent('bluefox-search-engine-changed', { detail: engineId }));
+  };
+
+  const toggleSafeSearch = () => {
+    const nextValue = !safeSearchEnabled;
+    setSafeSearchEnabled(nextValue);
+    localStorage.setItem(SAFE_SEARCH_STORAGE_KEY, String(nextValue));
+    window.dispatchEvent(new CustomEvent('bluefox-safe-search-changed', { detail: nextValue }));
+  };
+
+  const chooseMode = (modeId) => {
+    setSelectedMode(modeId);
+    localStorage.setItem(MODE_STORAGE_KEY, modeId);
+    window.dispatchEvent(new CustomEvent('bluefox-browser-mode-changed', { detail: modeId }));
+  };
+
+  const toggleFoxy = () => {
+    const nextValue = !foxyEnabled;
+    setFoxyEnabled(nextValue);
+    localStorage.setItem(FOXY_MODE_STORAGE_KEY, String(nextValue));
+    window.dispatchEvent(new CustomEvent('bluefox-foxy-mode-changed', { detail: nextValue }));
+  };
 
   const checkForUpdates = async () => {
     setUpdateState({ status: 'checking', availableVersion: '' });
     try {
       const result = await window.electron?.checkForUpdates?.();
-      setUpdateState({
-        status: result?.status || 'error',
-        availableVersion: result?.availableVersion || '',
-      });
+      setUpdateState({ status: result?.status || 'error', availableVersion: result?.availableVersion || '' });
     } catch {
       setUpdateState({ status: 'error', availableVersion: '' });
     }
   };
 
-  const renderSection = () => {
+  const renderActivePage = () => {
     switch (activeSection) {
-      case 'appearance':
-        return (
-          <SectionShell icon={MdPalette} title="Apparence" description="Une interface claire et cohérente, pensée pour BlueFox.">
-            <div className="bluefox-settings-appearance-card rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--theme-surface)] text-[#137b8b] shadow-sm"><MdPalette className="text-xl" /></span>
-                <div className="min-w-0 flex-1"><p className="font-semibold">Thème de l’interface</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">Le sélecteur clair, sombre ou système est disponible dans la sidebar Apparence de la page d’accueil.</p></div>
-                <span className="shrink-0 rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--theme-text-muted)]">{resolvedTheme === 'dark' ? 'Sombre' : 'Clair'}</span>
-              </div>
-            </div>
-            <div className="mt-3 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3 text-xs text-[var(--theme-text-muted)]">Les couleurs des onglets et le fond de la page d’accueil se personnalisent depuis le bouton Apparence de la page Nouvel onglet.</div>
-          </SectionShell>
-        );
-      case 'privacy':
-        return (
-          <SectionShell icon={MdSecurity} title="Confidentialité et sécurité" description="Gardez le contrôle de vos données dans BlueFox.">
-            <div className="divide-y divide-[var(--theme-border)] rounded-xl border border-[var(--theme-border)]">
-              <SettingRow title="Historique de navigation" description="BlueFox n’enregistre pas votre historique de navigation."><StatusPill>Protégé</StatusPill></SettingRow>
-            </div>
-          </SectionShell>
-        );
-      case 'updates':
-        return (
-          <SectionShell icon={MdUpdate} title="Mise à jour" description="Vérifiez si une nouvelle version de BlueFox est disponible.">
-            <VersionCard version={version} updateState={updateState} onCheck={checkForUpdates} />
-          </SectionShell>
-        );
-      case 'performance':
-        return <SectionShell icon={MdSpeed} title="Performances" description="BlueFox privilégie un démarrage rapide."><InfoCard title="Onglets rapides" text="Les onglets restent actifs pour accélérer leur réouverture. BlueFox peut limiter les ressources des onglets inactifs si nécessaire." /></SectionShell>;
-      case 'search':
-        return <SectionShell icon={MdSearch} title="Moteur de recherche" description="Choisissez le moteur utilisé par la barre d’adresse."><InfoCard title="Google" text="Google est actuellement utilisé pour les recherches et les suggestions de la barre d’adresse." /></SectionShell>;
-      case 'downloads':
-        return <SectionShell icon={MdDownload} title="Téléchargements" description="Les téléchargements s’ouvrent avec les réglages Windows habituels."><InfoCard title="Dossier de téléchargement" text="BlueFox utilise le dossier de téléchargement configuré par Windows." /></SectionShell>;
-      case 'languages':
-        return <SectionShell icon={MdLanguage} title="Langues" description="BlueFox est actuellement configuré en français."><InfoCard title="Langue de l’interface" text="La langue principale de BlueFox est le français. D’autres langues pourront être ajoutées ultérieurement." /></SectionShell>;
+      case 'appearance': return <AppearanceSettingsPage mode={mode} resolvedTheme={resolvedTheme} onSetMode={setMode} />;
+      case 'privacy': return <PrivacySettingsPage />;
+      case 'history': return <HistorySettingsPage history={browserHistory} query={historyQuery} onQueryChange={setHistoryQuery} onClear={clearBrowserHistory} onRemove={removeHistoryEntry} />;
+      case 'safe-search': return <SafeSearchSettingsPage enabled={safeSearchEnabled} onToggle={toggleSafeSearch} />;
+      case 'modes': return <ModesSettingsPage selectedMode={selectedMode} onSelect={chooseMode} />;
+      case 'foxy': return <FoxySettingsPage enabled={foxyEnabled} onToggle={toggleFoxy} />;
+      case 'performance': return <PerformanceSettingsPage />;
+      case 'search': return <SearchEngineSettingsPage selectedEngineId={searchEngineId} onSelect={selectSearchEngine} />;
+      case 'downloads': return <DownloadsSettingsPage />;
+      case 'languages': return <LanguagesSettingsPage />;
+      case 'updates': return <UpdatesSettingsPage version={version} updateState={updateState} onCheck={checkForUpdates} />;
       case 'general':
-      default:
-        return (
-          <SectionShell icon={MdTune} title="BlueFox et vous" description="Gérez les réglages principaux de votre navigateur.">
-            <div className="divide-y divide-[var(--theme-border)] rounded-xl border border-[var(--theme-border)]">
-              <SettingRow title="Navigation privée par défaut" description="BlueFox ne conserve pas votre historique de navigation."><StatusPill>Activé</StatusPill></SettingRow>
-            </div>
-          </SectionShell>
-        );
+      default: return <GeneralSettingsPage defaultBrowserState={defaultBrowserState} onOpenDefaultBrowserSettings={openDefaultBrowserSettings} />;
     }
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[var(--theme-bg)] text-[var(--theme-text)]">
-      <aside className="hidden w-[250px] shrink-0 overflow-y-auto border-r border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-5 lg:block">
-        <div className="mb-5 flex items-center gap-3 px-3">
-          <img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-9 w-9 object-contain" />
-          <div className="min-w-0"><p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--theme-text-muted)]">BlueFox Browser</p><h1 className="text-lg font-semibold">Paramètres</h1></div>
-        </div>
-        <nav aria-label="Catégories des paramètres" className="space-y-1">
-          {filteredNavItems.map(({ id, label, icon: Icon }) => (
-            <button
-              type="button"
-              key={id}
-              onClick={() => setActiveSection(id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${activeSection === id ? 'font-semibold' : 'text-[var(--theme-text)] hover:bg-[var(--theme-surface-hover)]'}`}
-              style={activeSection === id ? { backgroundColor: resolvedTheme === 'dark' ? '#303640' : '#eeeeee' } : undefined}
-              aria-current={activeSection === id ? 'page' : undefined}
-            >
-              <Icon className="shrink-0 text-[19px]" style={activeSection === id ? { color: '#137b8b' } : undefined} />
-              <span>{label}</span>
-            </button>
-          ))}
+    <div className="bluefox-settings-page">
+      <aside className="bluefox-settings-sidebar">
+        <div className="bluefox-settings-brand"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" /><h1>Paramètres</h1></div>
+        <nav className="bluefox-settings-nav" aria-label="Catégories des paramètres">
+          {filteredNavItems.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveSection(id)} className={`bluefox-settings-nav-item ${activeSection === id ? 'is-active' : ''}`} aria-current={activeSection === id ? 'page' : undefined}><Icon aria-hidden="true" /><span>{label}</span></button>)}
         </nav>
       </aside>
-
-      <div className="min-w-0 flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 border-b border-[var(--theme-border)] bg-[var(--theme-surface)]/95 px-5 py-3 backdrop-blur sm:px-8">
-          <div className="mx-auto flex max-w-[900px] items-center gap-3">
-            <button type="button" onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--theme-text-muted)] transition-colors hover:bg-[var(--theme-surface-hover)]" aria-label="Retour au navigateur" title="Retour au navigateur"><MdArrowBack className="text-xl" /></button>
-            <div className="relative min-w-0 flex-1"><MdSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[var(--theme-text-muted)]" /><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher dans les paramètres" className="h-10 w-full rounded-full border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] pl-10 pr-4 text-sm text-[var(--theme-text)] outline-none transition focus:border-[#137b8b] focus:ring-2 focus:ring-[#d9f0f3]" aria-label="Rechercher dans les paramètres" /></div>
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-[900px] px-5 py-7 sm:px-8 sm:py-9">
-          {filteredNavItems.some(({ id }) => id === activeSection) ? renderSection() : <InfoCard title="Aucun résultat" text="Aucune section ne correspond à votre recherche." />}
-        </main>
+      <div className="bluefox-settings-content">
+        <header className="bluefox-settings-header"><div className="bluefox-settings-header-inner"><div className="bluefox-settings-search"><MdSearch aria-hidden="true" /><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher dans les paramètres" aria-label="Rechercher dans les paramètres" /></div></div></header>
+        <main className="bluefox-settings-main">{filteredNavItems.some(({ id }) => id === activeSection) ? renderActivePage() : <InfoCard title="Aucun résultat" text="Aucune section ne correspond à votre recherche." />}</main>
       </div>
-    </div>
-  );
-};
-
-const SectionShell = ({ icon: Icon, title, description, children }) => (
-  <section className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-5 shadow-sm sm:p-6"><div className="mb-5 flex items-start gap-3"><Icon className="mt-0.5 text-2xl text-[var(--theme-text-muted)]" /><div><h3 className="text-lg font-semibold">{title}</h3><p className="mt-1 text-sm text-[var(--theme-text-muted)]">{description}</p></div></div>{children}</section>
-);
-
-const SettingRow = ({ title, description, children }) => <div className="flex items-center justify-between gap-4 px-4 py-4"><div><p className="font-medium">{title}</p><p className="mt-1 text-xs text-[var(--theme-text-muted)]">{description}</p></div><div className="shrink-0">{children}</div></div>;
-const StatusPill = ({ children }) => <span className="rounded-full bg-[#e8f5f7] px-2.5 py-1 text-xs font-semibold text-[#137b8b]">{children}</span>;
-const InfoCard = ({ title, text }) => <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] px-4 py-4"><p className="font-medium">{title}</p><p className="mt-1 text-sm text-[var(--theme-text-muted)]">{text}</p></div>;
-
-const VersionCard = ({ version, updateState, onCheck }) => {
-  const status = updateState.status;
-  const statusContent = status === 'checking'
-    ? { icon: MdAutorenew, text: 'Recherche de mises à jour…', tone: 'text-[#137b8b]' }
-    : status === 'latest'
-      ? { icon: MdCheckCircle, text: 'Vous utilisez la dernière version.', tone: 'text-[#16834b]' }
-      : status === 'available'
-        ? { icon: MdUpdate, text: `Mise à jour disponible : v${updateState.availableVersion}`, tone: 'text-[#b56b00]' }
-        : status === 'development'
-          ? { icon: MdInfoOutline, text: 'Les mises à jour sont vérifiées dans la version installée.', tone: 'text-[var(--theme-text-muted)]' }
-          : status === 'error'
-            ? { icon: MdErrorOutline, text: 'Impossible de vérifier les mises à jour pour le moment.', tone: 'text-[#b42318]' }
-            : null;
-
-  const StatusIcon = statusContent?.icon;
-
-  return (
-    <div className="mt-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] p-4">
-      <div className="flex items-start gap-3"><MdInfoOutline className="mt-0.5 text-xl text-[#137b8b]" /><div className="min-w-0 flex-1"><p className="font-semibold">Version de BlueFox</p><p className="mt-1 text-sm text-[var(--theme-text-muted)]">Version installée : <strong>v{version}</strong></p>{statusContent && StatusIcon && <p className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${statusContent.tone}`}><StatusIcon className={`text-base ${status === 'checking' ? 'animate-spin' : ''}`} />{statusContent.text}</p>}</div><button type="button" onClick={onCheck} disabled={status === 'checking'} className="shrink-0 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-xs font-semibold hover:bg-[var(--theme-surface-hover)] disabled:cursor-wait disabled:opacity-60">{status === 'checking' ? 'Vérification…' : 'Rechercher une mise à jour'}</button></div>
     </div>
   );
 };

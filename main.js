@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, session, Menu, dialog, nativeTheme, shell } = require('electron');
 const path = require('path');
+const os = require('os');
 const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -306,7 +307,66 @@ async function fetchUnusedNatureImage() {
   return imageUrl;
 }
 
+const measureNetworkPing = async () => {
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(`https://www.google.com/generate_204?bluefox_metrics=${Date.now()}`, { cache: 'no-store' });
+    return response.ok || response.status === 204 ? Date.now() - startedAt : null;
+  } catch {
+    return null;
+  }
+};
+
+ipcMain.handle('get-performance-metrics', async () => {
+  const processes = app.getAppMetrics();
+  const appMemoryKb = processes.reduce((total, metric) => total + Number(metric.memory?.workingSetSize || 0), 0);
+  const cpuPercent = processes.reduce((total, metric) => total + Number(metric.cpu?.percentCPUUsage || 0), 0);
+  const totalMemory = os.totalmem();
+  const freeMemory = os.freemem();
+  const pingMs = await measureNetworkPing();
+  const networkInterfaces = Object.values(os.networkInterfaces()).flat().filter((entry) => entry && !entry.internal);
+
+  return {
+    appMemoryMb: Math.round(appMemoryKb / 1024),
+    appMemoryPercent: totalMemory ? (appMemoryKb * 1024 / totalMemory) * 100 : null,
+    systemMemoryUsedPercent: totalMemory ? ((totalMemory - freeMemory) / totalMemory) * 100 : null,
+    cpuPercent: Math.round(cpuPercent * 10) / 10,
+    processCount: processes.length,
+    cpuCores: os.cpus().length,
+    totalMemoryGb: Math.round((totalMemory / 1024 ** 3) * 10) / 10,
+    freeMemoryGb: Math.round((freeMemory / 1024 ** 3) * 10) / 10,
+    networkInterfaceCount: networkInterfaces.length,
+    pingMs,
+    processes: processes.map((metric) => ({
+      pid: metric.pid,
+      type: metric.type || 'Unknown',
+      name: metric.name || metric.type || 'Processus Chromium',
+      memoryMb: Math.round(Number(metric.memory?.workingSetSize || 0) / 1024),
+      cpuPercent: Math.round(Number(metric.cpu?.percentCPUUsage || 0) * 10) / 10
+    })).sort((first, second) => second.memoryMb - first.memoryMb),
+    measuredAt: Date.now()
+  };
+});
+
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('get-default-browser-status', () => {
+  const supported = process.platform === 'win32' || process.platform === 'darwin' || process.platform === 'linux';
+  const httpDefault = app.isDefaultProtocolClient('http');
+  const httpsDefault = app.isDefaultProtocolClient('https');
+  return { supported, isDefault: httpDefault && httpsDefault };
+});
+
+ipcMain.handle('open-default-browser-settings', async () => {
+  const settingsUrl = process.platform === 'win32'
+    ? 'ms-settings:defaultapps'
+    : process.platform === 'darwin'
+      ? 'x-apple.systempreferences:com.apple.preference.general'
+      : '';
+  if (!settingsUrl) return { opened: false };
+  await shell.openExternal(settingsUrl);
+  return { opened: true };
+});
 
 const readPdfFile = async (filePath) => {
   if (typeof filePath !== 'string' || path.extname(filePath).toLowerCase() !== '.pdf') {
