@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdApps, MdClose, MdPalette, MdSearch } from 'react-icons/md';
+import { MdApps, MdClose, MdPalette, MdPublic, MdSearch } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
 import { useTheme } from '../utils/theme.js';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
@@ -178,11 +178,16 @@ const QuickLinkFavicon = ({ url, fallback: Fallback }) => {
 const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
   const logo = iconUrl || getFaviconUrl(url);
   const domain = title;
+  const [faviconError, setFaviconError] = useState(false);
+
+  useEffect(() => {
+    setFaviconError(false);
+  }, [logo]);
 
   return (
     <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="bluefox-home-favorite-tile bluefox-image-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
       <span className="bluefox-home-favorite-icon bluefox-image-favorite-icon flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
-        <img src={logo} alt="" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+        {faviconError ? <MdPublic className="h-8 w-8 text-[#6d747b]" aria-label="Site sans favicon" /> : <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setFaviconError(true)} />}
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
       {isSponsored && <span className="bluefox-home-favorite-sponsored">Sponsorisé</span>}

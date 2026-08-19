@@ -18,6 +18,7 @@ import {
   MdInsertLink,
   MdLanguage,
   MdPhotoLibrary,
+  MdPublic,
   MdLightbulbOutline,
   MdMenu,
   MdMic,
@@ -262,6 +263,11 @@ const AiPage = ({ isAiMode, onModeChange, isSidebar = false, pageContext = null,
   const progressTimers = useRef([]);
   const [visibleResultCount, setVisibleResultCount] = useState(12);
   const [sidebarSuggestions, setSidebarSuggestions] = useState([]);
+  const [sidebarFaviconError, setSidebarFaviconError] = useState(false);
+
+  useEffect(() => {
+    setSidebarFaviconError(false);
+  }, [currentFavicon, currentUrl]);
 
   useEffect(() => {
     setPrompt(initialPrompt);
@@ -675,7 +681,7 @@ const AiPage = ({ isAiMode, onModeChange, isSidebar = false, pageContext = null,
             </div>
           )}
 
-          {activeView === 'response' && <div className="sticky bottom-0 z-20 -mx-6 mt-5 bg-white px-6 pb-4 pt-2 sm:-mx-10 sm:px-10">{sidebarSite?.name && <div className="foxy-sidebar-site-context"><img src={sidebarSite.favicon} alt="" onError={(event) => { event.currentTarget.src = BLUEFOX_LOGO; }} /><span>{sidebarSite.name}</span></div>}<form onSubmit={askFoxy} className="bluefox-ai-prompt-bar w-full rounded-[16px] border border-[#e3e3e6] bg-white p-2.5 shadow-[0_4px_18px_rgba(32,33,36,0.08)] focus-within:border-[#b9c9d8]">
+          {activeView === 'response' && <div className="sticky bottom-0 z-20 -mx-6 mt-5 bg-white px-6 pb-4 pt-2 sm:-mx-10 sm:px-10">{sidebarSite?.name && <div className="foxy-sidebar-site-context">{sidebarFaviconError ? <MdPublic aria-label="Site web" /> : <img src={sidebarSite.favicon} alt="" onError={() => setSidebarFaviconError(true)} />}<span>{sidebarSite.name}</span></div>}<form onSubmit={askFoxy} className="bluefox-ai-prompt-bar w-full rounded-[16px] border border-[#e3e3e6] bg-white p-2.5 shadow-[0_4px_18px_rgba(32,33,36,0.08)] focus-within:border-[#b9c9d8]">
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={handlePromptKeyDown} className="min-h-[42px] max-h-[68px] w-full resize-none bg-transparent px-2 py-1 text-[14px] leading-5 text-[#292929] outline-none placeholder:text-[#a0a1a3]" placeholder={isDocumentMode ? 'Demander un résumé ou une modification du PDF' : (hasConversation ? 'Écrire une question de suivi' : 'Tapez @ pour les connecteurs')} aria-label="Question à Foxy" />
             <div className="flex items-center justify-between pt-1.5">
               <div className="flex items-center gap-1 text-xs text-[#6d6e72]"><button type="button" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#f1f0ee]" aria-label="Ajouter"><MdAdd className="text-lg" /></button>{!isDocumentMode && <span className="flex items-center gap-1 rounded-full border border-[#e1e0dd] px-2.5 py-1"><MdSearch /> Recherche <MdExpandMore /></span>}<span className="flex items-center gap-1 rounded-full bg-[#f4f3f1] px-2.5 py-1"><MdComputer /> Computer</span></div>

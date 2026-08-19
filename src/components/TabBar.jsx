@@ -53,7 +53,9 @@ const TabVisual = ({
     style={{ '--bluefox-tab-color-value': tabColor }}
   >
     <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
-      {tab.isGame || tab.offlineFallback ? (
+      {tab.pageError ? (
+        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label="Page introuvable" />
+      ) : tab.isGame || tab.offlineFallback ? (
         <MdGamepad className="bluefox-tab-game-icon h-full w-full text-[#7346bc]" aria-label="Jeu hors ligne" />
       ) : tab.isSettings ? (
         <MdTune className="h-full w-full text-[#137b8b]" aria-hidden="true" />

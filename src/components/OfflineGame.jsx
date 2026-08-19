@@ -30,7 +30,8 @@ const collides = (board, piece, nextX = piece.x, nextY = piece.y, nextShape = pi
   return x < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT || (y >= 0 && board[y][x]);
 }));
 
-const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, standalone = false }) => {
+const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, errorKind = 'offline', standalone = false }) => {
+  const isSiteError = errorKind === 'site';
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const gameRef = useRef({ board: createBoard(), piece: createPiece(), started: false, gameOver: false, score: 0, lines: 0, best: Number(localStorage.getItem('bluefox-tetris-best') || 0) });
@@ -197,13 +198,13 @@ const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, standalone = false 
     <section ref={stageRef} className={`bluefox-offline-page ${standalone ? 'is-standalone' : ''}`} aria-labelledby="bluefox-offline-title">
       {!standalone && attemptedUrl && (
         <div className="bluefox-offline-redirect" role="status">
-          <span>Vous serez redirigé automatiquement vers cette URL dès que la connexion Internet reviendra :</span>
+          <span>{isSiteError ? 'BlueFox n’a pas réussi à afficher cette page. Vous pouvez réessayer ou revenir à l’accueil.' : 'Vous serez redirigé automatiquement vers cette URL dès que la connexion Internet reviendra :'}</span>
           <code title={attemptedUrl}>{attemptedUrl}</code>
         </div>
       )}
       <header className="bluefox-offline-header">
-        <h1 id="bluefox-offline-title">Vous êtes <span>hors ligne</span></h1>
-        <p className="bluefox-offline-subtitle">{isOnline ? 'Connexion retrouvée.' : 'La connexion est interrompue pour le moment.'}</p>
+        <h1 id="bluefox-offline-title">{isSiteError ? <>Page <span>introuvable</span></> : <>Vous êtes <span>hors ligne</span></>}</h1>
+        <p className="bluefox-offline-subtitle">{isSiteError ? 'Ce site n’a pas pu charger la page demandée.' : isOnline ? 'Connexion retrouvée.' : 'La connexion est interrompue pour le moment.'}</p>
       </header>
       <div className="bluefox-offline-tetris-heading">
         <strong>Tetris hors ligne</strong>

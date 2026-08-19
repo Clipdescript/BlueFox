@@ -360,6 +360,56 @@ function App() {
   }, [activeTab?.isPdf, activeTab?.isSettings, activeTab?.url, activeTabId, isAiSidebarVisible]);
 
   useEffect(() => {
+    if (!activeTab?.isSearching || activeTab.isSettings || activeTab.isPdf || activeTab.offlineFallback || activeTab.pageError) return undefined;
+
+    let cancelled = false;
+    let attempts = 0;
+    let retryTimer = null;
+    const inspectLoadedPage = async () => {
+      if (cancelled) return;
+      const webview = webviewRefs.current[activeTabId];
+      if (!webview) {
+        if (attempts < 20) retryTimer = window.setTimeout(inspectLoadedPage, 350);
+        attempts += 1;
+        return;
+      }
+
+      try {
+        const renderedUrl = typeof webview.getURL === 'function' ? webview.getURL() : '';
+        const isChromiumErrorPage = /^chrome-error:\/\//i.test(renderedUrl);
+        const pageError = isChromiumErrorPage ? { description: 'La page interne d’erreur Chromium n’a pas pu charger le site.' } : await webview.executeJavaScript?.(`(() => {
+          const text = (document.body?.innerText || '').slice(0, 5000);
+          const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"]')].some((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && (Boolean(element.innerText?.trim()) || ['IMG', 'VIDEO', 'CANVAS', 'IFRAME'].includes(element.tagName));
+          });
+          const isError = /HTTP ERROR [45]\\d{2}/i.test(text)
+            || /ERR_(NAME_NOT_RESOLVED|CONNECTION|TIMED_OUT|INTERNET_DISCONNECTED)/i.test(text)
+            || /page du site .* est introuvable|page est introuvable|page n['’]existe pas/i.test(text);
+          return { isError, isBlank: document.readyState === 'complete' && !text.trim() && !meaningful };
+        })()`, true);
+        if (pageError && (pageError.isError || pageError.isBlank || isChromiumErrorPage)) {
+          setTabs((currentTabs) => currentTabs.map((tab) => tab.id === activeTabId
+            ? { ...tab, isLoading: false, offlineFallback: false, pageError: typeof pageError === 'object' ? pageError : { description: 'Page web introuvable.' } }
+            : tab));
+          return;
+        }
+      } catch {
+        // The webview may still be starting; try again briefly.
+      }
+
+      attempts += 1;
+      if (attempts < 20 && !cancelled) retryTimer = window.setTimeout(inspectLoadedPage, 350);
+    };
+
+    inspectLoadedPage();
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [activeTab?.isPdf, activeTab?.isSearching, activeTab?.isSettings, activeTab?.loadCount, activeTab?.offlineFallback, activeTab?.pageError, activeTabId]);
+
+  useEffect(() => {
     setIsAiMode(Boolean(activeTab?.isAi));
   }, [activeTabId]);
 
@@ -892,13 +942,13 @@ function App() {
 
   const handleOfflineRetry = useCallback(() => {
     setTabs((currentTabs) => currentTabs.map((tab) => tab.id === activeTabId
-      ? { ...tab, offlineFallback: false, isLoading: true, loadCount: (tab.loadCount || 0) + 1 }
+      ? { ...tab, offlineFallback: false, pageError: null, isLoading: true, loadCount: (tab.loadCount || 0) + 1 }
       : tab));
   }, [activeTabId]);
 
   const handleReload = useCallback(() => {
     const activeTabForReload = tabs.find((tab) => tab.id === activeTabId);
-    if (activeTabForReload?.offlineFallback) {
+    if (activeTabForReload?.offlineFallback || activeTabForReload?.pageError) {
       handleOfflineRetry();
       return;
     }
@@ -980,18 +1030,49 @@ function App() {
                   setTabs(prev => prev.map(t => t.id === tab.id ? { ...t, isLoading: loading } : t));
               };
               
+              const detectPageError = async () => {
+                  if (!webview.executeJavaScript || tab.isPdf) return;
+                  try {
+                      const pageError = await webview.executeJavaScript(`(() => {
+                        const title = document.title || '';
+                        const text = (document.body?.innerText || '').slice(0, 5000);
+                        const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"]')].some((element) => {
+                          const rect = element.getBoundingClientRect();
+                          return rect.width > 0 && rect.height > 0 && (Boolean(element.innerText?.trim()) || ['IMG', 'VIDEO', 'CANVAS', 'IFRAME'].includes(element.tagName));
+                        });
+                        const isError = /HTTP ERROR [45]\\d{2}/i.test(text)
+                          || /ERR_(NAME_NOT_RESOLVED|CONNECTION|TIMED_OUT|INTERNET_DISCONNECTED)/i.test(text)
+                          || /page du site .* est introuvable|page est introuvable|page n['’]existe pas/i.test(text)
+                          || /^(404|403|500|502|503|504)\\b/.test(title.trim());
+                        const isBlank = document.readyState === 'complete' && !text.trim() && !meaningful;
+                        return (isError || isBlank) ? { title, text: text.slice(0, 240), isBlank } : null;
+                      })()`, true);
+                      if (pageError) {
+                          setTabs(prev => prev.map(t => t.id === tab.id
+                            ? { ...t, isLoading: false, offlineFallback: false, pageError }
+                            : t));
+                      }
+                  } catch {
+                      // Protected pages can reject DOM inspection; keep the webview visible.
+                  }
+              };
+
               webview.addEventListener('dom-ready', () => {
                   updateState();
                   setLoading(false);
+                  void detectPageError();
               });
               webview.addEventListener('did-start-loading', () => setLoading(true));
-              webview.addEventListener('did-stop-loading', () => setLoading(false));
+              webview.addEventListener('did-stop-loading', () => {
+                  setLoading(false);
+                  void detectPageError();
+              });
               webview.addEventListener('did-fail-load', (e) => {
                   // Ignore harmless aborts and common errors
                   if (e.errorCode !== -3) {
                       const shouldShowOfflineGame = !navigator.onLine || isNetworkLoadError(e);
                       setTabs(prev => prev.map(t => t.id === tab.id
-                        ? { ...t, isLoading: false, offlineFallback: shouldShowOfflineGame }
+                        ? { ...t, isLoading: false, offlineFallback: shouldShowOfflineGame, pageError: shouldShowOfflineGame ? null : { code: e.errorCode, description: e.errorDescription } }
                         : t));
                       setLoading(false);
                       console.log('Webview load failed:', e.errorCode, e.errorDescription);
@@ -1002,7 +1083,7 @@ function App() {
               const updateNavigatedUrl = (event) => {
                    setTabs(prev => prev.map(t => {
                        if (t.id === tab.id && !t.isPdf && t.url !== event.url) {
-                           return { ...t, url: event.url, isLoading: false };
+                           return { ...t, url: event.url, isLoading: false, pageError: null, offlineFallback: false };
                        }
                        return t;
                    }));
@@ -1492,6 +1573,7 @@ function App() {
             currentUrl={isSettingsOpen ? SETTINGS_URL : activeTab?.isGame ? 'bluefox://tetris' : activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
             isGame={Boolean(activeTab?.isGame)}
+            isPageError={Boolean(activeTab?.pageError)}
             isOfflineFallback={Boolean(activeTab?.offlineFallback || (!isOnline && activeTab?.isLoading))}
             onPlayGame={handleOpenGame}
             isAiMode={isAiMode}
@@ -1552,13 +1634,19 @@ function App() {
                          />
                        </Suspense>
                    ) : tab.isSearching ? (
-                        (tab.offlineFallback || (!isOnline && tab.isLoading)) ? (
-                          tab.id === activeTabId ? (
-                            <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">Chargement du mini-jeu hors ligne…</div>}>
-                              <OfflineGame attemptedUrl={tab.url} onRetry={handleOfflineRetry} onGoHome={goHome} />
-                            </Suspense>
-                          ) : null
-                        ) : !tab.hibernated ? (
+                         (tab.offlineFallback || (!isOnline && tab.isLoading)) ? (
+                           tab.id === activeTabId ? (
+                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">Chargement du mini-jeu hors ligne…</div>}>
+                               <OfflineGame attemptedUrl={tab.url} errorKind="offline" onRetry={handleOfflineRetry} onGoHome={goHome} />
+                             </Suspense>
+                           ) : null
+                         ) : tab.pageError ? (
+                           tab.id === activeTabId ? (
+                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#667085]">Préparation de la page BlueFox…</div>}>
+                               <OfflineGame attemptedUrl={tab.url} errorKind="site" onRetry={handleOfflineRetry} onGoHome={goHome} />
+                             </Suspense>
+                           ) : null
+                         ) : !tab.hibernated ? (
                           <>
                           <webview
                               key={`${tab.id}-${tab.loadCount || 0}`}

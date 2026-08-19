@@ -670,11 +670,13 @@ html[data-theme='dark'] ::-moz-selection {
   font-weight: 500;
 }
 
-.foxy-sidebar-site-context img {
+.foxy-sidebar-site-context img,
+.foxy-sidebar-site-context > svg {
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
   border-radius: 4px;
+  color: #6d747b;
   object-fit: contain;
 }
 

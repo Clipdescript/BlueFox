@@ -69,7 +69,7 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) =>
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
+const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isPageError = false, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
@@ -183,6 +183,8 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
         <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && suggestions.length > 0 ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
           {isSettingsOpen ? (
             <MdTune className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Paramètres" />
+          ) : isPageError ? (
+            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Page introuvable" />
           ) : isGame || isOfflineFallback ? (
             <MdGamepad className="bluefox-address-game-icon mr-2 h-[18px] w-[18px] shrink-0 text-[#7346bc]" aria-label="Jeu hors ligne" />
           ) : isAiMode ? (

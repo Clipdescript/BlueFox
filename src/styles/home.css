@@ -191,6 +191,13 @@
   -webkit-backdrop-filter: none !important;
 }
 
+:root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-image-favorite-icon > svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-image-favorite-icon > svg {
+  color: #ffffff !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
 :root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar,
 :root[data-theme='light'] .bluefox-app .bluefox-reference-home.bluefox-home-customized .bluefox-home-search-bar:focus-within {
   border-color: rgba(255, 255, 255, 0.46) !important;
