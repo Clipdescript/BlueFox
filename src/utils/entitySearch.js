@@ -1,4 +1,6 @@
 const ENTITY_CACHE = new Map();
+const ENTITY_CACHE_TTL = 5 * 60 * 1000;
+const EMPTY_ENTITY_CACHE_TTL = 30 * 1000;
 
 const normalizeText = (value = '') => String(value)
   .normalize('NFD')
@@ -187,6 +189,8 @@ const searchOpenStreetMap = async (query, signal) => {
       website,
       country: item.address?.country || '',
       admin: item.address?.state || item.address?.county || item.address?.city || item.address?.town || '',
+      latitude: item.lat,
+      longitude: item.lon,
       exact,
       isBusiness,
       score: (exact ? 90 : 38) + (isBusiness ? 14 : 0) + (website ? 6 : 0)
@@ -248,14 +252,17 @@ const chooseCandidate = (candidates, query) => {
       const firstExact = normalizeText(first.title) === normalizedQuery ? 1 : 0;
       const secondExact = normalizeText(second.title) === normalizedQuery ? 1 : 0;
       return (secondExact - firstExact) || ((second.score || 0) - (first.score || 0));
-    })[0] || null;
+    })
+    .find((candidate) => normalizeText(candidate.title) === normalizedQuery || (candidate.score || 0) >= 52) || null;
 };
 
 export const findSmartSearchResult = async (query, { signal } = {}) => {
   const cleanQuery = String(query || '').trim();
   if (cleanQuery.length < 3) return null;
   const cacheKey = cleanQuery.toLocaleLowerCase();
-  if (ENTITY_CACHE.has(cacheKey)) return ENTITY_CACHE.get(cacheKey);
+  const cached = ENTITY_CACHE.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  if (cached) ENTITY_CACHE.delete(cacheKey);
 
   const { weatherIntent, locationQuery } = getWeatherContext(cleanQuery);
   let result = null;
@@ -281,6 +288,14 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
           ? await fetchWikipediaImage(candidate.title, candidate.language, signal)
           : await fetchWikipediaImage(candidate.title, candidate.language || 'fr', signal);
         const kind = candidate.website ? 'site' : candidate.source === 'osm' && candidate.isBusiness ? 'site' : classifyEntity(candidate.description);
+        const target = candidate.website
+          || (candidate.source === 'wikipedia'
+            ? `https://${candidate.language || 'fr'}.wikipedia.org/wiki/${encodeURIComponent(candidate.title.replace(/\\s+/g, '_'))}`
+            : candidate.source === 'wikidata'
+              ? `https://www.wikidata.org/wiki/${candidate.id}`
+              : candidate.source === 'osm' && candidate.latitude && candidate.longitude
+                ? `https://www.openstreetmap.org/?mlat=${candidate.latitude}&mlon=${candidate.longitude}#map=18/${candidate.latitude}/${candidate.longitude}`
+                : '');
         result = {
           kind,
           title: candidate.title,
@@ -289,7 +304,7 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
           image,
           favicon: candidate.website ? getFavicon(candidate.website) : '',
           weather: null,
-          target: candidate.website || '',
+          target,
           searchQuery: cleanQuery
         };
       }
@@ -298,6 +313,12 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
     result = null;
   }
 
-  ENTITY_CACHE.set(cacheKey, result);
+  // An aborted request is not a real negative result. Do not poison the cache
+  // when the user simply typed another character.
+  if (signal?.aborted) return null;
+  ENTITY_CACHE.set(cacheKey, {
+    value: result,
+    expiresAt: Date.now() + (result ? ENTITY_CACHE_TTL : EMPTY_ENTITY_CACHE_TTL)
+  });
   return result;
 };

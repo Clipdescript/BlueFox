@@ -6,6 +6,7 @@ import SpeedDial from './components/SpeedDial';
 import { MdClose, MdPublic, MdSearch, MdSkipNext } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
 import './styles/music.css';
+import './styles/search-suggestions.css';
 import { buildSearchUrl, DEFAULT_SEARCH_ENGINE_ID, extractSearchQuery, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from './utils/searchEngines.js';
 
 const SettingsPage = React.lazy(() => import('./components/SettingsPage'));

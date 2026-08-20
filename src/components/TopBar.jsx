@@ -41,11 +41,10 @@ import {
   MdViewInAr,
   MdZoomIn,
 } from 'react-icons/md';
-import fetchJsonp from 'fetch-jsonp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserSecret } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
-import { findSmartSearchResult } from '../utils/entitySearch.js';
+import { SiteSuggestionIcon, useSearchSuggestions } from '../utils/searchSuggestions.js';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
@@ -129,8 +128,6 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isInputDirty, setIsInputDirty] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [smartSuggestion, setSmartSuggestion] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isPlaceholderVisible, setIsPlaceholderVisible] = useState(true);
@@ -149,17 +146,6 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   const voiceLiveTranscribingRef = useRef(false);
   const voiceLastPreviewAtRef = useRef(0);
   const discordProfileRef = useRef(null);
-
-  useEffect(() => {
-    if (!suggestions.length) return undefined;
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.href = `https://www.google.com/search?q=${encodeURIComponent(suggestions[0])}`;
-    document.head.appendChild(link);
-    return () => {
-      try { document.head.removeChild(link); } catch { /* already removed */ }
-    };
-  }, [suggestions]);
 
   useEffect(() => {
     setInputVal(currentUrl || '');
@@ -365,66 +351,45 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (inputVal.length > 1 && document.activeElement?.tagName === 'INPUT') {
-        try {
-          const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(inputVal)}&hl=fr`);
-          if (response.ok) {
-            const data = await response.json();
-            setSuggestions((data[1] || []).slice(0, 8));
-            setShowSuggestions(true);
-          }
-        } catch {
-          setSuggestions([]);
-          setShowSuggestions(false);
-        }
-      } else if (inputVal.length <= 1) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [inputVal]);
-
-  useEffect(() => {
-    const query = inputVal.trim();
-    if (!isAddressFocused || query.length < 3) {
-      setSmartSuggestion(null);
-      return undefined;
-    }
-
-    const controller = new AbortController();
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      const result = await findSmartSearchResult(query, { signal: controller.signal });
-      if (!cancelled) {
-        setSmartSuggestion(result);
-        if (result) setShowSuggestions(true);
-      }
-    }, 380);
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [inputVal, isAddressFocused]);
+  const {
+    suggestions,
+    smartSuggestion,
+    isLoading: isSuggestionsLoading,
+    highlightedIndex,
+    highlightedSuggestion,
+    moveHighlight,
+    clearSuggestions
+  } = useSearchSuggestions({ query: inputVal, focused: isAddressFocused, searchEngineId });
 
   const handleKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setShowSuggestions(true);
+      moveHighlight(event.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      clearSuggestions();
+      setShowSuggestions(false);
+      return;
+    }
     if (event.key === 'Enter') {
+      event.preventDefault();
+      const value = highlightedSuggestion?.value || inputVal;
+      setInputVal(highlightedSuggestion?.label || inputVal);
       setIsInputDirty(false);
-      setSmartSuggestion(null);
-      onSearch(inputVal);
+      clearSuggestions();
+      onSearch(value);
       setShowSuggestions(false);
     }
   };
 
   const selectSuggestion = (suggestion) => {
-    setInputVal(suggestion);
+    setInputVal(suggestion.label);
     setIsInputDirty(false);
-    setSmartSuggestion(null);
-    onSearch(suggestion);
+    clearSuggestions();
+    onSearch(suggestion.value);
     setShowSuggestions(false);
   };
 
@@ -441,7 +406,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
       </div>
 
       <div className="relative min-w-0 flex-1">
-        <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && suggestions.length > 0 ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
+        <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && (suggestions.length > 0 || smartSuggestion || isSuggestionsLoading || inputVal.trim()) ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
           {isSettingsOpen ? (
             <MdTune className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Paramètres" />
           ) : isPageError ? (
@@ -476,12 +441,16 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
               onChange={(event) => {
                 setInputVal(event.target.value);
                 setIsInputDirty(true);
+                setShowSuggestions(true);
               }}
               onClick={(event) => event.currentTarget.select()}
               onKeyDown={handleKeyDown}
               onBlur={() => {
                 setIsAddressFocused(false);
-                setTimeout(() => setShowSuggestions(false), 200);
+                setTimeout(() => {
+                  clearSuggestions();
+                  setShowSuggestions(false);
+                }, 160);
               }}
               onFocus={() => {
                 setIsAddressFocused(true);
@@ -499,19 +468,22 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
           {whisperDownloadProgress !== null && <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#d7edf0]"><span className="block h-full bg-[#16899b] transition-[width] duration-150" style={{ width: `${whisperDownloadProgress}%` }} /></div>}
         </div>}
 
-        {showSuggestions && (suggestions.length > 0 || inputVal.trim()) && (
+        {showSuggestions && (suggestions.length > 0 || smartSuggestion || isSuggestionsLoading || inputVal.trim()) && (
           <div className="bluefox-address-suggestions absolute left-0 right-0 top-9 z-[100] overflow-hidden rounded-b-[12px] border border-t-0 border-[#8fcbd4] bg-white/90 py-1.5 shadow-[0_16px_34px_rgba(32,33,36,0.14)]">
-            {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={() => { setIsInputDirty(false); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
+            {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
               <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />Rechercher « {inputVal.trim()} »
             </button>}
-            {smartSuggestion && <button type="button" className="bluefox-address-smart-card" onMouseDown={() => { setIsInputDirty(false); setSmartSuggestion(null); onSearch(smartSuggestion.target || smartSuggestion.searchQuery); setShowSuggestions(false); }}>
+            {smartSuggestion && <button type="button" className={`bluefox-address-smart-card ${highlightedIndex === 0 ? 'is-highlighted' : ''}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onSearch(smartSuggestion.target || smartSuggestion.searchQuery); setShowSuggestions(false); }}>
               <span className="bluefox-address-smart-image">
-                {smartSuggestion.favicon || smartSuggestion.image ? (
-                  <>
-                    <MdPublic className="bluefox-address-smart-fallback" aria-hidden="true" />
-                    <img src={smartSuggestion.favicon || smartSuggestion.image} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
-                  </>
-                ) : smartSuggestion.kind === 'weather' ? <MdLocationOn aria-hidden="true" /> : <MdPublic aria-hidden="true" />}
+                {smartSuggestion.kind === 'weather' && !smartSuggestion.favicon && !smartSuggestion.image ? (
+                  <MdLocationOn aria-hidden="true" />
+                ) : (
+                  <SiteSuggestionIcon
+                    src={smartSuggestion.favicon || smartSuggestion.image}
+                    imageClassName="relative z-[1] h-full w-full object-cover"
+                    fallbackClassName="bluefox-address-smart-fallback"
+                  />
+                )}
               </span>
               <span className="bluefox-address-smart-copy">
                 <small>{smartSuggestion.kind === 'site' ? 'Entreprise ou site' : smartSuggestion.kind === 'weather' ? 'Météo actuelle' : smartSuggestion.kind === 'person' ? 'Personne' : smartSuggestion.kind === 'game' ? 'Jeu vidéo' : smartSuggestion.kind === 'subject' ? 'Sujet illustré' : smartSuggestion.kind === 'city' ? 'Ville reconnue' : 'Résultat reconnu'}</small>
@@ -520,12 +492,30 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
               </span>
               {smartSuggestion.weather ? <MdWbSunny className="bluefox-address-smart-status" aria-hidden="true" /> : <MdNorthEast className="bluefox-address-smart-status" aria-hidden="true" />}
             </button>}
-            {suggestions.filter((suggestion) => suggestion.trim().toLocaleLowerCase() !== inputVal.trim().toLocaleLowerCase()).map((suggestion, index) => (
-              <button type="button" key={`${suggestion}-${index}`} className="bluefox-address-suggestion flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] transition-colors duration-150 hover:bg-[#eef8fa] hover:text-[#202124]" onMouseDown={() => selectSuggestion(suggestion)}>
-                <MdSearch className={`mr-3 ${ICON_COLOR}`} />{suggestion}
+            {suggestions.map((suggestion, index) => (
+              <button
+                type="button"
+                key={suggestion.id}
+                aria-selected={highlightedIndex === (smartSuggestion ? index + 1 : index)}
+                className={`bluefox-address-suggestion flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] transition-colors duration-150 hover:bg-[#eef8fa] hover:text-[#202124] ${highlightedIndex === (smartSuggestion ? index + 1 : index) ? 'is-highlighted' : ''}`}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectSuggestion(suggestion)}
+              >
+                {suggestion.kind === 'history' ? (
+                  <SiteSuggestionIcon
+                    src={suggestion.favicon}
+                    imageClassName="mr-3 h-[18px] w-[18px] object-contain"
+                    fallbackClassName={`mr-3 h-[18px] w-[18px] ${ICON_COLOR}`}
+                  />
+                ) : (
+                  <MdSearch className={`mr-3 ${ICON_COLOR}`} />
+                )}
+                <span className="min-w-0 flex-1 truncate">{suggestion.label}</span>
+                {suggestion.kind === 'history' && <small className="ml-2 shrink-0 text-[10px] text-[#8a9099]">Historique</small>}
               </button>
             ))}
-            {inputVal.trim() && <button type="button" className="bluefox-address-foxy-action flex w-full items-center gap-2 border-t border-[#d9eef0] px-3 py-2 text-left text-sm font-medium text-[#137b8b] transition-colors hover:bg-[#eef8fa]" onMouseDown={() => { setIsInputDirty(false); onAskFoxy?.(inputVal.trim()); setShowSuggestions(false); }}>
+            {isSuggestionsLoading && <div className="bluefox-address-suggestions-status" role="status">Recherche de suggestions…</div>}
+            {inputVal.trim() && <button type="button" className="bluefox-address-foxy-action flex w-full items-center gap-2 border-t border-[#d9eef0] px-3 py-2 text-left text-sm font-medium text-[#137b8b] transition-colors hover:bg-[#eef8fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onAskFoxy?.(inputVal.trim()); setShowSuggestions(false); }}>
               <MdAutoAwesome className="text-[16px]" /> Demander à Foxy
             </button>}
           </div>

@@ -1,0 +1,91 @@
+/* Compact omnibox-style suggestion surfaces. */
+.bluefox-address-suggestions,
+.bluefox-home-search-results {
+  max-height: min(360px, calc(100vh - 88px));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.bluefox-address-suggestions .bluefox-address-suggestion {
+  min-height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 12px;
+}
+
+.bluefox-address-suggestions .bluefox-address-first-result {
+  min-height: 36px;
+}
+
+.bluefox-address-suggestions .bluefox-address-smart-card {
+  min-height: 54px;
+  padding: 6px 10px;
+}
+
+.bluefox-address-suggestions .bluefox-address-smart-image {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+  border-radius: 7px;
+}
+
+.bluefox-address-suggestions .bluefox-address-smart-copy strong {
+  font-size: 12px;
+}
+
+.bluefox-address-suggestions .bluefox-address-smart-copy span {
+  font-size: 10px;
+}
+
+.bluefox-address-suggestions .bluefox-address-suggestions-status,
+.bluefox-home-search-results .bluefox-home-search-status {
+  padding: 6px 12px;
+  color: #87929a;
+  font-size: 10px;
+}
+
+.bluefox-address-suggestions .is-highlighted,
+.bluefox-home-search-results .is-highlighted {
+  background: rgba(217, 240, 243, 0.72) !important;
+  color: #174f59 !important;
+  outline: none;
+}
+
+.bluefox-home-search-results {
+  border-radius: 12px;
+}
+
+.bluefox-home-search-results button {
+  min-height: 42px;
+  gap: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.bluefox-home-search-results .bluefox-home-smart-result {
+  min-height: 54px;
+  padding: 6px 10px;
+}
+
+.bluefox-home-search-results .bluefox-home-smart-result .bluefox-address-smart-image {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  flex-basis: 36px;
+  border-radius: 7px;
+}
+
+.bluefox-home-search-results strong {
+  font-size: 12px;
+}
+
+.bluefox-home-search-results small {
+  font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluefox-address-suggestions,
+  .bluefox-home-search-results {
+    animation: none;
+  }
+}

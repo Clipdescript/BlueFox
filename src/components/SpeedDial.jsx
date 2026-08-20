@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { MdApps, MdAutoAwesome, MdClose, MdLocationOn, MdNorthEast, MdPalette, MdPublic, MdSearch, MdWbSunny } from 'react-icons/md';
-import fetchJsonp from 'fetch-jsonp';
 import { useTheme } from '../utils/theme.js';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
-import { findSmartSearchResult } from '../utils/entitySearch.js';
+import { SiteSuggestionIcon, useSearchSuggestions } from '../utils/searchSuggestions.js';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
 const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
@@ -219,8 +218,6 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
   const { resolvedTheme } = useTheme();
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [homeSearch, setHomeSearch] = useState('');
-  const [homeSearchSuggestions, setHomeSearchSuggestions] = useState([]);
-  const [homeSmartSuggestion, setHomeSmartSuggestion] = useState(null);
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const [isHomeSearchFocused, setIsHomeSearchFocused] = useState(false);
   const [homeSearchFocusOffset, setHomeSearchFocusOffset] = useState(12);
@@ -282,8 +279,7 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
       if (!homeSearchRef.current?.contains(event.target)) {
         setIsHomeSearchFocused(false);
         setHomeSearch('');
-        setHomeSearchSuggestions([]);
-        setHomeSmartSuggestion(null);
+        clearHomeSuggestions();
       }
     };
 
@@ -298,53 +294,6 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
     window.addEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
     return () => window.removeEventListener('bluefox-search-engine-changed', handleSearchEngineChange);
   }, []);
-
-  useEffect(() => {
-    const query = homeSearch.trim();
-    if (!isHomeSearchFocused || !query) {
-      setHomeSearchSuggestions([]);
-      return undefined;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=fr`);
-        if (!cancelled && response.ok) {
-          const data = await response.json();
-          setHomeSearchSuggestions(Array.isArray(data[1]) ? data[1].slice(0, 4) : []);
-        }
-      } catch {
-        if (!cancelled) setHomeSearchSuggestions([]);
-      }
-    }, 160);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [homeSearch, isHomeSearchFocused]);
-
-  useEffect(() => {
-    const query = homeSearch.trim();
-    if (!isHomeSearchFocused || query.length < 3) {
-      setHomeSmartSuggestion(null);
-      return undefined;
-    }
-
-    const controller = new AbortController();
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      const result = await findSmartSearchResult(query, { signal: controller.signal });
-      if (!cancelled) setHomeSmartSuggestion(result);
-    }, 380);
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [homeSearch, isHomeSearchFocused]);
 
   useEffect(() => {
     const publishShortcuts = () => {
@@ -488,6 +437,16 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
     ? Array.from({ length: Math.min(9, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
     : [];
 
+  const {
+    suggestions: homeSuggestions,
+    smartSuggestion: homeSmartSuggestion,
+    isLoading: isHomeSuggestionsLoading,
+    highlightedIndex: homeHighlightedIndex,
+    highlightedSuggestion: homeHighlightedSuggestion,
+    moveHighlight: moveHomeHighlight,
+    clearSuggestions: clearHomeSuggestions
+  } = useSearchSuggestions({ query: homeSearch, focused: isHomeSearchFocused, searchEngineId });
+
   const activateHomeSearch = () => {
     if (!isHomeSearchFocused) {
       const favorites = homeFavoritesRef.current;
@@ -502,22 +461,41 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
   };
 
   const submitHomeSearchValue = (value) => {
-    const query = value.trim();
+    const query = String(value || '').trim();
     if (!query) return;
     setIsHomeSearchFocused(false);
-    setHomeSearchSuggestions([]);
-    setHomeSmartSuggestion(null);
+    clearHomeSuggestions();
     onNavigate(query);
+  };
+
+  const submitHomeSearchSuggestion = (suggestion) => {
+    if (!suggestion) return;
+    setHomeSearch(suggestion.label || homeSearch);
+    submitHomeSearchValue(suggestion.value || suggestion.searchQuery || homeSearch);
+  };
+
+  const handleHomeSearchKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveHomeHighlight(event.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      clearHomeSuggestions();
+      setIsHomeSearchFocused(false);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitHomeSearchValue(homeHighlightedSuggestion?.value || homeSearch);
+    }
   };
 
   const submitHomeSearch = (event) => {
     event.preventDefault();
     submitHomeSearchValue(homeSearch);
   };
-
-  const homeSearchResults = homeSearch.trim()
-    ? [homeSearch.trim(), ...homeSearchSuggestions.filter((suggestion) => suggestion.trim().toLocaleLowerCase() !== homeSearch.trim().toLocaleLowerCase())]
-    : [];
   const activeSearchEngine = getSearchEngine(searchEngineId);
   const activeSearchEngineIcon = getSearchEngineIcon(activeSearchEngine);
 
@@ -583,6 +561,7 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
               type="text"
               value={homeSearch}
               onChange={(event) => setHomeSearch(event.target.value)}
+              onKeyDown={handleHomeSearchKeyDown}
               placeholder="Des réponses à toutes vos questions..."
               aria-label="Rechercher sur le Web ou saisir une adresse"
               onFocus={activateHomeSearch}
@@ -591,33 +570,36 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
               <img src={activeSearchEngineIcon} alt={activeSearchEngine.name} title={`Rechercher avec ${activeSearchEngine.name}`} />
             </button>
           </form>
-          {isHomeSearchFocused && homeSearchResults.length > 0 && (
+          {isHomeSearchFocused && (homeSearch.trim() || homeSuggestions.length > 0 || homeSmartSuggestion || isHomeSuggestionsLoading) && (
             <div className="bluefox-home-search-results" role="listbox" aria-label="Suggestions de recherche">
-              {homeSearchResults[0] && (
+              {homeSearch.trim() && (
                 <button
                   type="button"
                   role="option"
                   aria-selected="false"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => submitHomeSearchValue(homeSearchResults[0])}
+                  onClick={() => submitHomeSearchValue(homeSearch)}
                 >
                   <MdNorthEast aria-hidden="true" />
-                  <span><strong>{homeSearchResults[0]}</strong></span>
+                  <span><strong>{homeSearch.trim()}</strong></span>
                 </button>
               )}
               {homeSmartSuggestion && <button
                 type="button"
-                className="bluefox-home-smart-result"
+                className={`bluefox-home-smart-result ${homeHighlightedIndex === 0 ? 'is-highlighted' : ''}`}
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={() => submitHomeSearchValue(homeSmartSuggestion.target || homeSearch)}
+                onClick={() => submitHomeSearchValue(homeSmartSuggestion.target || homeSmartSuggestion.searchQuery || homeSearch)}
               >
                 <span className="bluefox-address-smart-image">
-                  {homeSmartSuggestion.favicon || homeSmartSuggestion.image ? (
-                    <>
-                      <MdPublic className="bluefox-address-smart-fallback" aria-hidden="true" />
-                      <img src={homeSmartSuggestion.favicon || homeSmartSuggestion.image} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
-                    </>
-                  ) : homeSmartSuggestion.kind === 'weather' ? <MdLocationOn aria-hidden="true" /> : <MdPublic aria-hidden="true" />}
+                  {homeSmartSuggestion.kind === 'weather' && !homeSmartSuggestion.favicon && !homeSmartSuggestion.image ? (
+                    <MdLocationOn aria-hidden="true" />
+                  ) : (
+                    <SiteSuggestionIcon
+                      src={homeSmartSuggestion.favicon || homeSmartSuggestion.image}
+                      imageClassName="relative z-[1] h-full w-full object-cover"
+                      fallbackClassName="bluefox-address-smart-fallback"
+                    />
+                  )}
                 </span>
                 <span className="bluefox-address-smart-copy">
                   <small>{homeSmartSuggestion.kind === 'site' ? 'Entreprise ou site' : homeSmartSuggestion.kind === 'weather' ? 'Météo actuelle' : homeSmartSuggestion.kind === 'person' ? 'Personne' : homeSmartSuggestion.kind === 'game' ? 'Jeu vidéo' : homeSmartSuggestion.kind === 'subject' ? 'Sujet illustré' : 'Résultat reconnu'}</small>
@@ -626,19 +608,29 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
                 </span>
                 {homeSmartSuggestion.weather ? <MdWbSunny className="bluefox-address-smart-status" aria-hidden="true" /> : <MdNorthEast className="bluefox-address-smart-status" aria-hidden="true" />}
               </button>}
-              {homeSearchResults.slice(1).map((suggestion, index) => (
+              {homeSuggestions.map((suggestion, index) => (
                 <button
                   type="button"
-                  key={`${suggestion}-${index}`}
+                  key={suggestion.id}
                   role="option"
-                  aria-selected="false"
+                  aria-selected={homeHighlightedIndex === (homeSmartSuggestion ? index + 1 : index)}
+                  className={homeHighlightedIndex === (homeSmartSuggestion ? index + 1 : index) ? 'is-highlighted' : ''}
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => submitHomeSearchValue(suggestion)}
+                  onClick={() => submitHomeSearchSuggestion(suggestion)}
                 >
-                  <MdSearch aria-hidden="true" />
-                  <span><strong>{suggestion}</strong></span>
+                  {suggestion.kind === 'history' ? (
+                    <SiteSuggestionIcon
+                      src={suggestion.favicon}
+                      imageClassName="h-[19px] w-[19px] object-contain"
+                      fallbackClassName="h-[19px] w-[19px] text-[#30343a]"
+                    />
+                  ) : (
+                    <MdSearch aria-hidden="true" />
+                  )}
+                  <span><strong>{suggestion.label}</strong><small>{suggestion.kind === 'history' ? 'Historique' : suggestion.detail}</small></span>
                 </button>
               ))}
+              {isHomeSuggestionsLoading && <div className="bluefox-home-search-status" role="status">Recherche de suggestions…</div>}
               {homeSearch.trim() && <button
                 type="button"
                 className="bluefox-home-search-foxy-action"
@@ -646,8 +638,7 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
                 onClick={() => {
                   const question = homeSearch.trim();
                   setIsHomeSearchFocused(false);
-                  setHomeSearchSuggestions([]);
-                  setHomeSmartSuggestion(null);
+                  clearHomeSuggestions();
                   onAskFoxy?.(question);
                 }}
               >
