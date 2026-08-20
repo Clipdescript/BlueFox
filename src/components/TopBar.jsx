@@ -140,6 +140,42 @@ const getWeatherDescription = (code) => {
   return 'Conditions actuelles';
 };
 
+const SMART_SITE_ENTITIES = [
+  { names: ['amazon', 'amazon fr'], title: 'Amazon', domain: 'amazon.fr', subtitle: 'Boutique en ligne', url: 'https://www.amazon.fr' },
+  { names: ['google'], title: 'Google', domain: 'google.com', subtitle: 'Moteur de recherche', url: 'https://www.google.com' },
+  { names: ['youtube'], title: 'YouTube', domain: 'youtube.com', subtitle: 'Vidéos et musique', url: 'https://www.youtube.com' },
+  { names: ['netflix'], title: 'Netflix', domain: 'netflix.com', subtitle: 'Films et séries', url: 'https://www.netflix.com' },
+  { names: ['spotify'], title: 'Spotify', domain: 'spotify.com', subtitle: 'Musique et podcasts', url: 'https://open.spotify.com' },
+  { names: ['discord'], title: 'Discord', domain: 'discord.com', subtitle: 'Communauté et messagerie', url: 'https://discord.com' },
+  { names: ['facebook'], title: 'Facebook', domain: 'facebook.com', subtitle: 'Réseau social', url: 'https://www.facebook.com' },
+  { names: ['instagram'], title: 'Instagram', domain: 'instagram.com', subtitle: 'Réseau social', url: 'https://www.instagram.com' },
+  { names: ['microsoft'], title: 'Microsoft', domain: 'microsoft.com', subtitle: 'Technologies et logiciels', url: 'https://www.microsoft.com' },
+  { names: ['apple'], title: 'Apple', domain: 'apple.com', subtitle: 'Technologies et appareils', url: 'https://www.apple.com' },
+  { names: ['openai'], title: 'OpenAI', domain: 'openai.com', subtitle: 'Intelligence artificielle', url: 'https://openai.com' },
+  { names: ['mistral ai', 'mistral'], title: 'Mistral AI', domain: 'mistral.ai', subtitle: 'Intelligence artificielle française', url: 'https://mistral.ai' },
+  { names: ['carrefour'], title: 'Carrefour', domain: 'carrefour.fr', subtitle: 'Courses et grande distribution', url: 'https://www.carrefour.fr' },
+  { names: ['fnac'], title: 'Fnac', domain: 'fnac.com', subtitle: 'Culture, électronique et achats', url: 'https://www.fnac.com' },
+  { names: ['cdiscount'], title: 'Cdiscount', domain: 'cdiscount.com', subtitle: 'Achats en ligne', url: 'https://www.cdiscount.com' }
+];
+
+const getSmartSiteEntity = (value = '') => {
+  const normalized = normalizeSmartSearchText(value);
+  return SMART_SITE_ENTITIES.find((entity) => entity.names.some((name) => normalized === name)) || null;
+};
+
+const getWikipediaSummary = async (title, signal) => {
+  try {
+    const response = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal });
+    if (!response.ok) return null;
+    const summary = await response.json();
+    return summary.thumbnail?.source || summary.originalimage?.source
+      ? { title: summary.title || title, description: summary.description || summary.extract || '', image: summary.thumbnail?.source || summary.originalimage?.source }
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) => (
   <button type="button" onClick={onClick} className={`bluefox-topbar-menu-row flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed] ${className}`}>
     <span className="flex h-4 w-4 shrink-0 items-center justify-center leading-none">
@@ -416,6 +452,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   useEffect(() => {
     const query = inputVal.trim();
     const { weatherIntent, locationQuery } = getSmartSearchContext(query);
+    const imageTopicQuery = /\b(plante|plantes|fleur|fleurs|rose|tulipe|arbre|animal|chat|chien|montagne|monument)\b/i.test(query);
     if (!isAddressFocused || query.length < 3 || locationQuery.length < 2) {
       setSmartSuggestion(null);
       return undefined;
@@ -425,58 +462,112 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
-        const geocodeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationQuery)}&count=1&language=fr&format=json`, { signal: controller.signal });
-        if (!geocodeResponse.ok) throw new Error('Geocoding unavailable');
-        const geocode = await geocodeResponse.json();
-        const location = geocode.results?.[0];
-        if (!location) {
-          if (!cancelled) setSmartSuggestion(null);
+        const siteEntity = getSmartSiteEntity(query);
+        if (siteEntity) {
+          if (!cancelled) {
+            setSmartSuggestion({
+              kind: 'site',
+              title: siteEntity.title,
+              country: '',
+              admin: siteEntity.subtitle,
+              image: '',
+              favicon: `https://www.google.com/s2/favicons?domain=${siteEntity.domain}&sz=128`,
+              weather: null,
+              target: siteEntity.url,
+              searchQuery: query
+            });
+            setShowSuggestions(true);
+          }
           return;
         }
 
-        const normalizedQuery = normalizeSmartSearchText(query);
-        const normalizedLocation = normalizeSmartSearchText(location.name);
-        const isCityQuery = normalizedQuery === normalizedLocation
-          || normalizedQuery === `${normalizedLocation} ${normalizeSmartSearchText(location.country || '')}`;
-        if (!weatherIntent && !isCityQuery) {
-          if (!cancelled) setSmartSuggestion(null);
-          return;
-        }
-
-        let weather = null;
-        if (weatherIntent) {
-          const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,weather_code&timezone=auto`, { signal: controller.signal });
-          if (weatherResponse.ok) {
-            const weatherData = await weatherResponse.json();
-            weather = {
-              temperature: Number.isFinite(Number(weatherData.current?.temperature_2m)) ? Math.round(Number(weatherData.current.temperature_2m)) : null,
-              description: getWeatherDescription(weatherData.current?.weather_code)
-            };
+        if (!weatherIntent && imageTopicQuery) {
+          const summary = await getWikipediaSummary(query, controller.signal);
+          if (summary && !cancelled) {
+            setSmartSuggestion({
+              kind: 'subject',
+              title: summary.title,
+              country: '',
+              admin: summary.description || 'Sujet illustré',
+              image: summary.image,
+              favicon: '',
+              weather: null,
+              target: '',
+              searchQuery: query
+            });
+            setShowSuggestions(true);
+            return;
           }
         }
 
-        let image = '';
+        let location = null;
         try {
-          const summaryResponse = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(location.name)}`, { signal: controller.signal });
-          if (summaryResponse.ok) {
-            const summary = await summaryResponse.json();
-            image = summary.thumbnail?.source || summary.originalimage?.source || '';
+          const geocodeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationQuery)}&count=1&language=fr&format=json`, { signal: controller.signal });
+          if (geocodeResponse.ok) {
+            const geocode = await geocodeResponse.json();
+            location = geocode.results?.[0] || null;
           }
         } catch {
-          // An image is optional; the location card remains useful without it.
+          // Continue with the Wikipedia topic fallback below.
         }
 
-        if (!cancelled) {
-          setSmartSuggestion({
-            title: location.name,
-            country: location.country || '',
-            admin: location.admin1 || '',
-            image,
-            weather,
-            searchQuery: query
-          });
-          setShowSuggestions(true);
+        if (location) {
+          const normalizedQuery = normalizeSmartSearchText(query);
+          const normalizedLocation = normalizeSmartSearchText(location.name);
+          const isCityQuery = normalizedQuery === normalizedLocation
+            || normalizedQuery === `${normalizedLocation} ${normalizeSmartSearchText(location.country || '')}`;
+          if (weatherIntent || isCityQuery) {
+            let weather = null;
+            if (weatherIntent) {
+              const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,weather_code&timezone=auto`, { signal: controller.signal });
+              if (weatherResponse.ok) {
+                const weatherData = await weatherResponse.json();
+                weather = {
+                  temperature: Number.isFinite(Number(weatherData.current?.temperature_2m)) ? Math.round(Number(weatherData.current.temperature_2m)) : null,
+                  description: getWeatherDescription(weatherData.current?.weather_code)
+                };
+              }
+            }
+
+            const summary = weatherIntent ? null : await getWikipediaSummary(location.name, controller.signal);
+            if (!cancelled) {
+              setSmartSuggestion({
+                kind: weatherIntent ? 'weather' : 'city',
+                title: location.name,
+                country: location.country || '',
+                admin: location.admin1 || '',
+                image: summary?.image || '',
+                favicon: '',
+                weather,
+                target: '',
+                searchQuery: query
+              });
+              setShowSuggestions(true);
+            }
+            return;
+          }
         }
+
+        if (!weatherIntent && imageTopicQuery) {
+          const summary = await getWikipediaSummary(query, controller.signal);
+          if (summary && !cancelled) {
+            setSmartSuggestion({
+              kind: 'subject',
+              title: summary.title,
+              country: '',
+              admin: summary.description || 'Sujet illustré',
+              image: summary.image,
+              favicon: '',
+              weather: null,
+              target: '',
+              searchQuery: query
+            });
+            setShowSuggestions(true);
+            return;
+          }
+        }
+
+        if (!cancelled) setSmartSuggestion(null);
       } catch {
         if (!cancelled) setSmartSuggestion(null);
       }
@@ -582,12 +673,17 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
             {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={() => { setIsInputDirty(false); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
               <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />Rechercher « {inputVal.trim()} »
             </button>}
-            {smartSuggestion && <button type="button" className="bluefox-address-smart-card" onMouseDown={() => { setIsInputDirty(false); setSmartSuggestion(null); onSearch(smartSuggestion.searchQuery); setShowSuggestions(false); }}>
+            {smartSuggestion && <button type="button" className="bluefox-address-smart-card" onMouseDown={() => { setIsInputDirty(false); setSmartSuggestion(null); onSearch(smartSuggestion.target || smartSuggestion.searchQuery); setShowSuggestions(false); }}>
               <span className="bluefox-address-smart-image">
-                {smartSuggestion.image ? <img src={smartSuggestion.image} alt="" /> : <MdLocationOn aria-hidden="true" />}
+                {smartSuggestion.favicon || smartSuggestion.image ? (
+                  <>
+                    <MdPublic className="bluefox-address-smart-fallback" aria-hidden="true" />
+                    <img src={smartSuggestion.favicon || smartSuggestion.image} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+                  </>
+                ) : smartSuggestion.kind === 'weather' ? <MdLocationOn aria-hidden="true" /> : <MdPublic aria-hidden="true" />}
               </span>
               <span className="bluefox-address-smart-copy">
-                <small>{smartSuggestion.weather ? 'Météo actuelle' : 'Lieu reconnu'}</small>
+                <small>{smartSuggestion.kind === 'site' ? 'Entreprise ou site' : smartSuggestion.kind === 'weather' ? 'Météo actuelle' : smartSuggestion.kind === 'subject' ? 'Sujet illustré' : 'Ville reconnue'}</small>
                 <strong>{smartSuggestion.title}{smartSuggestion.country ? ` · ${smartSuggestion.country}` : ''}</strong>
                 <span>{smartSuggestion.weather?.temperature !== null && smartSuggestion.weather ? `${smartSuggestion.weather.temperature} °C · ${smartSuggestion.weather.description}` : smartSuggestion.admin || 'Voir les résultats sur le Web'}</span>
               </span>

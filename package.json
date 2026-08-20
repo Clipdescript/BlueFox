@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.65",
+  "version": "2.0.66",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",

@@ -147,6 +147,7 @@
 }
 
 .bluefox-address-smart-image {
+  position: relative;
   display: grid;
   width: 46px;
   height: 46px;
@@ -160,9 +161,20 @@
 }
 
 .bluefox-address-smart-image img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.bluefox-address-smart-fallback {
+  position: absolute;
+  inset: 0;
+  width: 22px;
+  height: 22px;
+  margin: auto;
+  color: #16899b !important;
 }
 
 .bluefox-address-smart-copy {
@@ -238,6 +250,10 @@
   border-color: rgba(167, 139, 250, 0.32);
   background: rgba(139, 92, 246, 0.16);
   color: #c4b5fd;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-smart-fallback {
+  color: #c4b5fd !important;
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-address-smart-copy small {
