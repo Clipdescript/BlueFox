@@ -61,6 +61,15 @@ const getWhisperPipeline = async (onProgress) => {
     whisperPipelinePromise = import('@huggingface/transformers').then(({ env, pipeline }) => {
       env.allowLocalModels = false;
       env.useBrowserCache = true;
+
+      const onnxRuntimeVersion = env.backends.onnx?.versions?.web;
+      if (onnxRuntimeVersion && env.backends.onnx?.wasm) {
+        const onnxWasmCdnBase = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${onnxRuntimeVersion}/dist/`;
+        env.backends.onnx.wasm.wasmPaths = {
+          mjs: `${onnxWasmCdnBase}ort-wasm-simd-threaded.asyncify.mjs`,
+          wasm: `${onnxWasmCdnBase}ort-wasm-simd-threaded.asyncify.wasm`
+        };
+      }
       const files = new Map();
       const reportProgress = (progress) => {
         if (!onProgress || !progress) return;

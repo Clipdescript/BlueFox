@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.67",
+  "version": "2.0.68",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -16,16 +16,16 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
     "@huggingface/transformers": "^4.2.0",
-    "electron-is-dev": "^3.0.1",
-    "electron-log": "^5.4.3",
-    "electron-updater": "^6.8.3",
     "fetch-jsonp": "^1.4.0",
-    "freebuff": "^0.0.149",
-    "fs-extra": "^11.3.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.2.108",
     "react": "^19.2.4",
@@ -33,12 +33,6 @@
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "unzipper": "^0.12.3",
-    "windows-shortcuts": "^0.1.6",
-    "youtube-search-without-api-key": "^2.0.7"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.21.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
@@ -47,7 +41,6 @@
     "cross-env": "^7.0.3",
     "electron": "^43.4.0",
     "electron-builder": "^25.1.8",
-    "electron-packager": "^17.1.2",
     "eslint": "^9.21.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.0.0",
@@ -56,8 +49,7 @@
     "postcss": "^8.5.3",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.17",
-    "vite": "^6.2.0",
-    "wait-on": "^8.0.2"
+    "vite": "^6.2.0"
   },
   "build": {
     "publish": [

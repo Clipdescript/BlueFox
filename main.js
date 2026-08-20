@@ -694,31 +694,6 @@ ipcMain.handle('save-pdf', async (event, payload = {}) => {
   return { fileName: path.basename(filePath), filePath };
 });
 
-ipcMain.handle('search-youtube', async (_event, rawQuery) => {
-  const query = String(rawQuery || '').trim().slice(0, 160);
-  if (!query) return { ok: false, error: 'Écris un titre ou un artiste à rechercher.' };
-
-  try {
-    const youtubeSearch = await import('youtube-search-without-api-key');
-    const results = await youtubeSearch.search(query);
-    return {
-      ok: true,
-      results: (results || []).slice(0, 12).map((result) => ({
-        id: result.id?.videoId || '',
-        title: result.title || result.snippet?.title || 'Vidéo YouTube',
-        description: result.description || '',
-        duration: result.duration_raw || result.snippet?.duration || '',
-        channel: result.snippet?.channelTitle || result.author?.name || '',
-        thumbnail: result.snippet?.thumbnails?.high?.url || result.snippet?.thumbnails?.default?.url || (result.id?.videoId ? `https://i.ytimg.com/vi/${result.id.videoId}/hqdefault.jpg` : ''),
-        url: result.url || (result.id?.videoId ? `https://www.youtube.com/watch?v=${result.id.videoId}` : '')
-      })).filter((result) => result.id)
-    };
-  } catch (error) {
-    log.warn(`YouTube search unavailable: ${error.message}`);
-    return { ok: false, error: 'La recherche YouTube est indisponible pour le moment.' };
-  }
-});
-
 ipcMain.on('update-home-shortcuts', (_event, shortcuts) => {
   updateJumpList(sanitizeHomeShortcuts(shortcuts));
 });

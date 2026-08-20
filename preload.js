@@ -21,7 +21,6 @@ contextBridge.exposeInMainWorld('electron', {
   savePdf: (payload) => ipcRenderer.invoke('save-pdf', payload),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   updateHomeShortcuts: (shortcuts) => ipcRenderer.send('update-home-shortcuts', shortcuts),
-  searchYouTube: (query) => ipcRenderer.invoke('search-youtube', query),
   onJumpListAction: (callback) => {
     const subscription = (_event, action) => callback(action);
     ipcRenderer.on('jump-list-action', subscription);

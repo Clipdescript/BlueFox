@@ -13,7 +13,6 @@ import {
   MdInfo,
   MdLightMode,
   MdLock,
-  MdNorthEast,
   MdAutorenew,
   MdPayment,
   MdShield,
@@ -367,7 +366,14 @@ function App() {
       <main id="top" className="download-page fl26-content">
         <section className="hero section-shell fl-split-page-upper fl-hero">
           <div className="hero-copy reveal">
-            <h1>Prenez enfin le pouvoir sur votre navigation</h1>
+            <h1>
+              Prenez enfin le{' '}
+              <span className="hero-title-accent">
+                {Array.from('pouvoir sur votre navigation').map((character, index) => character === ' '
+                  ? ' '
+                  : <span className="hero-title-letter" style={{ animationDelay: `${350 + index * 55}ms` }} key={`${character}-${index}`}>{character}</span>)}
+              </span>
+            </h1>
             <p className="hero-text">Plus rapide, plus léger et totalement transparent. BlueFox n'est pas juste un navigateur, c'est votre espace, sans compromis.</p>
             <div className="hero-actions" id="download">
               <a
@@ -388,7 +394,7 @@ function App() {
             </div>
             <div className="download-support">
               <span>Version officielle BlueFox pour Windows</span>
-              <a href={RELEASES_PAGE}>Voir les versions précédentes <MdNorthEast aria-hidden="true" /></a>
+              <a href={RELEASES_PAGE}>Voir les versions précédentes</a>
             </div>
           </div>
           <div className="browser-preview browser-capture-frame reveal reveal-delay" aria-label="Capture de l’interface BlueFox Browser">
@@ -449,7 +455,7 @@ function App() {
               <p className="section-label">Contrôle total</p>
               <h2>Des paramètres clairs, un contrôle complet.</h2>
               <p>Personnalisez votre expérience en quelques clics. Confidentialité, apparence, fonctionnalités : tous les réglages sont accessibles et transparents.</p>
-              <a className="text-link" href="#features">Voir les fonctionnalités <MdNorthEast aria-hidden="true" /></a>
+              <a className="text-link" href="#features">Voir les fonctionnalités</a>
             </div>
             <div className="feature-story-media"><img src={theme === 'dark' ? darkParametreUrl : parametreUrl} alt="Page des paramètres de BlueFox Browser" /></div>
           </article>
@@ -458,7 +464,7 @@ function App() {
               <p className="section-label">Foxy intégré</p>
               <h2>Réfléchir, chercher et avancer au même endroit.</h2>
               <p>Le mode IA accompagne votre navigation quand vous en avez besoin, tout en restant désactivable quand vous préférez une expérience classique.</p>
-              <a className="text-link" href="#download">Télécharger BlueFox <MdNorthEast aria-hidden="true" /></a>
+              <a className="text-link" href="#download">Télécharger BlueFox</a>
             </div>
             <div className="feature-story-media"><img src={theme === 'dark' ? iaSombreUrl : iaClairUrl} alt="Mode IA de BlueFox Browser" /></div>
           </article>
@@ -490,7 +496,7 @@ function App() {
               <p>Une interface claire et légère pour rester concentré sur l’essentiel. Foxy peut vous aider à comprendre, mais il ne s’impose jamais.</p>
             </article>
           </div>
-          <a className="text-link foxy-capabilities-link" href="#download">Découvrir BlueFox <MdNorthEast aria-hidden="true" /></a>
+          <a className="text-link foxy-capabilities-link" href="#download">Découvrir BlueFox</a>
         </section>
 
         <section className="pros-cons-section section-shell reveal" id="benefits" aria-labelledby="benefits-title">
@@ -635,8 +641,44 @@ function App() {
           </div>
         </section>
 
+        <section className="partners-section section-shell reveal" id="partners" aria-labelledby="partners-title">
+          <div className="content-heading partners-heading">
+            <p className="section-label">Nos partenaires</p>
+            <h2 id="partners-title">Des projets que nous sommes heureux de vous faire découvrir.</h2>
+            <p>Retrouvez les sites et communautés qui partagent notre envie de créer une expérience web simple et accessible.</p>
+          </div>
+          <div className="partners-grid">
+            <a
+              className="partner-card"
+              href="https://gamehubsocial-neos.web.app/login"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Visiter GameHub Social"
+            >
+              <span className="partner-favicon-wrap" aria-hidden="true">
+                <img
+                  className="partner-favicon"
+                  src="https://gamehubsocial-neos.web.app/logo.png"
+                  alt=""
+                  loading="lazy"
+                />
+              </span>
+              <span className="partner-card-content">
+                <span className="partner-card-topline">Partenaire</span>
+                <strong>GameHub Social</strong>
+                <span className="partner-url">https://gamehubsocial-neos.web.app/login</span>
+                <span className="partner-visit">Visiter le site</span>
+              </span>
+            </a>
+          </div>
+        </section>
+
         <section className="final-cta section-shell reveal">
-          <h2>Le navigateur qui respecte votre espace.</h2>
+          <h2 className="final-cta-title">
+            {Array.from('Le navigateur qui respecte votre espace.').map((character, index) => character === ' '
+              ? ' '
+              : <span className="final-title-letter" style={{ animationDelay: `${350 + index * 45}ms` }} key={`${character}-${index}`}>{character}</span>)}
+          </h2>
           <a className="primary-button" href="#download"><MdDownload className="button-icon" aria-hidden="true" /> Télécharger BlueFox</a>
         </section>
       </main>
@@ -669,6 +711,7 @@ function App() {
                 <h4>Ressources</h4>
                 <a href="https://github.com/Clipdescript/BlueFox" target="_blank" rel="noreferrer">Open Source</a>
                 <a href="https://discord.gg/rYaHfhgUJ4" target="_blank" rel="noreferrer">Support Discord</a>
+                <a href="#partners">Nos partenaires</a>
                 <a href="/confidentialite">Confidentialité</a>
               </div>
             </div>
