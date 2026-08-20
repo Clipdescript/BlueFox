@@ -25,6 +25,7 @@ import {
   MdHomeFilled,
   MdInfoOutline,
   MdKey,
+  MdLocationOn,
   MdMic,
   MdMusicNote,
   MdPrint,
@@ -34,6 +35,7 @@ import {
   MdSettings,
   MdTune,
   MdWifi,
+  MdWbSunny,
   MdMenu,
   MdVerticalSplit,
   MdViewInAr,
@@ -110,6 +112,34 @@ const formatCompactAddress = (url) => {
   }
 };
 
+const normalizeSmartSearchText = (value = '') => String(value)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLocaleLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim();
+
+const getSmartSearchContext = (value = '') => {
+  const query = String(value).trim();
+  const weatherIntent = /\b(meteo|météo|temps|temperature|température|previsions|prévisions)\b/i.test(query);
+  const locationQuery = query
+    .replace(/^(quelle est la|donne-moi|donne moi|voir|affiche)?\s*(meteo|météo|temps|temperature|température|previsions|prévisions)?\s*(a|à|de|pour)?\s*/i, '')
+    .replace(/\s+(aujourd'hui|aujourd hui|demain|ce soir|cette semaine).*$/i, '')
+    .trim();
+  return { weatherIntent, locationQuery: locationQuery || query };
+};
+
+const getWeatherDescription = (code) => {
+  if ([0].includes(Number(code))) return 'Ciel dégagé';
+  if ([1, 2].includes(Number(code))) return 'Éclaircies';
+  if ([3].includes(Number(code))) return 'Nuageux';
+  if ([45, 48].includes(Number(code))) return 'Brouillard';
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(Number(code))) return 'Pluie';
+  if ([71, 73, 75, 77, 85, 86].includes(Number(code))) return 'Neige';
+  if ([95, 96, 99].includes(Number(code))) return 'Orages';
+  return 'Conditions actuelles';
+};
+
 const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) => (
   <button type="button" onClick={onClick} className={`bluefox-topbar-menu-row flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed] ${className}`}>
     <span className="flex h-4 w-4 shrink-0 items-center justify-center leading-none">
@@ -126,6 +156,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   const [isInputDirty, setIsInputDirty] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [smartSuggestion, setSmartSuggestion] = useState(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isPlaceholderVisible, setIsPlaceholderVisible] = useState(true);
@@ -382,9 +413,86 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     return () => clearTimeout(timer);
   }, [inputVal]);
 
+  useEffect(() => {
+    const query = inputVal.trim();
+    const { weatherIntent, locationQuery } = getSmartSearchContext(query);
+    if (!isAddressFocused || query.length < 3 || locationQuery.length < 2) {
+      setSmartSuggestion(null);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const geocodeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationQuery)}&count=1&language=fr&format=json`, { signal: controller.signal });
+        if (!geocodeResponse.ok) throw new Error('Geocoding unavailable');
+        const geocode = await geocodeResponse.json();
+        const location = geocode.results?.[0];
+        if (!location) {
+          if (!cancelled) setSmartSuggestion(null);
+          return;
+        }
+
+        const normalizedQuery = normalizeSmartSearchText(query);
+        const normalizedLocation = normalizeSmartSearchText(location.name);
+        const isCityQuery = normalizedQuery === normalizedLocation
+          || normalizedQuery === `${normalizedLocation} ${normalizeSmartSearchText(location.country || '')}`;
+        if (!weatherIntent && !isCityQuery) {
+          if (!cancelled) setSmartSuggestion(null);
+          return;
+        }
+
+        let weather = null;
+        if (weatherIntent) {
+          const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,weather_code&timezone=auto`, { signal: controller.signal });
+          if (weatherResponse.ok) {
+            const weatherData = await weatherResponse.json();
+            weather = {
+              temperature: Number.isFinite(Number(weatherData.current?.temperature_2m)) ? Math.round(Number(weatherData.current.temperature_2m)) : null,
+              description: getWeatherDescription(weatherData.current?.weather_code)
+            };
+          }
+        }
+
+        let image = '';
+        try {
+          const summaryResponse = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(location.name)}`, { signal: controller.signal });
+          if (summaryResponse.ok) {
+            const summary = await summaryResponse.json();
+            image = summary.thumbnail?.source || summary.originalimage?.source || '';
+          }
+        } catch {
+          // An image is optional; the location card remains useful without it.
+        }
+
+        if (!cancelled) {
+          setSmartSuggestion({
+            title: location.name,
+            country: location.country || '',
+            admin: location.admin1 || '',
+            image,
+            weather,
+            searchQuery: query
+          });
+          setShowSuggestions(true);
+        }
+      } catch {
+        if (!cancelled) setSmartSuggestion(null);
+      }
+    }, 380);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [inputVal, isAddressFocused]);
+
   const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
       setIsInputDirty(false);
+      setSmartSuggestion(null);
       onSearch(inputVal);
       setShowSuggestions(false);
     }
@@ -393,6 +501,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   const selectSuggestion = (suggestion) => {
     setInputVal(suggestion);
     setIsInputDirty(false);
+    setSmartSuggestion(null);
     onSearch(suggestion);
     setShowSuggestions(false);
   };
@@ -472,6 +581,17 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
           <div className="bluefox-address-suggestions absolute left-0 right-0 top-9 z-[100] overflow-hidden rounded-b-[12px] border border-t-0 border-[#8fcbd4] bg-white/90 py-1.5 shadow-[0_16px_34px_rgba(32,33,36,0.14)]">
             {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={() => { setIsInputDirty(false); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
               <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />Rechercher « {inputVal.trim()} »
+            </button>}
+            {smartSuggestion && <button type="button" className="bluefox-address-smart-card" onMouseDown={() => { setIsInputDirty(false); setSmartSuggestion(null); onSearch(smartSuggestion.searchQuery); setShowSuggestions(false); }}>
+              <span className="bluefox-address-smart-image">
+                {smartSuggestion.image ? <img src={smartSuggestion.image} alt="" /> : <MdLocationOn aria-hidden="true" />}
+              </span>
+              <span className="bluefox-address-smart-copy">
+                <small>{smartSuggestion.weather ? 'Météo actuelle' : 'Lieu reconnu'}</small>
+                <strong>{smartSuggestion.title}{smartSuggestion.country ? ` · ${smartSuggestion.country}` : ''}</strong>
+                <span>{smartSuggestion.weather?.temperature !== null && smartSuggestion.weather ? `${smartSuggestion.weather.temperature} °C · ${smartSuggestion.weather.description}` : smartSuggestion.admin || 'Voir les résultats sur le Web'}</span>
+              </span>
+              {smartSuggestion.weather ? <MdWbSunny className="bluefox-address-smart-status" aria-hidden="true" /> : <MdNorthEast className="bluefox-address-smart-status" aria-hidden="true" />}
             </button>}
             {suggestions.filter((suggestion) => suggestion.trim().toLocaleLowerCase() !== inputVal.trim().toLocaleLowerCase()).map((suggestion, index) => (
               <button type="button" key={`${suggestion}-${index}`} className="bluefox-address-suggestion flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] transition-colors duration-150 hover:bg-[#eef8fa] hover:text-[#202124]" onMouseDown={() => selectSuggestion(suggestion)}>
