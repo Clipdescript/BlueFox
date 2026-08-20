@@ -27,6 +27,93 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
+const AI_LANGUAGE_NAMES = {
+  fr: 'French',
+  en: 'English'
+};
+
+let browserLanguage = 'fr';
+const configuredLanguageSessions = new WeakSet();
+
+const configureLanguageHeaders = (browserSession) => {
+  if (!browserSession || configuredLanguageSessions.has(browserSession)) return;
+  configuredLanguageSessions.add(browserSession);
+  browserSession.webRequest.onBeforeSendHeaders({ urls: ['<all_urls>'] }, (details, callback) => {
+    const languageHeader = browserLanguage === 'en'
+      ? 'en-US,en;q=0.9,fr;q=0.5'
+      : 'fr-FR,fr;q=0.9,en;q=0.5';
+    details.requestHeaders['Accept-Language'] = languageHeader;
+    callback({ requestHeaders: details.requestHeaders });
+  });
+};
+
+ipcMain.on('browser-language', (_event, language) => {
+  browserLanguage = String(language || 'fr').startsWith('en') ? 'en' : 'fr';
+});
+
+const getAiLanguageName = (language) => AI_LANGUAGE_NAMES[String(language || 'fr').split('-')[0]] || AI_LANGUAGE_NAMES.fr;
+
+const translateAiSourceBatch = async (sources, responseLanguage, mistralApiKey) => {
+  if (!sources.length) return [];
+  try {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${mistralApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+        temperature: 0.1,
+        max_tokens: 2200,
+        messages: [
+          {
+            role: 'system',
+            content: `Translate every title and short excerpt below into ${responseLanguage}. Return only a JSON array with exactly the same id values. Keep proper names, URLs, product names and facts unchanged. Do not summarize, omit, reorder or add results. If a title is already in ${responseLanguage}, keep it unchanged. Format: [{"id":"1","title":"...","text":"..."}]`
+          },
+          {
+            role: 'user',
+            content: JSON.stringify(sources.map((source, index) => ({
+              id: String(index + 1),
+              title: String(source.title || '').slice(0, 240),
+              text: String(source.text || '').slice(0, 500)
+            })))
+          }
+        ]
+      })
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    const rawContent = Array.isArray(content) ? content.map((part) => part.text || '').join('') : String(content || '');
+    const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+    const translations = JSON.parse(jsonMatch[0]);
+    return Array.isArray(translations) ? translations : [];
+  } catch (error) {
+    log.warn(`Foxy source batch localization unavailable: ${error.message}`);
+    return [];
+  }
+};
+
+const localizeAiSources = async (sources, responseLanguage, mistralApiKey) => {
+  if (responseLanguage === AI_LANGUAGE_NAMES.fr || !mistralApiKey || !sources.length) return sources;
+  const localizedSources = sources.map((source) => ({ ...source }));
+  const batchSize = 10;
+  for (let offset = 0; offset < sources.length; offset += batchSize) {
+    const batch = sources.slice(offset, offset + batchSize);
+    const translations = await translateAiSourceBatch(batch, responseLanguage, mistralApiKey);
+    batch.forEach((source, batchIndex) => {
+      const translation = translations.find((item) => String(item?.id) === String(batchIndex + 1));
+      if (!translation) return;
+      const target = localizedSources[offset + batchIndex];
+      target.title = String(translation.title || source.title);
+      target.text = String(translation.text || source.text);
+    });
+  }
+  return localizedSources;
+};
+
 // Configure logging for auto-updater
 log.transports.file.level = 'info';
 autoUpdater.logger = log;
@@ -725,6 +812,7 @@ ipcMain.handle('generate-ai-questions', async (_event, rawContext = {}) => {
   const mistralApiKey = process.env.MISTRAL_API_KEY;
   if (!mistralApiKey) return { ok: false, error: 'MISTRAL_API_KEY n’est pas configurée.' };
 
+  const responseLanguage = getAiLanguageName(rawContext.language);
   const pageUrl = String(rawContext.url || '').trim().slice(0, 500);
   const pageTitle = String(rawContext.title || '').trim().slice(0, 240);
   const pageDescription = String(rawContext.description || '').trim().slice(0, 1000);
@@ -747,11 +835,11 @@ ipcMain.handle('generate-ai-questions', async (_event, rawContext = {}) => {
         messages: [
           {
             role: 'system',
-            content: 'Tu génères des suggestions de questions pour la sidebar IA Foxy. Analyse uniquement le contenu fourni de la page web. Retourne exactement un tableau JSON contenant 3 chaînes en français, sans Markdown, sans introduction et sans réponses. Chaque chaîne doit être une vraie question directement liée au titre, au sujet ou aux informations visibles de cette page. Ne produis jamais des questions génériques comme « Résume cette page » si tu peux poser une question précise. Adapte la demande au type de page : vidéo, musique, boutique, article, documentation, réseau social ou autre. N’invente aucun produit, prix, personne, fait ou contenu absent des éléments fournis. Les trois questions doivent être différentes, naturelles et utiles.'
+            content: 'Tu génères des suggestions de questions pour la sidebar IA Foxy. Analyse uniquement le contenu fourni de la page web. Retourne exactement un tableau JSON contenant 3 chaînes dans la langue demandée, sans Markdown, sans introduction et sans réponses. Chaque chaîne doit être une vraie question directement liée au titre, au sujet ou aux informations visibles de cette page. Ne produis jamais des questions génériques comme « Résume cette page » si tu peux poser une question précise. Adapte la demande au type de page : vidéo, musique, boutique, article, documentation, réseau social ou autre. N’invente aucun produit, prix, personne, fait ou contenu absent des éléments fournis. Les trois questions doivent être différentes, naturelles et utiles.'
           },
           {
             role: 'user',
-            content: `URL : ${pageUrl}\nTitre : ${pageTitle || 'inconnu'}\nDescription : ${pageDescription || 'indisponible'}\nContenu visible :\n${pageText || 'indisponible'}`
+            content: `URL : ${pageUrl}\nTitre : ${pageTitle || 'inconnu'}\nDescription : ${pageDescription || 'indisponible'}\nContenu visible :\n${pageText || 'indisponible'}\n\nIMPORTANT : génère les questions uniquement en ${responseLanguage}.`
           }
         ]
       })
@@ -780,6 +868,7 @@ ipcMain.handle('generate-ai-questions', async (_event, rawContext = {}) => {
 ipcMain.handle('ask-ai', async (event, rawRequest) => {
   const request = typeof rawRequest === 'string' ? { prompt: rawRequest } : (rawRequest || {});
   const mode = request.mode === 'document' ? 'document' : 'web';
+  const responseLanguage = getAiLanguageName(request.language);
   const prompt = String(request.prompt || '').trim().slice(0, 4000);
   const documentText = String(request.documentText || '').trim().slice(0, 24000);
   const exaApiKey = process.env.EXA_API_KEY;
@@ -809,11 +898,11 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
           messages: [
             {
               role: 'system',
-              content: 'Tu es Foxy, l’assistant PDF de BlueFox. Travaille exclusivement à partir du document fourni, sans recherche Internet, sans sources externes et sans inventer. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour une demande de résumé, donne d’abord un résumé clair et fidèle, puis les idées importantes. Pour une demande de modification, propose une version réécrite prête à insérer et explique brièvement ce qui a changé. Réponds en français avec des paragraphes courts et du Markdown. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` avec modération et `==...==` uniquement pour une information essentielle. Termine par exactement quatre questions de suivi courtes dans des balises <foxy_followup>question</foxy_followup>.'
+              content: 'Tu es Foxy, l’assistant PDF de BlueFox. Travaille exclusivement à partir du document fourni, sans recherche Internet, sans sources externes et sans inventer. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour une demande de résumé, donne d’abord un résumé clair et fidèle, puis les idées importantes. Pour une demande de modification, propose une version réécrite prête à insérer et explique brièvement ce qui a changé. Réponds uniquement dans la langue demandée, avec des paragraphes courts et du Markdown. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` avec modération et `==...==` uniquement pour une information essentielle. Termine par exactement quatre questions de suivi courtes dans des balises <foxy_followup>question</foxy_followup>.'
             },
             {
               role: 'user',
-              content: `Demande : ${prompt}\n\nTexte du document PDF :\n${documentText || 'Le texte du document est indisponible.'}`
+              content: `Demande : ${prompt}\n\nTexte du document PDF :\n${documentText || 'Le texte du document est indisponible.'}\n\nIMPORTANT : réponds uniquement en ${responseLanguage}.`
             }
           ]
         })
@@ -868,9 +957,10 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
         publishedDate: result.publishedDate || result.published_at || ''
       }));
 
+    const localizedSources = await localizeAiSources(sources, responseLanguage, mistralApiKey);
     event.sender.send('ai-search-progress', {
       status: 'sources',
-      sources: sources.map(({ title, url, image }) => ({ title, url, image }))
+      sources: localizedSources.map(({ title, url, image }) => ({ title, url, image }))
     });
 
     const context = sources.slice(0, 12).map((source, index) => `[${index + 1}] ${source.title}\n${source.url}\n${source.text}`).join('\n\n');
@@ -887,11 +977,11 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
         messages: [
           {
             role: 'system',
-            content: 'Tu es Foxy, l’assistant de BlueFox. Réponds en français, directement et honnêtement. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour les faits récents ou vérifiables, utilise exclusivement les extraits web numérotés fournis : ne complète jamais avec une supposition et ne fabrique aucun fait, nom, chiffre, citation ou lien. Si les extraits ne permettent pas de répondre, dis clairement que l’information n’est pas vérifiable avec les éléments disponibles. N’écris jamais de section « Sources », ne dis pas « selon les sources » et ne mentionne pas Exa. Ajoute uniquement des citations numérotées au format [1], [2] après les affirmations réellement soutenues par l’extrait correspondant ; n’invente jamais de numéro. Structure la réponse avec Markdown : réponse directe d’abord, paragraphes courts, titres utiles et listes à puces quand plusieurs éléments sont nécessaires. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` pour un mot ou une expression en gras quand c’est utile, mais pas pour toute une phrase ni pour tous les noms. Utilise `==...==` uniquement pour une ou deux informations vraiment essentielles à retenir ; ce sera affiché avec un petit surlignage bleu doux. Laisse le texte ordinaire sans surlignage. Sois suffisamment détaillé pour terminer correctement ta réponse et ne coupe pas une explication en cours ; évite seulement les répétitions. Termine par exactement quatre questions de suivi courtes et directement liées à la question, chacune dans une balise <foxy_followup>question</foxy_followup>, sans répondre à ces questions et sans ajouter d’information nouvelle.'
+            content: 'Tu es Foxy, l’assistant de BlueFox. Réponds uniquement dans la langue demandée, directement et honnêtement. Avant de répondre, vérifie la prémisse sans la déformer. Si l’utilisateur dit « je suis un poisson » ou se présente comme un animal, traite cela comme une hypothèse, une blague ou un jeu de rôle : ne le prends pas littéralement et ne dis pas qu’un poisson doit adopter une forme humaine. Réponds simplement « si tu parles d’un vrai poisson… » puis donne le fait utile. Pour une question de troll, reste bref et ne transforme pas la réponse en long exposé. Si le contexte est ambigu, demande une précision. Ne rejette pas une question originale simplement parce qu’elle est inhabituelle. Pour les faits récents ou vérifiables, utilise exclusivement les extraits web numérotés fournis : ne complète jamais avec une supposition et ne fabrique aucun fait, nom, chiffre, citation ou lien. Si les extraits ne permettent pas de répondre, dis clairement que l’information n’est pas vérifiable avec les éléments disponibles. N’écris jamais de section « Sources », ne dis pas « selon les sources » et ne mentionne pas Exa. Ajoute uniquement des citations numérotées au format [1], [2] après les affirmations réellement soutenues par l’extrait correspondant ; n’invente jamais de numéro. Structure la réponse avec Markdown : réponse directe d’abord, paragraphes courts, titres utiles et listes à puces quand plusieurs éléments sont nécessaires. Ne donne jamais de tutoriel, d’étapes ou de conseils pratiques pour pêcher, hameçonner, attirer, ferrer ou blesser un animal. Distingue toujours la possibilité physique du danger : un poisson peut happer ou mordre un appât, mais cela ne rend pas l’action sûre. Réponds seulement au fait général, recommande d’éviter la souffrance animale et n’affirme pas qu’une espèce ou un appât est « naturel » sans preuve. N’invente jamais de réglementation, d’espèces, de chiffres ou de citations ; n’ajoute une citation numérotée que si un extrait fourni la soutient précisément. Utilise `**...**` pour un mot ou une expression en gras quand c’est utile, mais pas pour toute une phrase ni pour tous les noms. Utilise `==...==` uniquement pour une ou deux informations vraiment essentielles à retenir ; ce sera affiché avec un petit surlignage bleu doux. Laisse le texte ordinaire sans surlignage. Sois suffisamment détaillé pour terminer correctement ta réponse et ne coupe pas une explication en cours ; évite seulement les répétitions. Termine par exactement quatre questions de suivi courtes et directement liées à la question, chacune dans une balise <foxy_followup>question</foxy_followup>, sans répondre à ces questions et sans ajouter d’information nouvelle.'
           },
           {
             role: 'user',
-            content: `Question : ${prompt}\n\nExtraits web numérotés :\n${context || 'Aucun extrait exploitable.'}`
+            content: `Question : ${prompt}\n\nExtraits web numérotés :\n${context || 'Aucun extrait exploitable.'}\n\nIMPORTANT : réponds uniquement en ${responseLanguage}.`
           }
         ]
       })
@@ -910,7 +1000,7 @@ ipcMain.handle('ask-ai', async (event, rawRequest) => {
     const answer = rawAnswer.replace(/\s*<foxy_followup>.*?<\/foxy_followup>/gis, '').trim();
 
     event.sender.send('ai-search-progress', { status: 'done' });
-    return { ok: true, answer, followUps, sources: sources.map(({ title, url, image, text, publishedDate }) => ({ title, url, image, text, publishedDate })) };
+    return { ok: true, answer, followUps, sources: localizedSources.map(({ title, url, image, text, publishedDate }) => ({ title, url, image, text, publishedDate })) };
   } catch (error) {
     event.sender.send('ai-search-progress', { status: 'error' });
     log.warn(`Foxy AI unavailable: ${error.message}`);
@@ -995,6 +1085,7 @@ function createWindow({ privateMode = false } = {}) {
     },
   });
 
+  configureLanguageHeaders(mainWindow.webContents.session);
   let currentTheme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
   const guestContentsSet = new Set();
   const guestSelectionCssKeys = new Map();

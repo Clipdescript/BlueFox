@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electron', {
   print: () => ipcRenderer.send('window-print'),
   setTheme: (theme) => ipcRenderer.send('window-theme', theme),
   setTabColor: (color) => ipcRenderer.send('window-tab-color', color),
+  setBrowserLanguage: (language) => ipcRenderer.send('browser-language', language),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getRuntimeInfo: () => ipcRenderer.invoke('get-electron-runtime-info'),
   getDefaultBrowserStatus: () => ipcRenderer.invoke('get-default-browser-status'),

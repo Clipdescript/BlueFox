@@ -56,12 +56,12 @@ const fetchWikipediaImage = async (title, language, signal) => {
   return '';
 };
 
-const fetchEntityData = async (id, signal) => {
+const fetchEntityData = async (id, signal, preferredLanguage = 'fr') => {
   const params = new URLSearchParams({
     action: 'wbgetentities',
     ids: id,
     props: 'claims|labels|descriptions',
-    languages: 'fr|en',
+    languages: preferredLanguage === 'en' ? 'en|fr' : 'fr|en',
     format: 'json',
     origin: '*'
   });
@@ -71,8 +71,9 @@ const fetchEntityData = async (id, signal) => {
   return data.entities?.[id] || null;
 };
 
-const searchWikidata = async (query, signal) => {
-  const languages = /[àâçéèêëîïôùûüÿœ]/i.test(query) ? ['fr', 'en'] : ['fr', 'en', 'de', 'es'];
+const searchWikidata = async (query, signal, preferredLanguage = 'fr') => {
+  const fallbackLanguages = preferredLanguage === 'en' ? ['en', 'fr'] : ['fr', 'en'];
+  const languages = /[àâçéèêëîïôùûüÿœ]/i.test(query) ? fallbackLanguages : [...fallbackLanguages, 'de', 'es'];
   const responses = await Promise.all(languages.map(async (language) => {
     const params = new URLSearchParams({
       action: 'wbsearchentities',
@@ -97,11 +98,11 @@ const searchWikidata = async (query, signal) => {
   const candidate = exact || uniqueCandidates.find((item) => normalizeText(item.label).length >= 3);
   if (!candidate) return null;
 
-  const entity = await fetchEntityData(candidate.id, signal);
+  const entity = await fetchEntityData(candidate.id, signal, preferredLanguage);
   const claims = entity?.claims || {};
   const website = typeof getClaimValue(claims, 'P856') === 'string' ? getClaimValue(claims, 'P856') : '';
-  const label = entity?.labels?.fr?.value || entity?.labels?.en?.value || candidate.label;
-  const description = entity?.descriptions?.fr?.value || entity?.descriptions?.en?.value || candidate.description || '';
+  const label = entity?.labels?.[preferredLanguage]?.value || entity?.labels?.fr?.value || entity?.labels?.en?.value || candidate.label;
+  const description = entity?.descriptions?.[preferredLanguage]?.value || entity?.descriptions?.fr?.value || entity?.descriptions?.en?.value || candidate.description || '';
   const normalizedLabel = normalizeText(label);
   const exactMatch = normalizedLabel === normalizedQuery;
   const queryWordCount = normalizedQuery.split(' ').length;
@@ -120,8 +121,8 @@ const searchWikidata = async (query, signal) => {
   };
 };
 
-const searchWikipedia = async (query, signal) => {
-  const languages = ['fr', 'en'];
+const searchWikipedia = async (query, signal, preferredLanguage = 'fr') => {
+  const languages = preferredLanguage === 'en' ? ['en', 'fr'] : ['fr', 'en'];
   const responses = await Promise.all(languages.map(async (language) => {
     const params = new URLSearchParams({
       action: 'query',
@@ -163,7 +164,7 @@ const getOsmDescription = (item) => {
   return `${type.replace(/_/g, ' ')}${city ? ` · ${city}` : ''}`;
 };
 
-const searchOpenStreetMap = async (query, signal) => {
+const searchOpenStreetMap = async (query, signal, preferredLanguage = 'fr') => {
   const params = new URLSearchParams({
     q: query,
     format: 'jsonv2',
@@ -171,7 +172,7 @@ const searchOpenStreetMap = async (query, signal) => {
     extratags: '1',
     namedetails: '1',
     limit: '8',
-    'accept-language': 'fr,en'
+    'accept-language': preferredLanguage === 'en' ? 'en,fr' : 'fr,en'
   });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { signal });
   if (!response.ok) return null;
@@ -199,8 +200,8 @@ const searchOpenStreetMap = async (query, signal) => {
   return candidates.sort((first, second) => second.score - first.score)[0] || null;
 };
 
-const getWeatherResult = async (query, locationQuery, signal) => {
-  const params = new URLSearchParams({ name: locationQuery, count: '1', language: 'fr', format: 'json' });
+const getWeatherResult = async (query, locationQuery, signal, preferredLanguage = 'fr') => {
+  const params = new URLSearchParams({ name: locationQuery, count: '1', language: preferredLanguage, format: 'json' });
   const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params}`, { signal });
   if (!response.ok) return null;
   const data = await response.json();
@@ -213,7 +214,9 @@ const getWeatherResult = async (query, locationQuery, signal) => {
     if (weatherResponse.ok) {
       const current = await weatherResponse.json();
       const code = Number(current.current?.weather_code);
-      const description = code === 0 ? 'Ciel dégagé' : [1, 2].includes(code) ? 'Éclaircies' : code === 3 ? 'Nuageux' : [45, 48].includes(code) ? 'Brouillard' : [71, 73, 75, 77, 85, 86].includes(code) ? 'Neige' : [95, 96, 99].includes(code) ? 'Orages' : 'Pluie';
+      const description = preferredLanguage === 'en'
+        ? (code === 0 ? 'Clear sky' : [1, 2].includes(code) ? 'Partly cloudy' : code === 3 ? 'Cloudy' : [45, 48].includes(code) ? 'Fog' : [71, 73, 75, 77, 85, 86].includes(code) ? 'Snow' : [95, 96, 99].includes(code) ? 'Thunderstorms' : 'Rain')
+        : (code === 0 ? 'Ciel dégagé' : [1, 2].includes(code) ? 'Éclaircies' : code === 3 ? 'Nuageux' : [45, 48].includes(code) ? 'Brouillard' : [71, 73, 75, 77, 85, 86].includes(code) ? 'Neige' : [95, 96, 99].includes(code) ? 'Orages' : 'Pluie');
       weather = {
         temperature: Number.isFinite(Number(current.current?.temperature_2m)) ? Math.round(Number(current.current.temperature_2m)) : null,
         description
@@ -256,10 +259,11 @@ const chooseCandidate = (candidates, query) => {
     .find((candidate) => normalizeText(candidate.title) === normalizedQuery || (candidate.score || 0) >= 52) || null;
 };
 
-export const findSmartSearchResult = async (query, { signal } = {}) => {
+export const findSmartSearchResult = async (query, { signal, language = 'fr' } = {}) => {
+  const preferredLanguage = String(language).startsWith('en') ? 'en' : 'fr';
   const cleanQuery = String(query || '').trim();
   if (cleanQuery.length < 3) return null;
-  const cacheKey = cleanQuery.toLocaleLowerCase();
+  const cacheKey = `${preferredLanguage}:${cleanQuery.toLocaleLowerCase()}`;
   const cached = ENTITY_CACHE.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   if (cached) ENTITY_CACHE.delete(cacheKey);
@@ -269,7 +273,7 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
 
   try {
     if (weatherIntent) {
-      result = await getWeatherResult(cleanQuery, locationQuery, signal);
+      result = await getWeatherResult(cleanQuery, locationQuery, signal, preferredLanguage);
     } else {
       const simplifiedQuery = cleanQuery
         .replace(/\b(entreprise|entreprises|société|societe|company|site|magasin|restaurant|landais|landaise|français|francaise)\b/gi, ' ')
@@ -277,9 +281,9 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
         .trim();
       const lookupQueries = [...new Set([cleanQuery, simplifiedQuery].filter((value) => value.length >= 3))];
       const lookups = await Promise.all(lookupQueries.flatMap((lookupQuery) => [
-        searchWikidata(lookupQuery, signal),
-        searchWikipedia(lookupQuery, signal),
-        searchOpenStreetMap(lookupQuery, signal)
+        searchWikidata(lookupQuery, signal, preferredLanguage),
+        searchWikipedia(lookupQuery, signal, preferredLanguage),
+        searchOpenStreetMap(lookupQuery, signal, preferredLanguage)
       ].map((request) => Promise.resolve(request).catch(() => null))));
       const candidate = chooseCandidate(lookups, cleanQuery);
 
@@ -300,7 +304,7 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
           kind,
           title: candidate.title,
           country: candidate.country || '',
-          admin: candidate.admin || candidate.description || 'Résultat reconnu',
+          admin: candidate.admin || candidate.description || (preferredLanguage === 'en' ? 'Recognized result' : 'Résultat reconnu'),
           image,
           favicon: candidate.website ? getFavicon(candidate.website) : '',
           weather: null,

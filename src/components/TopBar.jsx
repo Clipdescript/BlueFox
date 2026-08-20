@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaDiscord } from 'react-icons/fa';
 import {
   MdApps,
@@ -48,12 +49,6 @@ import { SiteSuggestionIcon, useSearchSuggestions } from '../utils/searchSuggest
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
-const ADDRESS_PLACEHOLDERS = [
-  'Rechercher ou saisir une URL',
-  'Rechercher avec Foxy',
-  'Trouver un site ou une information',
-  'Poser une question à Foxy'
-];
 let whisperPipelinePromise = null;
 
 const getWhisperPipeline = async (onProgress) => {
@@ -133,6 +128,8 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) =>
 );
 
 const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isPageError = false, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
+  const { t, i18n } = useTranslation('common');
+  const addressPlaceholders = t('topbar.addressPlaceholders', { returnObjects: true });
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [isInputDirty, setIsInputDirty] = useState(false);
@@ -171,7 +168,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     const timer = window.setInterval(() => {
       setIsPlaceholderVisible(false);
       transitionTimer = window.setTimeout(() => {
-        setPlaceholderIndex((index) => (index + 1) % ADDRESS_PLACEHOLDERS.length);
+        setPlaceholderIndex((index) => (index + 1) % addressPlaceholders.length);
         setIsPlaceholderVisible(true);
       }, 260);
     }, 3200);
@@ -179,7 +176,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
       window.clearInterval(timer);
       if (transitionTimer) window.clearTimeout(transitionTimer);
     };
-  }, [currentUrl, inputVal, isAddressFocused]);
+  }, [addressPlaceholders.length, currentUrl, inputVal, isAddressFocused]);
   useEffect(() => setIsFaviconBroken(false), [currentFavicon, currentUrl, isAiMode, isSettingsOpen]);
   useEffect(() => {
     const handleSearchEngineChange = (event) => {
@@ -251,7 +248,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
         }
       });
       setIsWhisperPreparing(false);
-      const result = await transcriber(audioUrl, { language: 'fr', task: 'transcribe' });
+      const result = await transcriber(audioUrl, { language: i18n.resolvedLanguage || 'fr', task: 'transcribe' });
       const transcript = String(result?.text || '').replace(/\s+/g, ' ').trim();
       if (transcript) {
         setInputVal(transcript);
@@ -274,7 +271,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     }
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setVoiceError('La capture audio locale n’est pas disponible dans cette version.');
+      setVoiceError(t('topbar.audioUnavailable'));
       window.setTimeout(() => setVoiceError(''), 5000);
       return;
     }
@@ -301,7 +298,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
         }
       };
       recorder.onerror = () => {
-        setVoiceError('La capture du microphone a échoué.');
+        setVoiceError(t('topbar.microphoneCapture'));
         setIsVoiceListening(false);
       };
       recorder.onstop = async () => {
@@ -315,7 +312,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
         const chunks = voiceChunksRef.current;
         voiceChunksRef.current = [];
         if (!chunks.length) {
-          setVoiceError('Aucune voix n’a été détectée.');
+          setVoiceError(t('topbar.noVoice'));
           window.setTimeout(() => setVoiceError(''), 4000);
           return;
         }
@@ -332,7 +329,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
             }
           });
           setIsWhisperPreparing(false);
-          const result = await transcriber(audioUrl, { language: 'fr', task: 'transcribe' });
+          const result = await transcriber(audioUrl, { language: i18n.resolvedLanguage || 'fr', task: 'transcribe' });
           URL.revokeObjectURL(audioUrl);
           const transcript = String(result?.text || '').replace(/\s+/g, ' ').trim();
           if (!transcript) throw new Error('Aucune phrase reconnue.');
@@ -340,7 +337,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
           setShowSuggestions(false);
           setIsAddressFocused(true);
         } catch (error) {
-          setVoiceError(`Transcription impossible : ${error.message || 'erreur inconnue'}`);
+          setVoiceError(t('topbar.transcriptionError', { error: error.message || 'unknown error' }));
           window.setTimeout(() => setVoiceError(''), 6000);
         } finally {
           setWhisperDownloadProgress(null);
@@ -354,8 +351,8 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     } catch (error) {
       setIsVoiceListening(false);
       setVoiceError(error.name === 'NotAllowedError'
-        ? 'Autorise l’accès au microphone pour utiliser la recherche vocale.'
-        : 'La capture du microphone a échoué.');
+        ? t('topbar.allowMicrophone')
+        : t('topbar.microphoneCapture'));
       window.setTimeout(() => setVoiceError(''), 5000);
     }
   };
@@ -408,26 +405,26 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
   return (
     <div className="bluefox-topbar sticky top-0 z-50 flex h-12 items-center gap-2 border-b border-[#e1e0dd] bg-[#fffefe] px-3 text-[#202124]">
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" onClick={onBack} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page précédente"><MdArrowBack className="text-[19px]" /></button>
-        <button type="button" onClick={onForward} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Page suivante"><MdArrowForward className="text-[19px]" /></button>
-        <button type="button" onClick={onReload} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Actualiser"><MdRefresh className="text-[19px]" /></button>
-        {showHomeButton && <button type="button" onClick={onHome} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Accueil" title="Accueil"><MdHomeFilled className="text-[19px]" /></button>}
+        <button type="button" onClick={onBack} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={t('topbar.previous')}><MdArrowBack className="text-[19px]" /></button>
+        <button type="button" onClick={onForward} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={t('topbar.next')}><MdArrowForward className="text-[19px]" /></button>
+        <button type="button" onClick={onReload} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={t('topbar.reload')}><MdRefresh className="text-[19px]" /></button>
+        {showHomeButton && <button type="button" onClick={onHome} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={t('topbar.home')} title={t('topbar.home')}><MdHomeFilled className="text-[19px]" /></button>}
       </div>
 
       <div className="relative min-w-0 flex-1">
         <div className={`bluefox-address-bar flex h-9 items-center border border-[#a9d5dd] bg-white px-3 transition-[border-color,box-shadow] focus-within:border-[#16899b] focus-within:ring-2 focus-within:ring-[#d9f0f3] ${showSuggestions && (suggestions.length > 0 || smartSuggestion || isSuggestionsLoading || inputVal.trim()) ? 'rounded-t-[12px] rounded-b-none border-[#8fcbd4]' : 'rounded-[12px]'}`}>
           {isSettingsOpen ? (
-            <MdTune className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Paramètres" />
+            <MdTune className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label={t('topbar.settings')} />
           ) : isPageError ? (
-            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Page introuvable" />
+            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label={t('tabs.pageNotFound')} />
           ) : isGame || isOfflineFallback ? (
-            <MdGamepad className="bluefox-address-game-icon mr-2 h-[18px] w-[18px] shrink-0 text-[#7346bc]" aria-label="Jeu hors ligne" />
+            <MdGamepad className="bluefox-address-game-icon mr-2 h-[18px] w-[18px] shrink-0 text-[#7346bc]" aria-label={t('tabs.offlineGame')} />
           ) : isAiMode ? (
-            <MdAutoAwesome className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label="Mode IA" />
+            <MdAutoAwesome className="mr-2 h-[18px] w-[18px] shrink-0 text-[#137b8b]" aria-label={t('topbar.aiMode')} />
           ) : currentFavicon && !isFaviconBroken ? (
             <img
               src={currentFavicon}
-              alt="Icône du site"
+              alt=""
               className="mr-2 h-[18px] w-[18px] object-contain"
               onError={() => setIsFaviconBroken(true)}
             />
@@ -439,7 +436,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
               onError={() => setIsFaviconBroken(true)}
             />
           ) : (
-            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Site sans favicon" />
+            <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label={t('tabs.siteNoIcon')} />
           )}
           <div className="relative min-w-0 flex-1">
             <input
@@ -466,21 +463,21 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
                 if (inputVal.length > 1) setShowSuggestions(true);
               }}
             />
-            {!isAddressFocused && !currentUrl && !inputVal && <span key={placeholderIndex} className={`bluefox-address-placeholder pointer-events-none absolute inset-0 flex items-center text-[13px] text-[#77787b] ${isPlaceholderVisible ? 'is-visible' : 'is-leaving'}`} aria-hidden="true">{ADDRESS_PLACEHOLDERS[placeholderIndex]}</span>}
+            {!isAddressFocused && !currentUrl && !inputVal && <span key={placeholderIndex} className={`bluefox-address-placeholder pointer-events-none absolute inset-0 flex items-center text-[13px] text-[#77787b] ${isPlaceholderVisible ? 'is-visible' : 'is-leaving'}`} aria-hidden="true">{addressPlaceholders[placeholderIndex]}</span>}
           </div>
-          <button type="button" onClick={() => { setIsInputDirty(false); onSearch(inputVal); }} className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Rechercher"><MdSearch className="text-[17px]" /></button>
-          <button type="button" onClick={handleVoiceSearch} disabled={isVoiceTranscribing} className={`ml-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:cursor-wait ${isVoiceListening || isVoiceTranscribing ? 'bg-[#dff3f5] text-[#137b8b]' : `${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`}`} aria-label={isVoiceTranscribing ? 'Transcription en cours' : isVoiceListening ? 'Arrêter la recherche vocale' : 'Recherche vocale'} aria-pressed={isVoiceListening} title={voiceError || (isVoiceTranscribing ? 'Transcription locale en cours…' : isVoiceListening ? 'Écoute en cours… Cliquez pour terminer' : 'Recherche vocale')}><MdMic className={`text-[17px] ${isVoiceListening || isVoiceTranscribing ? 'animate-pulse' : ''}`} /></button>
-          <span className="sr-only" aria-live="polite">{voiceError || (whisperDownloadProgress !== null ? `Téléchargement du modèle Whisper ${whisperDownloadProgress}%` : isWhisperPreparing ? 'Préparation du modèle Whisper' : isVoiceTranscribing ? 'Transcription locale en cours' : isVoiceListening ? 'Recherche vocale en cours' : '')}</span>
+          <button type="button" onClick={() => { setIsInputDirty(false); onSearch(inputVal); }} className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={t('topbar.search')}><MdSearch className="text-[17px]" /></button>
+          <button type="button" onClick={handleVoiceSearch} disabled={isVoiceTranscribing} className={`ml-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:cursor-wait ${isVoiceListening || isVoiceTranscribing ? 'bg-[#dff3f5] text-[#137b8b]' : `${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`}`} aria-label={isVoiceTranscribing ? t('topbar.transcribing') : isVoiceListening ? t('topbar.stopVoice') : t('topbar.voiceSearch')} aria-pressed={isVoiceListening} title={voiceError || (isVoiceTranscribing ? t('topbar.transcribing') : isVoiceListening ? t('topbar.stopVoice') : t('topbar.voiceSearch'))}><MdMic className={`text-[17px] ${isVoiceListening || isVoiceTranscribing ? 'animate-pulse' : ''}`} /></button>
+          <span className="sr-only" aria-live="polite">{voiceError || (whisperDownloadProgress !== null ? t('topbar.downloadWhisper', { percent: whisperDownloadProgress }) : isWhisperPreparing ? t('topbar.prepareWhisper') : isVoiceTranscribing ? t('topbar.localTranscription') : isVoiceListening ? t('topbar.voiceSearch') : '')}</span>
         </div>
         {(voiceError || isVoiceListening || isVoiceTranscribing || isWhisperPreparing) && <div className={`absolute left-0 right-0 top-10 z-[110] rounded-b-[9px] border border-t-0 px-3 py-2 text-[11px] shadow-[0_8px_18px_rgba(32,33,36,0.10)] ${voiceError ? 'border-[#e5b9bd] bg-[#fff5f5] text-[#a33e49]' : 'border-[#b9dfe4] bg-[#f0fbfc] text-[#137b8b]'}`} role="status" aria-live="polite">
-          {voiceError || (whisperDownloadProgress !== null ? `Téléchargement du modèle Whisper : ${whisperDownloadProgress}%` : isWhisperPreparing ? 'Préparation du modèle Whisper…' : isVoiceTranscribing ? 'Transcription locale en cours…' : 'Écoute en cours… parle maintenant')}
+          {voiceError || (whisperDownloadProgress !== null ? t('topbar.downloadWhisper', { percent: whisperDownloadProgress }) : isWhisperPreparing ? t('topbar.prepareWhisper') : isVoiceTranscribing ? t('topbar.localTranscription') : t('topbar.listeningNow'))}
           {whisperDownloadProgress !== null && <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#d7edf0]"><span className="block h-full bg-[#16899b] transition-[width] duration-150" style={{ width: `${whisperDownloadProgress}%` }} /></div>}
         </div>}
 
         {showSuggestions && (suggestions.length > 0 || smartSuggestion || isSuggestionsLoading || inputVal.trim()) && (
           <div className="bluefox-address-suggestions absolute left-0 right-0 top-9 z-[100] overflow-hidden rounded-b-[12px] border border-t-0 border-[#8fcbd4] bg-white/90 py-1.5 shadow-[0_16px_34px_rgba(32,33,36,0.14)]">
             {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
-              <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />Rechercher « {inputVal.trim()} »
+              <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />{t('topbar.searchFor', { query: inputVal.trim() })}
             </button>}
             {smartSuggestion && <button type="button" className={`bluefox-address-smart-card ${highlightedIndex === 0 ? 'is-highlighted' : ''}`} onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onSearch(smartSuggestion.target || smartSuggestion.searchQuery); setShowSuggestions(false); }}>
               <span className="bluefox-address-smart-image">
@@ -495,9 +492,9 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
                 )}
               </span>
               <span className="bluefox-address-smart-copy">
-                <small>{smartSuggestion.kind === 'site' ? 'Entreprise ou site' : smartSuggestion.kind === 'weather' ? 'Météo actuelle' : smartSuggestion.kind === 'person' ? 'Personne' : smartSuggestion.kind === 'game' ? 'Jeu vidéo' : smartSuggestion.kind === 'subject' ? 'Sujet illustré' : smartSuggestion.kind === 'city' ? 'Ville reconnue' : 'Résultat reconnu'}</small>
+                <small>{smartSuggestion.kind === 'site' ? t('topbar.recognizedSite') : smartSuggestion.kind === 'weather' ? t('topbar.weather') : smartSuggestion.kind === 'person' ? t('topbar.person') : smartSuggestion.kind === 'game' ? t('topbar.videoGame') : smartSuggestion.kind === 'subject' ? t('topbar.subject') : smartSuggestion.kind === 'city' ? t('topbar.city') : t('topbar.recognizedResult')}</small>
                 <strong>{smartSuggestion.title}{smartSuggestion.country ? ` · ${smartSuggestion.country}` : ''}</strong>
-                <span>{smartSuggestion.weather?.temperature !== null && smartSuggestion.weather ? `${smartSuggestion.weather.temperature} °C · ${smartSuggestion.weather.description}` : smartSuggestion.admin || 'Voir les résultats sur le Web'}</span>
+                <span>{smartSuggestion.weather?.temperature !== null && smartSuggestion.weather ? `${smartSuggestion.weather.temperature} °C · ${smartSuggestion.weather.description}` : smartSuggestion.admin || t('topbar.seeWebResults')}</span>
               </span>
               {smartSuggestion.weather ? <MdWbSunny className="bluefox-address-smart-status" aria-hidden="true" /> : <MdNorthEast className="bluefox-address-smart-status" aria-hidden="true" />}
             </button>}
@@ -520,28 +517,27 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
                   <MdSearch className={`mr-3 ${ICON_COLOR}`} />
                 )}
                 <span className="min-w-0 flex-1 truncate">{suggestion.label}</span>
-                {suggestion.kind === 'history' && <small className="ml-2 shrink-0 text-[10px] text-[#8a9099]">Historique</small>}
+                {suggestion.kind === 'history' && <small className="ml-2 shrink-0 text-[10px] text-[#8a9099]">{t('topbar.historyLabel')}</small>}
               </button>
             ))}
-            {isSuggestionsLoading && <div className="bluefox-address-suggestions-status" role="status">Recherche de suggestions…</div>}
+            {isSuggestionsLoading && <div className="bluefox-address-suggestions-status" role="status">{t('topbar.searchSuggestionsLoading')}</div>}
             {inputVal.trim() && <button type="button" className="bluefox-address-foxy-action flex w-full items-center gap-2 border-t border-[#d9eef0] px-3 py-2 text-left text-sm font-medium text-[#137b8b] transition-colors hover:bg-[#eef8fa]" onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsInputDirty(false); clearSuggestions(); onAskFoxy?.(inputVal.trim()); setShowSuggestions(false); }}>
-              <MdAutoAwesome className="text-[16px]" /> Demander à Foxy
-            </button>}
+              <MdAutoAwesome className="text-[16px]" />{t('topbar.askFoxy')}</button>}
           </div>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? 'Fermer Assistant' : 'Ouvrir Assistant'} aria-pressed={isAssistantActive}><MdAutoAwesome className="text-[17px]" /><span>Assistant</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
-        <div className="hidden items-center gap-1.5 lg:flex" aria-label="Mode de navigation">
+        <button type="button" onClick={onAssistant} className={`hidden h-9 items-center gap-1 rounded-full px-2 text-[13px] transition-colors lg:flex ${isAssistantActive ? 'bg-[#f0efed] text-[#292929]' : 'text-[#68696d] hover:bg-[#f0efed] hover:text-[#292929]'}`} aria-label={isAssistantActive ? t('topbar.closeAssistant') : t('topbar.openAssistant')} aria-pressed={isAssistantActive}><MdAutoAwesome className="text-[17px]" /><span>{t('topbar.assistant')}</span><MdExpandMore className="text-[16px] transition-transform duration-200" /></button>
+        <div className="hidden items-center gap-1.5 lg:flex" aria-label={t('topbar.webMode')}>
           <button
             type="button"
             onClick={() => onModeChange?.(!isAiMode)}
             className="bluefox-topbar-mode-switch relative flex h-8 w-[96px] items-center rounded-full border p-1 text-[10px] font-semibold tracking-wide transition-colors"
             role="switch"
             aria-checked={isAiMode}
-            aria-label="Basculer entre le mode Web et le mode IA"
-            title={isAiMode ? 'Mode IA' : 'Mode Web'}
+            aria-label={`${t('topbar.webMode')} / ${t('topbar.aiMode')}`}
+            title={isAiMode ? t('topbar.aiMode') : t('topbar.webMode')}
           >
             <span className="absolute left-1 top-1 h-6 w-[44px] rounded-full shadow-sm transition-transform duration-200 ease-out" style={{ transform: isAiMode ? 'translateX(44px)' : 'translateX(0)' }} />
             <span className={`bluefox-topbar-mode-label ${isAiMode ? 'is-inactive' : 'is-active'} relative z-10 flex w-1/2 justify-center`}>WEB</span>
@@ -549,21 +545,21 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
           </button>
         </div>
         <div ref={discordProfileRef} className="relative" onMouseEnter={() => discordProfile && setIsDiscordProfileOpen(true)} onMouseLeave={() => setIsDiscordProfileOpen(false)}>
-          <button type="button" onClick={() => discordProfile ? setIsDiscordProfileOpen((open) => !open) : onDiscordLogin?.()} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={discordProfile ? `Ouvrir le profil de ${discordProfile.globalName || discordProfile.username}` : 'Se connecter avec Discord'} aria-expanded={Boolean(discordProfile && isDiscordProfileOpen)} title={discordProfile ? `Connecté en tant que ${discordProfile.globalName || discordProfile.username}` : 'Se connecter avec Discord'}>{discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" /> : <MdAccountCircle className="text-[21px]" />}</button>
+          <button type="button" onClick={() => discordProfile ? setIsDiscordProfileOpen((open) => !open) : onDiscordLogin?.()} className={`flex h-9 w-9 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`} aria-label={discordProfile ? t('topbar.discordProfile') : t('topbar.loginDiscord')} aria-expanded={Boolean(discordProfile && isDiscordProfileOpen)} title={discordProfile ? t('topbar.connectedAs', { name: discordProfile.globalName || discordProfile.username }) : t('topbar.loginDiscord')}>{discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" /> : <MdAccountCircle className="text-[21px]" />}</button>
           {discordProfile && isDiscordProfileOpen && (
             <div className="bluefox-discord-profile-popover" role="dialog" aria-label="Profil Discord">
               <div className="bluefox-discord-profile-heading">
                 <img src={discordProfile.avatarUrl} alt="" className="bluefox-discord-profile-avatar" />
                 <div className="min-w-0">
-                  <strong>Salut, {discordProfile.globalName || discordProfile.username} !</strong>
+                  <strong>{t('topbar.hello', { name: discordProfile.globalName || discordProfile.username })}</strong>
                   <span>@{discordProfile.username}</span>
                 </div>
               </div>
-              <div className="bluefox-discord-profile-status"><FaDiscord className="bluefox-discord-profile-status-icon" aria-hidden="true" /> Connecté avec Discord</div>
-              <p className="bluefox-discord-profile-note">Ton profil Discord est associé à BlueFox pour cette session.</p>
+              <div className="bluefox-discord-profile-status"><FaDiscord className="bluefox-discord-profile-status-icon" aria-hidden="true" /> {t('topbar.connectedWithDiscord')}</div>
+              <p className="bluefox-discord-profile-note">{t('topbar.connectedWithDiscord')}</p>
               <div className="bluefox-discord-profile-actions">
-                <button type="button" onClick={() => { onSettings?.(); setIsDiscordProfileOpen(false); }}>Paramètres du compte</button>
-                <button type="button" className="is-secondary" onClick={() => { onDiscordLogout?.(); setIsDiscordProfileOpen(false); }}>Se déconnecter</button>
+                <button type="button" onClick={() => { onSettings?.(); setIsDiscordProfileOpen(false); }}>{t('topbar.accountSettings')}</button>
+                <button type="button" className="is-secondary" onClick={() => { onDiscordLogout?.(); setIsDiscordProfileOpen(false); }}>{t('topbar.logout')}</button>
               </div>
             </div>
           )}
@@ -574,7 +570,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
             type="button"
             onClick={() => onMenuChange?.(!isMenuOpen)}
             className={`bluefox-topbar-menu-trigger flex h-9 w-9 items-center justify-center rounded-full ${isMenuOpen ? 'bg-[#f0efed] text-[#292929]' : ICON_COLOR} transition-colors hover:bg-[#f0efed] hover:text-[#292929]`}
-            aria-label="Ouvrir le menu"
+            aria-label={t('topbar.menu')}
             aria-expanded={isMenuOpen}
           >
             <MdMenu className="text-[20px]" />
@@ -582,45 +578,45 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
 
           {isMenuOpen && (
             <div className="bluefox-topbar-menu absolute right-0 top-11 z-[200] max-h-[calc(100vh-76px)] w-[320px] overflow-hidden rounded-lg border border-[#deddd9] bg-white p-1.5 text-[#303134] shadow-none">
-              <MenuRow icon={MdTab} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); onMenuChange?.(false); }}>Nouvel onglet</MenuRow>
-              <MenuRow icon={MdFileOpen} onClick={async () => { await onOpenPdf?.(); onMenuChange?.(false); }}>Ouvrir un PDF</MenuRow>
-              <MenuRow icon={MdOpenInBrowser} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); onMenuChange?.(false); }}>Nouvelle fenêtre</MenuRow>
-              <MenuRow icon={SecretAgentIcon} shortcut="Ctrl+Maj+N" onClick={() => { onNewPrivateWindow?.(); onMenuChange?.(false); }}>Nouvelle fenêtre privée</MenuRow>
+              <MenuRow icon={MdTab} shortcut="Ctrl+T" onClick={() => { onNewTab?.(); onMenuChange?.(false); }}>{t('topbar.newTab')}</MenuRow>
+              <MenuRow icon={MdFileOpen} onClick={async () => { await onOpenPdf?.(); onMenuChange?.(false); }}>{t('topbar.openPdf')}</MenuRow>
+              <MenuRow icon={MdOpenInBrowser} shortcut="Ctrl+N" onClick={() => { onNewWindow?.(); onMenuChange?.(false); }}>{t('topbar.newWindow')}</MenuRow>
+              <MenuRow icon={SecretAgentIcon} shortcut="Ctrl+Maj+N" onClick={() => { onNewPrivateWindow?.(); onMenuChange?.(false); }}>{t('topbar.privateWindow')}</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdHomeFilled} onClick={() => { onHome?.(); onMenuChange?.(false); }}>Accueil</MenuRow>
-              <MenuRow icon={MdWallet} onClick={() => { onSettingsSection?.('wallet'); onMenuChange?.(false); }}>Portefeuille</MenuRow>
-              <MenuRow icon={MdWifi} onClick={() => { onSettingsSection?.('vpn'); onMenuChange?.(false); }}>VPN BlueFox</MenuRow>
+              <MenuRow icon={MdHomeFilled} onClick={() => { onHome?.(); onMenuChange?.(false); }}>{t('topbar.home')}</MenuRow>
+              <MenuRow icon={MdWallet} onClick={() => { onSettingsSection?.('wallet'); onMenuChange?.(false); }}>{t('topbar.wallet')}</MenuRow>
+              <MenuRow icon={MdWifi} onClick={() => { onSettingsSection?.('vpn'); onMenuChange?.(false); }}>{t('topbar.vpn')}</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdVerticalSplit} shortcut="Activé" onClick={() => { onAssistant?.(); onMenuChange?.(false); }}>Barre latérale</MenuRow>
-              <MenuRow icon={MdKey} onClick={() => { onSettingsSection?.('passwords'); onMenuChange?.(false); }}>Mots de passe et saisie automatique</MenuRow>
-              <MenuRow icon={MdManageHistory} onClick={() => { onSettingsSection?.('history'); onMenuChange?.(false); }}>Historique</MenuRow>
-              <MenuRow icon={MdBookmarkBorder}>Favoris et listes</MenuRow>
-              <MenuRow icon={MdDownload} shortcut="Ctrl+J" onClick={() => { onSettingsSection?.('downloads'); onMenuChange?.(false); }}>Téléchargements</MenuRow>
-              <MenuRow icon={MdViewInAr} onClick={() => { onSearch(BLUEFOX_ADDONS_URL); onMenuChange?.(false); }}>Extensions</MenuRow>
-              <MenuRow icon={MdCleaningServices} shortcut="Ctrl+Maj+Suppr" onClick={() => { onSettingsSection?.('clear-data'); onMenuChange?.(false); }}>Effacer les données de navigation…</MenuRow>
+              <MenuRow icon={MdVerticalSplit} shortcut="Activé" onClick={() => { onAssistant?.(); onMenuChange?.(false); }}>{t('topbar.sidebar')}</MenuRow>
+              <MenuRow icon={MdKey} onClick={() => { onSettingsSection?.('passwords'); onMenuChange?.(false); }}>{t('topbar.passwords')}</MenuRow>
+              <MenuRow icon={MdManageHistory} onClick={() => { onSettingsSection?.('history'); onMenuChange?.(false); }}>{t('topbar.history')}</MenuRow>
+              <MenuRow icon={MdBookmarkBorder}>{t('topbar.bookmarks')}</MenuRow>
+              <MenuRow icon={MdDownload} shortcut="Ctrl+J" onClick={() => { onSettingsSection?.('downloads'); onMenuChange?.(false); }}>{t('topbar.downloads')}</MenuRow>
+              <MenuRow icon={MdViewInAr} onClick={() => { onSearch(BLUEFOX_ADDONS_URL); onMenuChange?.(false); }}>{t('topbar.addons')}</MenuRow>
+              <MenuRow icon={MdCleaningServices} shortcut="Ctrl+Maj+Suppr" onClick={() => { onSettingsSection?.('clear-data'); onMenuChange?.(false); }}>{t('topbar.clearData')}</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
               <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[12px]">
                 <MdZoomIn className="shrink-0 text-[16px] text-[#5f6368]" />
-                <span className="flex-1">Zoom</span>
-                <button type="button" onClick={onZoomOut} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Réduire le zoom">−</button>
+                <span className="flex-1">{t('topbar.zoom')}</span>
+                <button type="button" onClick={onZoomOut} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label={t('topbar.zoomOut')}>−</button>
                 <span className="text-[11px]">{Math.round(zoomFactor * 100)} %</span>
-                <button type="button" onClick={onZoomIn} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label="Augmenter le zoom">+</button>
+                <button type="button" onClick={onZoomIn} className="px-1.5 text-base leading-none hover:text-[#137b8b]" aria-label={t('topbar.zoomIn')}>+</button>
               </div>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdPrint} shortcut="Ctrl+P" onClick={() => { onPrint?.(); onMenuChange?.(false); }}>Imprimer…</MenuRow>
-              <MenuRow icon={MdSearch}>Rechercher et modifier</MenuRow>
-              <MenuRow icon={MdShare}>Enregistrer et partager</MenuRow>
-              <MenuRow icon={MdCallSplit}>Plus d’options</MenuRow>
+              <MenuRow icon={MdPrint} shortcut="Ctrl+P" onClick={() => { onPrint?.(); onMenuChange?.(false); }}>{t('topbar.print')}</MenuRow>
+              <MenuRow icon={MdSearch}>{t('topbar.findEdit')}</MenuRow>
+              <MenuRow icon={MdShare}>{t('topbar.saveShare')}</MenuRow>
+              <MenuRow icon={MdCallSplit}>{t('topbar.moreOptions')}</MenuRow>
 
               <div className="my-1 border-t border-[#e7e6e3]" />
-              <MenuRow icon={MdInfoOutline}>Centre d’aide</MenuRow>
-              <MenuRow icon={MdTune} onClick={() => { onSettings?.(); onMenuChange?.(false); }}>Paramètres</MenuRow>
-              <MenuRow icon={MdGamepad} onClick={() => { onPlayGame?.(); onMenuChange?.(false); }}>Jouer à Tetris</MenuRow>
-              <MenuRow icon={MdPowerSettingsNew} className="bluefox-topbar-menu-quit" onClick={() => { window.electron?.close(); onMenuChange?.(false); }}>Quitter</MenuRow>
+              <MenuRow icon={MdInfoOutline}>{t('topbar.help')}</MenuRow>
+              <MenuRow icon={MdTune} onClick={() => { onSettings?.(); onMenuChange?.(false); }}>{t('topbar.settings')}</MenuRow>
+              <MenuRow icon={MdGamepad} onClick={() => { onPlayGame?.(); onMenuChange?.(false); }}>{t('topbar.playTetris')}</MenuRow>
+              <MenuRow icon={MdPowerSettingsNew} className="bluefox-topbar-menu-quit" onClick={() => { window.electron?.close(); onMenuChange?.(false); }}>{t('topbar.quit')}</MenuRow>
             </div>
           )}
         </div>

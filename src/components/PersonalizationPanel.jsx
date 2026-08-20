@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdArrowBack, MdBrush, MdCheck, MdClose, MdComputer, MdFlashOn, MdNightsStay, MdUpload, MdWallpaper } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
 import { ThemeCard } from './settings/SettingsPrimitives.jsx';
@@ -15,20 +16,20 @@ const THEME_OPTIONS = [
 ];
 
 const BASE_TAB_STYLES = [
-  { label: 'Défaut clair', color: '#f3f2f0', accent: '#a6a7ab' },
-  { label: 'Défaut sombre', color: '#1d2026', accent: '#7c8492' },
-  { label: 'Bleu clair', color: '#e8f1ff', accent: '#2563eb' },
-  { label: 'Gris clair', color: '#f1f3f4', accent: '#8a919a' },
-  { label: 'Blanc', color: '#ffffff', accent: '#c6cbd2' },
-  { label: 'Sable', color: '#fff4df', accent: '#d79b43' },
-  { label: 'Jaune doux', color: '#fff9cf', accent: '#d6b31e' },
-  { label: 'Pêche', color: '#fff0e8', accent: '#e58d67' },
-  { label: 'Rose clair', color: '#fceff3', accent: '#d77c9b' },
-  { label: 'Corail clair', color: '#ffe8e6', accent: '#e36f68' },
-  { label: 'Vert clair', color: '#eaf7ef', accent: '#69ad83' },
-  { label: 'Menthe', color: '#e5f8f2', accent: '#51ab9a' },
-  { label: 'Bleu ciel', color: '#e5f6ff', accent: '#55a8d2' },
-  { label: 'Lavande claire', color: '#f1edff', accent: '#8d7bc8' }
+  { id: 'defaultLight', labelKey: 'defaultLight', color: '#f3f2f0', accent: '#a6a7ab' },
+  { id: 'defaultDark', labelKey: 'defaultDark', color: '#1d2026', accent: '#7c8492' },
+  { id: 'blueLight', labelKey: 'blueLight', color: '#e8f1ff', accent: '#2563eb' },
+  { id: 'grayLight', labelKey: 'grayLight', color: '#f1f3f4', accent: '#8a919a' },
+  { id: 'white', labelKey: 'white', color: '#ffffff', accent: '#c6cbd2' },
+  { id: 'sand', labelKey: 'sand', color: '#fff4df', accent: '#d79b43' },
+  { id: 'softYellow', labelKey: 'softYellow', color: '#fff9cf', accent: '#d6b31e' },
+  { id: 'peach', labelKey: 'peach', color: '#fff0e8', accent: '#e58d67' },
+  { id: 'lightPink', labelKey: 'lightPink', color: '#fceff3', accent: '#d77c9b' },
+  { id: 'lightCoral', labelKey: 'lightCoral', color: '#ffe8e6', accent: '#e36f68' },
+  { id: 'lightGreen', labelKey: 'lightGreen', color: '#eaf7ef', accent: '#69ad83' },
+  { id: 'mint', labelKey: 'mint', color: '#e5f8f2', accent: '#51ab9a' },
+  { id: 'skyBlue', labelKey: 'skyBlue', color: '#e5f6ff', accent: '#55a8d2' },
+  { id: 'lavender', labelKey: 'lavender', color: '#f1edff', accent: '#8d7bc8' }
 ];
 
 const hslToHex = (hue, saturation, lightness) => {
@@ -52,19 +53,25 @@ const hslToHex = (hue, saturation, lightness) => {
   return `#${[red, green, blue].map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`;
 };
 
-const PALETTE_HUE_NAMES = ['Rouge', 'Orange', 'Jaune', 'Vert citron', 'Vert', 'Turquoise', 'Cyan', 'Bleu', 'Indigo', 'Violet', 'Magenta', 'Rose'];
-const PALETTE_TONE_NAMES = ['brumeux', 'pâle', 'clair', 'doux', 'frais', 'vif', 'éclatant', 'profond', 'nocturne'];
+const PALETTE_HUES = [
+  ['red', 0], ['orange', 30], ['yellow', 60], ['lime', 90], ['green', 120], ['turquoise', 150],
+  ['cyan', 180], ['blue', 210], ['indigo', 240], ['violet', 270], ['magenta', 300], ['pink', 330]
+];
+const PALETTE_TONES = ['misty', 'pale', 'light', 'soft', 'fresh', 'vivid', 'bright', 'deep', 'night'];
 
 // 108 additional named tones keep the large palette readable and provide hex
 // values that Electron can apply to the native Windows title-bar overlay.
 const EXTRA_TAB_STYLES = Array.from({ length: 108 }, (_, index) => {
-  const hueIndex = index % 12;
-  const toneIndex = Math.floor(index / 12);
-  const hue = hueIndex * 30;
+  const hueIndex = index % PALETTE_HUES.length;
+  const toneIndex = Math.floor(index / PALETTE_HUES.length);
+  const [hueKey, hue] = PALETTE_HUES[hueIndex];
+  const toneKey = PALETTE_TONES[toneIndex];
   const lightness = 95 - (toneIndex * 7);
   const accentLightness = Math.max(28, lightness - 18);
   return {
-    label: `${PALETTE_HUE_NAMES[hueIndex]} ${PALETTE_TONE_NAMES[toneIndex]}`,
+    id: `palette-${hueKey}-${toneKey}`,
+    hueKey,
+    toneKey,
     color: hslToHex(hue, 72, lightness),
     accent: hslToHex(hue, 72, accentLightness)
   };
@@ -425,6 +432,8 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
   const [galleryError, setGalleryError] = useState(false);
   const [customTabColor, setCustomTabColor] = useState(/^#[0-9a-f]{6}$/i.test(tabColor || '') ? tabColor : '#2563eb');
   const { mode, setMode } = useTheme();
+  const { t } = useTranslation('common');
+  const localizedThemeOptions = THEME_OPTIONS.map((themeOption) => ({ ...themeOption, name: t(`personalization.${themeOption.id}`), description: t(`personalization.${themeOption.id}Description`) }));
 
   React.useEffect(() => {
     if (/^#[0-9a-f]{6}$/i.test(tabColor || '')) setCustomTabColor(tabColor);
@@ -482,44 +491,50 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
     IMAGE_CATEGORIES.forEach((category) => { void loadCategoryImages(category); });
   }, [isOpen]);
   const defaultTabColor = resolvedTheme === 'dark' ? DARK_DEFAULT_TAB_COLOR : LIGHT_DEFAULT_TAB_COLOR;
+  const localizedTabStyles = TAB_STYLES.map((style) => ({
+    ...style,
+    label: style.labelKey
+      ? t(`personalization.${style.labelKey}`)
+      : t('personalization.paletteLabel', { hue: t(`personalization.paletteHues.${style.hueKey}`), tone: t(`personalization.paletteTones.${style.toneKey}`) })
+  }));
   const availableTabStyles = Array.from(new Map((resolvedTheme === 'dark'
-    ? TAB_STYLES
-    : TAB_STYLES.filter((style) => style.label !== 'Défaut sombre')).map((style) => [style.color.toLowerCase(), style])).values());
+    ? localizedTabStyles
+    : localizedTabStyles.filter((style) => style.id !== 'defaultDark')).map((style) => [style.color.toLowerCase(), style])).values());
 
   return (
     <div className={`bluefox-personalization-panel ${isOpen ? 'is-open' : 'is-closed'}`} role="presentation">
-      <aside className="bluefox-personalization-sidebar" aria-hidden={!isOpen} aria-label="Personnaliser la page d’accueil">
+      <aside className="bluefox-personalization-sidebar" aria-hidden={!isOpen} aria-label={t('personalization.customize')}>
         <header className="bluefox-personalization-header">
           <div className="bluefox-personalization-heading">
-            {selectedCategory ? <button type="button" className="bluefox-personalization-back" onClick={() => setActiveCategory(null)} aria-label="Retour aux catégories"><MdArrowBack /></button> : <MdBrush aria-hidden="true" />}
-            <span>{selectedCategory ? selectedCategory.label : 'Personnaliser'}</span>
+            {selectedCategory ? <button type="button" className="bluefox-personalization-back" onClick={() => setActiveCategory(null)} aria-label={t('personalization.back')}><MdArrowBack /></button> : <MdBrush aria-hidden="true" />}
+            <span>{selectedCategory ? selectedCategory.label : t('personalization.customize')}</span>
           </div>
-          <button type="button" onClick={onClose} className="bluefox-personalization-close" aria-label="Fermer la personnalisation" title="Fermer"><MdClose aria-hidden="true" /></button>
+          <button type="button" onClick={onClose} className="bluefox-personalization-close" aria-label={t('personalization.close')} title={t('personalization.close')}><MdClose aria-hidden="true" /></button>
         </header>
 
         <div className="bluefox-personalization-content">
           {!selectedCategory ? (
             <>
-              <h1 className="bluefox-personalization-title">Apparence</h1>
-              <p className="bluefox-personalization-intro">Choisissez les couleurs du navigateur et le fond de votre page Nouvel onglet.</p>
-              <div className="bluefox-settings-theme-grid bluefox-personalization-theme-grid" role="group" aria-label="Choisir le thème de BlueFox">
-                {THEME_OPTIONS.map((themeOption) => <ThemeCard key={themeOption.id} themeOption={themeOption} compact selected={themeOption.id === mode} onClick={() => setMode(themeOption.id)} />)}
+              <h1 className="bluefox-personalization-title">{t('personalization.appearance')}</h1>
+              <p className="bluefox-personalization-intro">{t('personalization.intro')}</p>
+              <div className="bluefox-settings-theme-grid bluefox-personalization-theme-grid" role="group" aria-label={t('personalization.chooseTheme')}>
+                {localizedThemeOptions.map((themeOption) => <ThemeCard key={themeOption.id} themeOption={themeOption} compact selected={themeOption.id === mode} onClick={() => setMode(themeOption.id)} />)}
               </div>
-              <div className="bluefox-settings-switcher bluefox-personalization-tabs" role="tablist" aria-label="Options de personnalisation">
-                <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdBrush aria-hidden="true" /> Onglets</button>
-                <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdWallpaper aria-hidden="true" /> Fonds de page</button>
+              <div className="bluefox-settings-switcher bluefox-personalization-tabs" role="tablist" aria-label={t('personalization.options')}>
+                <button type="button" role="tab" aria-selected={activeSection === 'tabs'} className={activeSection === 'tabs' ? 'is-active' : ''} onClick={() => setActiveSection('tabs')}><MdBrush aria-hidden="true" /> {t('personalization.tabs')}</button>
+                <button type="button" role="tab" aria-selected={activeSection === 'images'} className={activeSection === 'images' ? 'is-active' : ''} onClick={() => setActiveSection('images')}><MdWallpaper aria-hidden="true" /> {t('personalization.backgrounds')}</button>
               </div>
 
               {activeSection === 'tabs' ? (
                 <section className="bluefox-personalization-section" role="tabpanel">
-                  <div className="bluefox-section-heading"><h2>Personnaliser les onglets</h2><p>Choisissez une couleur ou insérez une image en arrière-plan de la barre des onglets.</p></div>
+                  <div className="bluefox-section-heading"><h2>{t('personalization.customizeTabs')}</h2><p>{t('personalization.customizeTabsText')}</p></div>
                   <div className="bluefox-tab-palette-toolbar">
-                    <span><strong>{availableTabStyles.length}</strong> couleurs disponibles</span>
-                    <span>Choisissez une teinte ou créez la vôtre</span>
+                    <span><strong>{availableTabStyles.length}</strong> {t('personalization.colorsAvailable', { count: availableTabStyles.length }).replace(String(availableTabStyles.length), '').trim()}</span>
+                    <span>{t('personalization.chooseTone')}</span>
                   </div>
                   <div className="bluefox-tab-style-grid">
                     {availableTabStyles.map((style) => (
-                      <button key={style.color} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={`Choisir ${style.label}`} title={style.label}>
+                      <button key={style.color} type="button" className={`bluefox-tab-style-choice ${tabColor === style.color ? 'is-selected' : ''}`} onClick={() => onTabColorChange(style.color)} aria-label={t('personalization.chooseColor', { name: style.label })} title={style.label}>
                         <span className={`bluefox-tab-color-swatch ${tabColor === style.color ? 'is-selected' : ''}`} style={{ '--swatch-color': style.color, '--swatch-accent': style.accent }}>
                           <i />
                           {tabColor === style.color && <MdCheck className="bluefox-tab-color-check" aria-hidden="true" />}
@@ -530,30 +545,30 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
                   </div>
                   <label className={`bluefox-custom-tab-color ${isCustomTabColor ? 'is-selected' : ''}`}>
                     <span className="bluefox-custom-tab-color-preview" style={{ '--custom-tab-color': customTabColor }} />
-                    <span className="bluefox-custom-tab-color-copy"><strong>Ma couleur</strong><small>{customTabColor.toUpperCase()}</small></span>
-                    <input type="color" value={customTabColor} onChange={handleCustomTabColor} aria-label="Choisir une couleur personnalisée" />
+                    <span className="bluefox-custom-tab-color-copy"><strong>{t('personalization.myColor')}</strong><small>{customTabColor.toUpperCase()}</small></span>
+                    <input type="color" value={customTabColor} onChange={handleCustomTabColor} aria-label={t('personalization.chooseCustomColor')} />
                     {isCustomTabColor && <MdCheck aria-hidden="true" />}
                   </label>
                   <label className={`bluefox-import-background bluefox-import-tab-background ${tabBackground ? 'is-selected' : ''}`}>
                     {tabBackground ? <span className="bluefox-tab-background-preview" style={{ backgroundImage: tabBackground }} /> : <MdUpload aria-hidden="true" />}
-                    <span>{tabBackground ? 'Modifier l’image des onglets' : 'Insérer une image dans les onglets'}</span>
+                    <span>{tabBackground ? t('personalization.changeTabImage') : t('personalization.insertTabImage')}</span>
                     <input type="file" accept="image/*" onChange={selectTabBackground} />
                   </label>
-                  <button type="button" className="bluefox-reset-control" onClick={() => { onTabColorChange(defaultTabColor); onTabBackgroundChange?.(''); }}>Réinitialiser les onglets</button>
+                  <button type="button" className="bluefox-reset-control" onClick={() => { onTabColorChange(defaultTabColor); onTabBackgroundChange?.(''); }}>{t('personalization.resetTabs')}</button>
                 </section>
               ) : (
                 <section className="bluefox-personalization-section" role="tabpanel">
-                  <div className="bluefox-section-heading"><h2>Fond de la page d’accueil</h2><p>Choisissez une collection puis une image de haute qualité pour votre nouvel onglet.</p></div>
+                  <div className="bluefox-section-heading"><h2>{t('personalization.homeBackground')}</h2><p>{t('personalization.homeBackgroundText')}</p></div>
                   <div className="bluefox-category-grid">
                     {IMAGE_CATEGORIES.map((category) => (
-                      <button key={category.label} type="button" className="bluefox-category-choice" onClick={() => { void openCategory(category); }} aria-label={`Ouvrir la catégorie ${category.label}`}>
+                      <button key={category.label} type="button" className="bluefox-category-choice" onClick={() => { void openCategory(category); }} aria-label={t('personalization.openCategory', { name: category.label })}>
                         <span className="bluefox-category-cover" style={{ backgroundImage: categoryImages[category.label]?.[0]?.url || category.cover.url || category.cover }} />
                         <span className="bluefox-category-label">{category.label}</span>
                       </button>
                     ))}
                   </div>
-                  <label className="bluefox-import-background"><MdUpload aria-hidden="true" /><span>Importer une image</span><input type="file" accept="image/*" onChange={selectBackgroundImage} /></label>
-                  <button type="button" className="bluefox-reset-control" onClick={() => setHomeBackground('')}>Réinitialiser le fond de la page</button>
+                  <label className="bluefox-import-background"><MdUpload aria-hidden="true" /><span>{t('personalization.importImage')}</span><input type="file" accept="image/*" onChange={selectBackgroundImage} /></label>
+                  <button type="button" className="bluefox-reset-control" onClick={() => setHomeBackground('')}>{t('personalization.resetBackground')}</button>
                 </section>
               )}
             </>
@@ -561,13 +576,13 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
             <section className="bluefox-gallery-section" role="tabpanel">
               <div className="bluefox-gallery-heading"><div><h2>{selectedCategory.label}</h2><p>{selectedCategory.sourceLabel}</p></div><span className="bluefox-gallery-toggle" aria-hidden="true"><i /></span></div>
               {loadingCategory === selectedCategory.label ? (
-                <div className="bluefox-gallery-loading">Chargement des images officielles…</div>
+                <div className="bluefox-gallery-loading">{t('personalization.officialLoading')}</div>
               ) : galleryError ? (
-                <div className="bluefox-gallery-loading">Cette source n’est pas disponible pour le moment.</div>
+                <div className="bluefox-gallery-loading">{t('personalization.sourceUnavailable')}</div>
               ) : (
                 <div className="bluefox-gallery-grid">
                   {selectedImages.map((item) => (
-                    <button key={item.url} type="button" className={`bluefox-gallery-choice ${homeBackground === formatBackground(item.url) ? 'is-selected' : ''}`} onClick={() => setHomeBackground(formatBackground(item.url))} aria-label={`Choisir ${item.label}`} title={item.sourceUrl || item.label}>
+                    <button key={item.url} type="button" className={`bluefox-gallery-choice ${homeBackground === formatBackground(item.url) ? 'is-selected' : ''}`} onClick={() => setHomeBackground(formatBackground(item.url))} aria-label={t('personalization.chooseImage', { name: item.label })} title={item.sourceUrl || item.label}>
                       <span style={{ backgroundImage: item.url }} />
                       {homeBackground === formatBackground(item.url) && <MdCheck aria-hidden="true" />}
                     </button>

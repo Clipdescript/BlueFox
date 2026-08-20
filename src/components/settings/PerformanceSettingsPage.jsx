@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdSpeed } from 'react-icons/md';
 import './PerformanceSettingsPage.css';
 import { SectionShell } from './SettingsPrimitives.jsx';
@@ -13,11 +14,11 @@ const readPerformanceHistory = () => {
   }
 };
 const clampMetric = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
-const formatDay = (date) => new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(date).replace('.', '');
+const formatDay = (date, language = 'fr') => new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short' }).format(date).replace('.', '');
 
-const Sparkline = ({ values, color = '#137b8b' }) => {
+const Sparkline = ({ values, color = '#137b8b', emptyLabel = 'Collecte en cours…' }) => {
   const cleanValues = values.filter((value) => Number.isFinite(value));
-  if (cleanValues.length < 2) return <div className="bluefox-performance-empty-chart">Collecte en cours…</div>;
+  if (cleanValues.length < 2) return <div className="bluefox-performance-empty-chart">{emptyLabel}</div>;
   const max = Math.max(...cleanValues, 1);
   const min = Math.min(...cleanValues, 0);
   const range = Math.max(max - min, 1);
@@ -28,6 +29,8 @@ const MetricCard = ({ label, value, note, values, color }) => <div className="bl
 const ChartBlock = ({ title, values, suffix, color }) => <div className="bluefox-performance-chart-block"><div><strong>{title}</strong><small>{values.length ? `${Math.round(values.at(-1))}${suffix}` : 'Collecte…'}</small></div><Sparkline values={values} color={color} /></div>;
 
 const PerformanceDashboard = () => {
+  const { t, i18n } = useTranslation('common');
+  const selectedLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'fr';
   const [metrics, setMetrics] = useState({ appMemoryMb: null, appMemoryPercent: null, systemMemoryUsedPercent: null, cpuPercent: null, processCount: 0, cpuCores: 0, processes: [] });
   const [systemSamples, setSystemSamples] = useState([]);
   const [history, setHistory] = useState(readPerformanceHistory);
@@ -101,18 +104,18 @@ const PerformanceDashboard = () => {
   const systemMemoryValues = systemSamples.map((sample) => sample.systemMemoryUsedPercent).filter(Number.isFinite);
   const days = Object.entries(history).slice(-7);
   const averagePing = metrics.ping ?? (days.at(-1)?.[1]?.ping?.length ? Math.round(days.at(-1)[1].ping.reduce((sum, value) => sum + value, 0) / days.at(-1)[1].ping.length) : null);
-  const memoryText = metrics.appMemoryMb === null ? 'Indisponible' : `${metrics.appMemoryMb} MB`;
-  const cpuText = metrics.cpuPercent === null ? 'Indisponible' : `${metrics.cpuPercent.toFixed(1)} %`;
-  const systemMemoryText = metrics.systemMemoryUsedPercent === null ? 'Indisponible' : `${Math.round(metrics.systemMemoryUsedPercent)} %`;
-  const connection = navigator.connection?.effectiveType || 'réseau actif';
+  const memoryText = metrics.appMemoryMb === null ? t('settingsExtra.unavailableMetric') : `${metrics.appMemoryMb} MB`;
+  const cpuText = metrics.cpuPercent === null ? t('settingsExtra.unavailableMetric') : `${metrics.cpuPercent.toFixed(1)} %`;
+  const systemMemoryText = metrics.systemMemoryUsedPercent === null ? t('settingsExtra.unavailableMetric') : `${Math.round(metrics.systemMemoryUsedPercent)} %`;
+  const connection = navigator.connection?.effectiveType || t('settingsExtra.networkPing');
 
-  return <SectionShell icon={MdSpeed} title="Performances" description="BlueFox privilégie un démarrage rapide.">
+  return <SectionShell icon={MdSpeed} title={t('settings.nav.performance')} description={t('settingsExtra.performanceDescription')}>
     <div className="bluefox-performance-dashboard">
-      <div className="bluefox-performance-cards"><MetricCard label="RAM BlueFox" value={memoryText} note={`${metrics.processCount || 0} processus Chromium`} values={memoryValues} color="#1a73e8" /><MetricCard label="CPU BlueFox" value={cpuText} note={`${metrics.cpuCores || '—'} cœurs disponibles`} values={cpuValues} color="#8b5cf6" /><MetricCard label="RAM système" value={systemMemoryText} note="Mémoire Windows utilisée" values={systemMemoryValues} color="#e67e22" /><MetricCard label="Ping réseau" value={averagePing === null ? '—' : `${averagePing} ms`} note={connection} values={days.at(-1)?.[1]?.ping || []} color="#137b8b" /></div>
-      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>Évolution en temps réel</h3><p>Mesures locales actualisées toutes les 2 secondes, ping vérifié toutes les 15 secondes.</p></div><span className="bluefox-performance-live"><i /> En direct</span></div><div className="bluefox-performance-chart-grid"><ChartBlock title="RAM BlueFox" values={memoryValues} suffix=" %" color="#1a73e8" /><ChartBlock title="CPU BlueFox" values={cpuValues} suffix=" %" color="#8b5cf6" /><ChartBlock title="RAM système" values={systemMemoryValues} suffix=" %" color="#e67e22" /><ChartBlock title="Ping" values={days.at(-1)?.[1]?.ping || []} suffix=" ms" color="#137b8b" /></div></div>
-      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>Détail par processus</h3><p>Les processus qui utilisent le plus de mémoire apparaissent en premier.</p></div><span className="bluefox-performance-process-count">{metrics.processes?.length || 0} processus</span></div><div className="bluefox-performance-process-list">{metrics.processes?.length ? metrics.processes.map((process) => <div className="bluefox-performance-process" key={`${process.pid}-${process.type}`}><div className="bluefox-performance-process-name"><strong>{process.name}</strong><small>{process.type} · PID {process.pid}</small></div><span>{process.memoryMb} MB</span><span>{process.cpuPercent.toFixed(1)} % CPU</span></div>) : <div className="bluefox-performance-empty-chart">Collecte des processus en cours…</div>}</div></div>
-      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>Historique des 7 derniers jours</h3><p>Moyennes enregistrées localement sur cet appareil.</p></div></div><div className="bluefox-performance-history">{days.length ? days.map(([day, values]) => { const pings = values.ping || []; const avg = pings.length ? Math.round(pings.reduce((sum, value) => sum + value, 0) / pings.length) : null; const memory = values.memory?.length ? Math.round(values.memory.reduce((sum, value) => sum + value, 0) / values.memory.length) : null; return <div className="bluefox-performance-day" key={day}><strong>{formatDay(new Date(`${day}T12:00:00`))}</strong><span>{day.slice(5).replace('-', '/')}</span><div className="bluefox-performance-day-bars"><i style={{ height: `${Math.max(8, memory || 8)}%` }} title={`Mémoire : ${memory ?? '—'} %`} /><i style={{ height: `${Math.max(8, Math.min(100, avg ? avg / 3 : 8))}%` }} title={`Ping : ${avg ?? '—'} ms`} /></div><small>{avg === null ? 'Pas de ping' : `${avg} ms`}</small></div>; }) : <div className="bluefox-performance-empty-chart">L’historique se remplira au fil de l’utilisation.</div>}</div></div>
-      <p className="bluefox-performance-footnote">Les mesures restent locales. RAM et CPU proviennent des processus Electron/Chromium, la RAM système vient de Windows et le ping mesure le temps aller-retour vers un point de contrôle réseau.</p>
+      <div className="bluefox-performance-cards"><MetricCard label={t('settingsExtra.memoryBluefox')} value={memoryText} note={`${metrics.processCount || 0} ${t('settingsExtra.processes', { count: metrics.processCount || 0 }).replace(String(metrics.processCount || 0), '').trim()}`} values={memoryValues} color="#1a73e8" /><MetricCard label={t('settingsExtra.cpuBluefox')} value={cpuText} note={t('settingsExtra.cores', { count: metrics.cpuCores || 0 })} values={cpuValues} color="#8b5cf6" /><MetricCard label={t('settingsExtra.systemMemory')} value={systemMemoryText} note={t('settingsExtra.memoryWindows')} values={systemMemoryValues} color="#e67e22" /><MetricCard label={t('settingsExtra.networkPing')} value={averagePing === null ? '—' : `${averagePing} ms`} note={connection} values={days.at(-1)?.[1]?.ping || []} color="#137b8b" /></div>
+      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>{t('settingsExtra.realtime')}</h3><p>{t('settingsExtra.realtimeText')}</p></div><span className="bluefox-performance-live"><i /> {t('settingsExtra.live')}</span></div><div className="bluefox-performance-chart-grid"><ChartBlock title={t('settingsExtra.memoryBluefox')} values={memoryValues} suffix=" %" color="#1a73e8" /><ChartBlock title={t('settingsExtra.cpuBluefox')} values={cpuValues} suffix=" %" color="#8b5cf6" /><ChartBlock title={t('settingsExtra.systemMemory')} values={systemMemoryValues} suffix=" %" color="#e67e22" /><ChartBlock title="Ping" values={days.at(-1)?.[1]?.ping || []} suffix=" ms" color="#137b8b" /></div></div>
+      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>{t('settingsExtra.processDetail')}</h3><p>{t('settingsExtra.processDetailText')}</p></div><span className="bluefox-performance-process-count">{t('settingsExtra.processes', { count: metrics.processes?.length || 0 })}</span></div><div className="bluefox-performance-process-list">{metrics.processes?.length ? metrics.processes.map((process) => <div className="bluefox-performance-process" key={`${process.pid}-${process.type}`}><div className="bluefox-performance-process-name"><strong>{process.name}</strong><small>{process.type} · PID {process.pid}</small></div><span>{process.memoryMb} MB</span><span>{process.cpuPercent.toFixed(1)} % CPU</span></div>) : <div className="bluefox-performance-empty-chart">{t('settingsExtra.collecting')}</div>}</div></div>
+      <div className="bluefox-performance-panel"><div className="bluefox-performance-panel-heading"><div><h3>{t('settingsExtra.lastSevenDays')}</h3><p>{t('settingsExtra.lastSevenText')}</p></div></div><div className="bluefox-performance-history">{days.length ? days.map(([day, values]) => { const pings = values.ping || []; const avg = pings.length ? Math.round(pings.reduce((sum, value) => sum + value, 0) / pings.length) : null; const memory = values.memory?.length ? Math.round(values.memory.reduce((sum, value) => sum + value, 0) / values.memory.length) : null; return <div className="bluefox-performance-day" key={day}><strong>{formatDay(new Date(`${day}T12:00:00`), selectedLanguage)}</strong><span>{day.slice(5).replace('-', '/')}</span><div className="bluefox-performance-day-bars"><i style={{ height: `${Math.max(8, memory || 8)}%` }} title={`Mémoire : ${memory ?? '—'} %`} /><i style={{ height: `${Math.max(8, Math.min(100, avg ? avg / 3 : 8))}%` }} title={`Ping : ${avg ?? '—'} ms`} /></div><small>{avg === null ? 'Pas de ping' : `${avg} ms`}</small></div>; }) : <div className="bluefox-performance-empty-chart">{t('settingsExtra.lastSevenText')}</div>}</div></div>
+      <p className="bluefox-performance-footnote">{t('settingsExtra.localMeasures')}</p>
     </div>
   </SectionShell>;
 };

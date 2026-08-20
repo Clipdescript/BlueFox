@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdBusinessCenter, MdCode, MdDashboard, MdFamilyRestroom, MdSchool, MdSelfImprovement, MdSportsEsports, MdToggleOn } from 'react-icons/md';
 import { ModeCard, SectionShell } from './SettingsPrimitives.jsx';
 import './ModesSettingsPage.css';
@@ -13,10 +14,12 @@ const MODE_OPTIONS = [
   { id: 'focus', name: 'Concentration', description: 'Interface calme avec le minimum de distractions.', icon: MdSelfImprovement, color: '#16a34a' },
 ];
 
-const ModesSettingsPage = ({ selectedMode, onSelect }) => (
-  <SectionShell icon={MdToggleOn} title="Modes de navigation" description="Choisissez un profil adapté à ce que vous faites.">
-    <div className="bluefox-settings-mode-grid">{MODE_OPTIONS.map((mode) => <ModeCard key={mode.id} mode={mode} selected={mode.id === selectedMode} onClick={() => onSelect(mode.id)} />)}</div>
-  </SectionShell>
-);
+const ModesSettingsPage = ({ selectedMode, onSelect }) => {
+  const { t } = useTranslation('common');
+  const localizedModes = MODE_OPTIONS.map((mode) => ({ ...mode, name: t(`settingsExtra.mode${mode.id.charAt(0).toUpperCase()}${mode.id.slice(1)}`), description: t(`settingsExtra.mode${mode.id.charAt(0).toUpperCase()}${mode.id.slice(1)}Text`) }));
+  return <SectionShell icon={MdToggleOn} title={t('settingsPages.modesTitle')} description={t('settingsPages.modesDescription')}>
+    <div className="bluefox-settings-mode-grid">{localizedModes.map((mode) => <ModeCard key={mode.id} mode={mode} selected={mode.id === selectedMode} onClick={() => onSelect(mode.id)} />)}</div>
+  </SectionShell>;
+};
 
 export default ModesSettingsPage;

@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdAdd, MdChevronLeft, MdChevronRight, MdClose, MdGamepad, MdPictureAsPdf, MdPublic, MdTune } from 'react-icons/md';
 
 const ICON_COLOR = 'text-[#66676b]';
@@ -25,6 +26,7 @@ const TabVisual = ({
   onTabClose,
   isPreview = false
 }) => {
+  const { t } = useTranslation('common');
   const [faviconError, setFaviconError] = useState(false);
 
   useEffect(() => {
@@ -54,13 +56,13 @@ const TabVisual = ({
   >
     <div className={`relative ${isCrowded ? 'mr-1' : 'mr-2'} flex h-4 w-4 shrink-0 items-center justify-center`}>
       {tab.pageError ? (
-        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label="Page introuvable" />
+        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label={t('tabs.pageNotFound')} />
       ) : tab.isGame || tab.offlineFallback ? (
-        <MdGamepad className="bluefox-tab-game-icon h-full w-full text-[#7346bc]" aria-label="Jeu hors ligne" />
+        <MdGamepad className="bluefox-tab-game-icon h-full w-full text-[#7346bc]" aria-label={t('tabs.offlineGame')} />
       ) : tab.isSettings ? (
         <MdTune className="h-full w-full text-[#137b8b]" aria-hidden="true" />
       ) : tab.isPdf ? (
-        <MdPictureAsPdf className="h-full w-full text-[#d14b4b]" aria-label="Document PDF" />
+        <MdPictureAsPdf className="h-full w-full text-[#d14b4b]" aria-label={t('tabs.pdf')} />
       ) : tab.url && tab.favicon && !faviconError ? (
         <img
           draggable={false}
@@ -70,7 +72,7 @@ const TabVisual = ({
           onError={() => setFaviconError(true)}
         />
       ) : tab.url ? (
-        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label="Site sans icône" />
+        <MdPublic className="bluefox-tab-fallback-icon h-full w-full" aria-label={t('tabs.siteNoIcon')} />
       ) : (
         <img draggable={false} src={BLUEFOX_LOGO} alt="" className="h-full w-full object-contain" />
       )}
@@ -79,10 +81,10 @@ const TabVisual = ({
 
     <span className="bluefox-tab-title flex-1 truncate text-[12px] font-normal">
       {tab.isGame
-        ? 'Tetris'
+        ? t('tabs.tetris')
         : tab.isSettings
-          ? 'Paramètres'
-          : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? 'Nouvel onglet' : tab.title}
+          ? t('tabs.settings')
+          : tab.title === 'Nouvel onglet' || tab.title === 'Accès rapide' ? t('tabs.newTab') : tab.title}
     </span>
 
     {!isPreview && (
@@ -90,7 +92,7 @@ const TabVisual = ({
         type="button"
         onClick={(event) => onTabClose(event, tab.id)}
         className={`bluefox-tab-close ${isCrowded ? 'ml-1' : 'ml-2'} flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ICON_COLOR} transition-[background-color,color,opacity,transform] duration-150 hover:bg-[#deddda] hover:text-[#252525] ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-        aria-label="Fermer l'onglet"
+        aria-label={t('tabs.close')}
       >
         <MdClose className="text-[14px]" />
       </button>
@@ -110,6 +112,7 @@ const TabBar = React.memo(({
   tabColor = '#f3f2f0',
   tabBackground = ''
 }) => {
+  const { t } = useTranslation('common');
   const [closingTabs, setClosingTabs] = useState(() => new Set());
   const [dragState, setDragState] = useState(null);
   const tabStripRef = useRef(null);
@@ -321,7 +324,7 @@ const TabBar = React.memo(({
   return (
     <div className={`drag-region bluefox-tab-bar flex h-12 items-center border-b border-[#d8d7d4] px-2 text-[#282828] select-none ${tabBackground ? 'bluefox-tab-image-mode' : ''}`} style={{ '--bluefox-tab-color': tabColor, '--bluefox-tab-background-image': tabBackground || 'none' }}>
       <div className="relative no-drag flex h-full min-w-0 flex-1 items-center">
-        {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets précédents"><MdChevronLeft className="text-xl" /></button>}
+        {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label={t('tabs.previous')}><MdChevronLeft className="text-xl" /></button>}
         <div
           ref={tabStripRef}
           className={`no-scrollbar flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-[138px] ${canScrollLeft ? 'pl-9' : ''} ${canScrollRight ? 'pr-[176px]' : ''}`}
@@ -367,11 +370,11 @@ const TabBar = React.memo(({
             );
           })}
 
-          <button type="button" onClick={onNewTab} className={`no-drag flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#deddda] hover:text-[#252525]`} aria-label="Nouvel onglet">
+          <button type="button" onClick={onNewTab} className={`no-drag flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ICON_COLOR} transition-colors hover:bg-[#deddda] hover:text-[#252525]`} aria-label={t('tabs.newTab')}>
             <MdAdd className="text-base" />
           </button>
         </div>
-        {canScrollRight && <button type="button" onClick={() => scrollTabs(1)} className="absolute right-[138px] z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[-2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets suivants"><MdChevronRight className="text-xl" /></button>}
+        {canScrollRight && <button type="button" onClick={() => scrollTabs(1)} className="absolute right-[138px] z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[-2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label={t('tabs.next')}><MdChevronRight className="text-xl" /></button>}
       </div>
 
       {draggedTab && dragState?.started && (

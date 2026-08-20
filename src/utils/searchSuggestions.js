@@ -1,4 +1,5 @@
 import { createElement, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdPublic } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
 import { findSmartSearchResult } from './entitySearch.js';
@@ -13,7 +14,7 @@ export const SiteSuggestionIcon = ({ src = '', alt = '', imageClassName = '', fa
   if (!src || hasError) {
     return createElement(MdPublic, {
       className: fallbackClassName || imageClassName,
-      'aria-label': 'Site sans favicon'
+      'aria-label': document.documentElement.lang === 'en' ? 'Site without favicon' : 'Site sans favicon'
     });
   }
 
@@ -67,8 +68,8 @@ const readLocalSuggestions = (query) => {
   }
 };
 
-const readGoogleSuggestions = async (query) => {
-  const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=fr`);
+const readGoogleSuggestions = async (query, language = 'fr') => {
+  const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=${language}`);
   if (!response.ok) return [];
   const data = await response.json();
   return (Array.isArray(data[1]) ? data[1] : [])
@@ -77,7 +78,7 @@ const readGoogleSuggestions = async (query) => {
       id: `remote:${label}:${index}`,
       label,
       value: label,
-      detail: 'Suggestion de recherche',
+      detail: language === 'en' ? 'Search suggestion' : 'Suggestion de recherche',
       kind: 'search'
     }));
 };
@@ -100,6 +101,8 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [historyEnabled, setHistoryEnabled] = useState(() => localStorage.getItem(HISTORY_ENABLED_KEY) !== 'false');
+  const { i18n } = useTranslation('common');
+  const selectedLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'fr';
 
   useEffect(() => {
     const handleHistorySettingChanged = (event) => setHistoryEnabled(event.detail !== false);
@@ -140,7 +143,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
       // the text to an unrelated provider.
       if (searchEngineId === 'google') {
         try {
-          remoteSuggestions = await readGoogleSuggestions(cleanQuery);
+          remoteSuggestions = await readGoogleSuggestions(cleanQuery, selectedLanguage);
         } catch {
           remoteSuggestions = [];
         }
@@ -157,7 +160,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [cleanQuery, focused, historyEnabled, searchEngineId]);
+  }, [cleanQuery, focused, historyEnabled, searchEngineId, selectedLanguage]);
 
   useEffect(() => {
     if (!focused || cleanQuery.length < 3) {
@@ -169,7 +172,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
-        const result = await findSmartSearchResult(cleanQuery, { signal: controller.signal });
+        const result = await findSmartSearchResult(cleanQuery, { signal: controller.signal, language: selectedLanguage });
         if (!cancelled) {
           setSmartSuggestion(result);
           setSmartSuggestionQuery(cleanQuery);
@@ -184,7 +187,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [cleanQuery, focused]);
+  }, [cleanQuery, focused, selectedLanguage]);
 
   const moveHighlight = (direction) => {
     if (!smartAndSuggestions.length) return;

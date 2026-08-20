@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MdAutoAwesome,
   MdCleaningServices,
@@ -42,26 +43,27 @@ import WalletSettingsPage from './settings/WalletSettingsPage.jsx';
 import { InfoCard } from './settings/SettingsPrimitives.jsx';
 import './settings/SettingsPage.css';
 import './settings/ResponsiveSettings.css';
+import { SUPPORTED_LANGUAGES } from '../i18n/languages.js';
 
 const NAV_ITEMS = [
-  { id: 'general', label: 'BlueFox et vous', keywords: 'général navigateur réglages', icon: MdAccountCircle },
-  { id: 'appearance', label: 'Apparence', keywords: 'thème clair sombre système couleur', icon: MdPalette },
-  { id: 'privacy', label: 'Confidentialité et sécurité', keywords: 'vie privée sécurité données', icon: MdSecurity },
-  { id: 'history', label: 'Historique', keywords: 'navigation données historique consulter visites', icon: MdManageHistory },
-  { id: 'clear-data', label: 'Effacer les données de navigation', keywords: 'supprimer effacer historique cache cookies données navigation', icon: MdCleaningServices },
-  { id: 'safe-search', label: 'Safe Search', keywords: 'recherche sécurisée contenu filtrage', icon: MdSearch },
-  { id: 'modes', label: 'Modes', keywords: 'familial codage travail étude gaming concentration standard', icon: MdToggleOn },
-  { id: 'foxy', label: 'Mode IA Foxy', keywords: 'intelligence artificielle pdf résumé écrire assistant', icon: MdAutoAwesome },
-  { id: 'performance', label: 'Performances', keywords: 'vitesse mémoire onglets rapide', icon: MdSpeed },
-  { id: 'search', label: 'Moteur de recherche', keywords: 'google bing qwant ecosia wikipedia perplexity navigateur', icon: MdSearch },
-  { id: 'downloads', label: 'Téléchargements', keywords: 'fichiers dossier', icon: MdDownload },
-  { id: 'actions', label: 'Raccourcis clavier', keywords: 'clavier raccourcis touches ctrl contrôle actualiser nouvel onglet pdf enregistrer annuler échap', icon: MdKeyboard },
-  { id: 'extensions', label: 'Extensions', keywords: 'modules add-ons catalogue outils', icon: MdViewInAr },
-  { id: 'passwords', label: 'Mots de passe et saisie automatique', keywords: 'identifiants remplir automatiquement sécurité', icon: MdKey },
-  { id: 'vpn', label: 'VPN BlueFox', keywords: 'réseau connexion protection tunnel', icon: MdWifi },
-  { id: 'wallet', label: 'Portefeuille BlueFox', keywords: 'wallet crypto paiement récupération', icon: MdWallet },
-  { id: 'languages', label: 'Langues', keywords: 'français traduction', icon: MdLanguage },
-  { id: 'updates', label: 'Mise à jour', keywords: 'version update nouvelle', icon: MdSystemUpdateAlt },
+  { id: 'general', labelKey: 'settings.nav.general', keywords: 'général navigateur réglages settings browser', icon: MdAccountCircle },
+  { id: 'appearance', labelKey: 'settings.nav.appearance', keywords: 'thème clair sombre système couleur theme light dark color', icon: MdPalette },
+  { id: 'privacy', labelKey: 'settings.nav.privacy', keywords: 'vie privée sécurité données privacy security data', icon: MdSecurity },
+  { id: 'history', labelKey: 'settings.nav.history', keywords: 'navigation données historique consulter visites history browsing', icon: MdManageHistory },
+  { id: 'clear-data', labelKey: 'settings.nav.clearData', keywords: 'supprimer effacer historique cache cookies données clear browsing data', icon: MdCleaningServices },
+  { id: 'safe-search', labelKey: 'settings.nav.safeSearch', keywords: 'recherche sécurisée contenu filtrage safe search', icon: MdSearch },
+  { id: 'modes', labelKey: 'settings.nav.modes', keywords: 'familial codage travail étude gaming concentration standard modes', icon: MdToggleOn },
+  { id: 'foxy', labelKey: 'settings.nav.foxy', keywords: 'intelligence artificielle pdf résumé écrire assistant ai', icon: MdAutoAwesome },
+  { id: 'performance', labelKey: 'settings.nav.performance', keywords: 'vitesse mémoire onglets rapide performance speed', icon: MdSpeed },
+  { id: 'search', labelKey: 'settings.nav.search', keywords: 'google bing qwant ecosia wikipedia perplexity navigateur search engine', icon: MdSearch },
+  { id: 'downloads', labelKey: 'settings.nav.downloads', keywords: 'fichiers dossier downloads files', icon: MdDownload },
+  { id: 'actions', labelKey: 'settings.nav.actions', keywords: 'clavier raccourcis touches ctrl contrôle actualiser nouvel onglet pdf enregistrer annuler échap keyboard shortcuts', icon: MdKeyboard },
+  { id: 'extensions', labelKey: 'settings.nav.extensions', keywords: 'modules add-ons catalogue outils extensions', icon: MdViewInAr },
+  { id: 'passwords', labelKey: 'settings.nav.passwords', keywords: 'identifiants remplir automatiquement sécurité passwords autofill', icon: MdKey },
+  { id: 'vpn', labelKey: 'settings.nav.vpn', keywords: 'réseau connexion protection tunnel vpn network', icon: MdWifi },
+  { id: 'wallet', labelKey: 'settings.nav.wallet', keywords: 'wallet crypto paiement récupération portefeuille', icon: MdWallet },
+  { id: 'languages', labelKey: 'settings.nav.languages', keywords: 'français anglais langue traduction language translation', icon: MdLanguage },
+  { id: 'updates', labelKey: 'settings.nav.updates', keywords: 'version update nouvelle mise à jour', icon: MdSystemUpdateAlt },
 ];
 
 const MODE_STORAGE_KEY = 'bluefox_browser_mode_v1';
@@ -79,6 +81,7 @@ const readBrowserHistory = () => {
 };
 
 const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindow, onNewPrivateWindow, onOpenPdf, onOpenExtensions, onQuit, discordProfile, onDiscordLogin, onDiscordLogout }) => {
+  const { t } = useTranslation('common');
   const { mode, resolvedTheme, setMode } = useTheme();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,8 +136,8 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
   const filteredNavItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase('fr-FR');
     if (!normalizedQuery) return NAV_ITEMS;
-    return NAV_ITEMS.filter(({ label, keywords = '' }) => `${label} ${keywords}`.toLocaleLowerCase('fr-FR').includes(normalizedQuery));
-  }, [searchQuery]);
+    return NAV_ITEMS.filter(({ labelKey, keywords = '' }) => `${t(labelKey)} ${keywords}`.toLocaleLowerCase().includes(normalizedQuery));
+  }, [searchQuery, t]);
 
   useEffect(() => {
     if (searchQuery.trim() && filteredNavItems.length > 0 && !filteredNavItems.some(({ id }) => id === activeSection)) setActiveSection(filteredNavItems[0].id);
@@ -220,7 +223,7 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
       case 'wallet': return <WalletSettingsPage />;
       case 'search': return <SearchEngineSettingsPage selectedEngineId={searchEngineId} onSelect={selectSearchEngine} />;
       case 'downloads': return <DownloadsSettingsPage />;
-      case 'languages': return <LanguagesSettingsPage />;
+      case 'languages': return <LanguagesSettingsPage languages={SUPPORTED_LANGUAGES} />;
       case 'updates': return <UpdatesSettingsPage version={version} updateState={updateState} onCheck={checkForUpdates} runtimeInfo={runtimeInfo} />;
       case 'general':
       default: return <GeneralSettingsPage defaultBrowserState={defaultBrowserState} onOpenDefaultBrowserSettings={openDefaultBrowserSettings} discordProfile={discordProfile} onDiscordLogin={onDiscordLogin} onDiscordLogout={onDiscordLogout} />;
@@ -230,14 +233,14 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
   return (
     <div className="bluefox-settings-page">
       <aside className="bluefox-settings-sidebar">
-        <div className="bluefox-settings-brand"><MdTune className="h-[34px] w-[34px] shrink-0 text-[#137b8b]" aria-hidden="true" /><h1>Paramètres</h1></div>
-        <nav className="bluefox-settings-nav" aria-label="Catégories des paramètres">
-          {filteredNavItems.map(({ id, label, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveSection(id)} className={`bluefox-settings-nav-item ${activeSection === id ? 'is-active' : ''}`} aria-current={activeSection === id ? 'page' : undefined}>{id === 'general' && discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="bluefox-settings-nav-avatar" /> : <Icon aria-hidden="true" />}<span>{label}</span></button>)}
+        <div className="bluefox-settings-brand"><MdTune className="h-[34px] w-[34px] shrink-0 text-[#137b8b]" aria-hidden="true" /><h1>{t('settings.brand')}</h1></div>
+        <nav className="bluefox-settings-nav" aria-label={t('settings.navLabel')}>
+          {filteredNavItems.map(({ id, labelKey, icon: Icon }) => <button type="button" key={id} onClick={() => setActiveSection(id)} className={`bluefox-settings-nav-item ${activeSection === id ? 'is-active' : ''}`} aria-current={activeSection === id ? 'page' : undefined}>{id === 'general' && discordProfile ? <img src={discordProfile.avatarUrl} alt="" className="bluefox-settings-nav-avatar" /> : <Icon aria-hidden="true" />}<span>{t(labelKey)}</span></button>)}
         </nav>
       </aside>
       <div className="bluefox-settings-content">
-        <header className="bluefox-settings-header"><div className="bluefox-settings-header-inner"><div className="bluefox-settings-search"><MdSearch aria-hidden="true" /><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Rechercher dans les paramètres" aria-label="Rechercher dans les paramètres" /></div></div></header>
-        <main className="bluefox-settings-main">{filteredNavItems.some(({ id }) => id === activeSection) ? renderActivePage() : <InfoCard title="Aucun résultat" text="Aucune section ne correspond à votre recherche." />}</main>
+        <header className="bluefox-settings-header"><div className="bluefox-settings-header-inner"><div className="bluefox-settings-search"><MdSearch aria-hidden="true" /><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={t('settings.searchPlaceholder')} aria-label={t('settings.searchLabel')} /></div></div></header>
+        <main className="bluefox-settings-main">{filteredNavItems.some(({ id }) => id === activeSection) ? renderActivePage() : <InfoCard title={t('settings.noResults')} text={t('settings.noResultsText')} />}</main>
       </div>
     </div>
   );

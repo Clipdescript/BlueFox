@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaDiscord } from 'react-icons/fa';
 import { MdApps, MdAutoAwesome, MdClose, MdLocationOn, MdNorthEast, MdPalette, MdPublic, MdSearch, MdWbSunny } from 'react-icons/md';
 import { useTheme } from '../utils/theme.js';
@@ -6,10 +7,14 @@ import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_
 import { SiteSuggestionIcon, useSearchSuggestions } from '../utils/searchSuggestions.js';
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc';
-const NEWS_CACHE_KEY = 'bluefox_news_cache_v2';
+const NEWS_CACHE_KEY = 'bluefox_news_cache_v3';
 const NEWS_CACHE_MAX_AGE = 15 * 60 * 1000;
 const NEWS_MAX_AGE = 36 * 60 * 60 * 1000;
-const GDELT_QUERY = 'sourcelang:french';
+const NEWS_LANGUAGE_CONFIG = {
+  fr: { query: 'sourcelang:french', sourceLanguage: 'french' },
+  en: { query: 'sourcelang:english', sourceLanguage: 'english' }
+};
+const getNewsCacheKey = (language) => `${NEWS_CACHE_KEY}_${language}`;
 const GDELT_MAX_RECORDS = 250;
 
 // Only show established editorial sources instead of arbitrary sites surfaced by GDELT.
@@ -44,7 +49,21 @@ const TRUSTED_NEWS_SOURCES = [
   ['lesnumeriques.com', 'Les Numériques'],
   ['01net.com', '01net'],
   ['frandroid.com', 'Frandroid'],
-  ['euronews.com', 'Euronews']
+  ['euronews.com', 'Euronews'],
+  ['bbc.com', 'BBC'],
+  ['bbc.co.uk', 'BBC'],
+  ['cnn.com', 'CNN'],
+  ['reuters.com', 'Reuters'],
+  ['apnews.com', 'Associated Press'],
+  ['theguardian.com', 'The Guardian'],
+  ['nytimes.com', 'The New York Times'],
+  ['washingtonpost.com', 'The Washington Post'],
+  ['npr.org', 'NPR'],
+  ['techcrunch.com', 'TechCrunch'],
+  ['wired.com', 'Wired'],
+  ['nationalgeographic.com', 'National Geographic'],
+  ['cnbc.com', 'CNBC'],
+  ['time.com', 'TIME']
 ];
 
 const getTrustedNewsSource = (domain = '') => {
@@ -176,6 +195,7 @@ const QuickLinkFavicon = ({ url, fallback: Fallback }) => {
 };
 
 const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
+  const { t } = useTranslation('common');
   const logo = iconUrl || getFaviconUrl(url);
   const domain = title;
   const [faviconError, setFaviconError] = useState(false);
@@ -185,12 +205,12 @@ const FavoriteTile = ({ title, url, iconUrl, isSponsored, onNavigate }) => {
   }, [logo]);
 
   return (
-    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ' · Sponsorisé' : ''}`} className="bluefox-home-favorite-tile bluefox-image-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
+    <button type="button" onClick={() => onNavigate(url)} aria-label={`${title}${isSponsored ? ` · ${t('home.sponsored')}` : ''}`} className="bluefox-home-favorite-tile bluefox-image-favorite-tile group flex min-w-0 flex-col items-center gap-1.5 rounded-[10px] p-2 text-center text-[#202124] transition-colors duration-200 hover:bg-[#e8e8e8]">
       <span className="bluefox-home-favorite-icon bluefox-image-favorite-icon flex h-[60px] w-[60px] items-center justify-center rounded-[9px] border border-[#e3e3e6] bg-[#f7f7f8] p-3 shadow-none transition-colors duration-200 group-hover:bg-[#eeeeef]">
-        {faviconError ? <MdPublic className="h-8 w-8 text-[#6d747b]" aria-label="Site sans favicon" /> : <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setFaviconError(true)} />}
+        {faviconError ? <MdPublic className="h-8 w-8 text-[#6d747b]" aria-label="" /> : <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setFaviconError(true)} />}
       </span>
       <span className="max-w-[100px] truncate text-[11px] font-medium text-[#55565b] group-hover:text-[#202124]">{domain}</span>
-      {isSponsored && <span className="bluefox-home-favorite-sponsored">Sponsorisé</span>}
+      {isSponsored && <span className="bluefox-home-favorite-sponsored">{t('home.sponsored')}</span>}
     </button>
   );
 };
@@ -216,6 +236,8 @@ const SuggestionCard = ({ article }) => (
 
 const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
   const { resolvedTheme } = useTheme();
+  const { t, i18n } = useTranslation('common');
+  const selectedNewsLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'fr';
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [homeSearch, setHomeSearch] = useState('');
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
@@ -313,28 +335,26 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
     };
   }, []);
 
-  const normalizeArticles = (loadedArticles) => {
+  const normalizeArticles = (loadedArticles, language = selectedNewsLanguage) => {
     const uniqueArticles = Array.from(
       new Map(loadedArticles.filter((article) => article.link).map((article) => [article.link, article])).values()
     ).filter((article) => {
       const age = Date.now() - (article.date || 0);
-      const trustedSource = getTrustedNewsSource(article.domain || getArticleDomain(article.link, ''));
-      return trustedSource
-        && hasUsableArticleTitle(article.title, article.link)
-        && article.language?.toLowerCase() === 'french'
+      return hasUsableArticleTitle(article.title, article.link)
+        && article.language?.toLowerCase() === NEWS_LANGUAGE_CONFIG[language].sourceLanguage
         && age >= 0
         && age <= NEWS_MAX_AGE;
     }).map((article) => ({
       ...article,
-      source: getTrustedNewsSource(article.domain || getArticleDomain(article.link, ''))[1]
+      source: getTrustedNewsSource(article.domain || getArticleDomain(article.link, ''))?.[1] || article.domain || getArticleDomain(article.link)
     })).sort((first, second) => second.date - first.date);
 
     return diversifyArticles(uniqueArticles);
   };
 
-  const readNewsCache = () => {
+  const readNewsCache = (language = selectedNewsLanguage) => {
     try {
-      const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY) || 'null');
+      const cached = JSON.parse(localStorage.getItem(getNewsCacheKey(language)) || 'null');
       if (!cached?.articles?.length) return null;
       return cached;
     } catch {
@@ -342,9 +362,9 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
     }
   };
 
-  const saveNewsCache = (nextArticles) => {
+  const saveNewsCache = (nextArticles, language = selectedNewsLanguage) => {
     try {
-      localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), articles: nextArticles.slice(0, 120) }));
+      localStorage.setItem(getNewsCacheKey(language), JSON.stringify({ savedAt: Date.now(), language, articles: nextArticles.slice(0, 120) }));
     } catch {
       // News remain available for the current session when storage is unavailable.
     }
@@ -353,8 +373,9 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
   const loadNews = async () => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
-    const cached = readNewsCache();
-    const cachedArticles = normalizeArticles(cached?.articles || []);
+    const languageConfig = NEWS_LANGUAGE_CONFIG[selectedNewsLanguage];
+    const cached = readNewsCache(selectedNewsLanguage);
+    const cachedArticles = normalizeArticles(cached?.articles || [], selectedNewsLanguage);
 
     if (cachedArticles.length) {
       setArticles(cachedArticles);
@@ -366,11 +387,11 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
     }
 
     try {
-      // GDELT is free/open data; the language query and 24h window keep results recent and French.
+      // GDELT is free/open data; the language query and 24h window keep results recent and localized.
       if (cached && cachedArticles.length && Date.now() - cached.savedAt < NEWS_CACHE_MAX_AGE) return;
 
       const params = new URLSearchParams({
-        query: GDELT_QUERY,
+        query: languageConfig.query,
         mode: 'artlist',
         format: 'json',
         maxrecords: String(GDELT_MAX_RECORDS),
@@ -397,11 +418,11 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
           date: parseGdeltDate(item.seendate || item.date)
         };
       });
-      const uniqueArticles = normalizeArticles([...cachedArticles, ...loadedArticles]);
+      const uniqueArticles = normalizeArticles([...cachedArticles, ...loadedArticles], selectedNewsLanguage);
 
-      if (!uniqueArticles.length) throw new Error('No French articles returned by GDELT');
+      if (!uniqueArticles.length) throw new Error(`No ${languageConfig.sourceLanguage} articles returned by GDELT`);
       setArticles(uniqueArticles);
-      saveNewsCache(uniqueArticles);
+      saveNewsCache(uniqueArticles, selectedNewsLanguage);
       setNewsError(false);
       setArticleOffset((currentOffset) => currentOffset % uniqueArticles.length);
     } catch {
@@ -431,7 +452,7 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
       }
       if (refreshTimer) clearInterval(refreshTimer);
     };
-  }, []);
+  }, [selectedNewsLanguage]);
 
   const visibleSuggestions = articles.length > 0
     ? Array.from({ length: Math.min(9, articles.length) }, (_, index) => articles[(articleOffset + index) % articles.length])
@@ -508,8 +529,8 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
         type="button"
         onClick={() => onPersonalizationChange?.(!isPersonalizationOpen)}
         className={`bluefox-home-floating-button bluefox-image-glass-control bluefox-customize-trigger fixed bottom-5 z-40 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-[0_5px_18px_rgba(32,33,36,0.18)] backdrop-blur-sm transition-[right,transform,background-color,color] duration-300 hover:bg-[#f0efed] ${isPersonalizationOpen ? 'bluefox-customize-trigger-open' : ''}`}
-        aria-label={isPersonalizationOpen ? 'Fermer la personnalisation' : 'Personnaliser la page d’accueil'}
-        title="Personnaliser"
+        aria-label={isPersonalizationOpen ? t('personalization.close') : t('personalization.customize')}
+        title={t('personalization.customize')}
       >
         <MdPalette className="bluefox-home-control-icon text-[21px]" />
       </button>
@@ -519,28 +540,28 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
           type="button"
           onClick={() => (isQuickLinksOpen ? closeQuickLinks() : openQuickLinks())}
           className="bluefox-home-floating-button bluefox-image-glass-control flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d7d4] bg-white/90 text-[#55565b] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f0efed] hover:text-[#202124]"
-          aria-label={isQuickLinksOpen ? 'Fermer les liens BlueFox' : 'Ouvrir les liens BlueFox'}
+          aria-label={isQuickLinksOpen ? t('home.closeLinks') : t('home.openLinks')}
           aria-expanded={isQuickLinksOpen}
-          title="Liens BlueFox"
+          title={t('topbar.addons')}
         >
           {isQuickLinksOpen ? <MdClose className="text-[20px]" /> : <MdApps className="text-[20px]" />}
         </button>
 
         {isQuickLinksVisible && (
           <div className={`bluefox-home-quick-links absolute right-0 top-11 ${isQuickLinksClosing ? 'is-closing' : ''}`}>
-            <div className="bluefox-home-quick-links-heading">Applications BlueFox</div>
+            <div className="bluefox-home-quick-links-heading">{t('topbar.addons')}</div>
             <div className="bluefox-home-quick-links-grid">
-              <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir le serveur Discord BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://discord.gg/z3bUt3hCya'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label={t('topbar.connectedWithDiscord')}>
                 <span className="bluefox-home-quick-link-icon discord"><QuickLinkFavicon url="https://discord.gg/z3bUt3hCya" fallback={FaDiscord} /></span>
                 <span className="bluefox-home-quick-link-label">Discord</span>
               </button>
-              <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir le site de téléchargement BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://bluefoxbrowser.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label={t('topbar.downloads')}>
                 <span className="bluefox-home-quick-link-icon download"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
-                <span className="bluefox-home-quick-link-label">Télécharger</span>
+                <span className="bluefox-home-quick-link-label">{t('topbar.downloads')}</span>
               </button>
-              <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label="Ouvrir les extensions BlueFox">
+              <button type="button" onClick={() => { onNavigate('https://bluefox-add-ons.pages.dev/'); closeQuickLinks(); }} className="bluefox-home-quick-link" aria-label={t('topbar.addons')}>
                 <span className="bluefox-home-quick-link-icon extensions"><img src={`${import.meta.env.BASE_URL}Logo.ico`} alt="BlueFox" className="h-7 w-7 object-contain" /></span>
-                <span className="bluefox-home-quick-link-label">Extensions</span>
+                <span className="bluefox-home-quick-link-label">{t('home.extensions')}</span>
               </button>
             </div>
           </div>
@@ -548,7 +569,7 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
       </div>
       <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-6 py-8 sm:px-10 sm:py-10">
         <section ref={homeFavoritesRef} className={`bluefox-home-favorites mb-8 ${isHomeSearchFocused ? 'is-search-hidden' : ''}`}>
-          <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Favoris</h1>
+          <h1 className="mb-5 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">{t('home.favorites')}</h1>
           <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-9 sm:gap-x-4">
             {shortcuts.map(({ title, url, iconUrl, isSponsored }) => <FavoriteTile key={url} title={title} url={url} iconUrl={iconUrl} isSponsored={isSponsored} onNavigate={onNavigate} />)}
           </div>
@@ -562,16 +583,16 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
               value={homeSearch}
               onChange={(event) => setHomeSearch(event.target.value)}
               onKeyDown={handleHomeSearchKeyDown}
-              placeholder="Des réponses à toutes vos questions..."
-              aria-label="Rechercher sur le Web ou saisir une adresse"
+              placeholder={t('topbar.addressPlaceholders.0')}
+              aria-label={t('home.searchWeb')}
               onFocus={activateHomeSearch}
             />
-            <button type="submit" aria-label="Lancer la recherche" title={`Rechercher avec ${activeSearchEngine.name}`}>
+            <button type="submit" aria-label={t('topbar.search')} title={`Rechercher avec ${activeSearchEngine.name}`}>
               <img src={activeSearchEngineIcon} alt={activeSearchEngine.name} title={`Rechercher avec ${activeSearchEngine.name}`} />
             </button>
           </form>
           {isHomeSearchFocused && (homeSearch.trim() || homeSuggestions.length > 0 || homeSmartSuggestion || isHomeSuggestionsLoading) && (
-            <div className="bluefox-home-search-results" role="listbox" aria-label="Suggestions de recherche">
+            <div className="bluefox-home-search-results" role="listbox" aria-label={t('home.suggestions')}>
               {homeSearch.trim() && (
                 <button
                   type="button"
@@ -602,9 +623,9 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
                   )}
                 </span>
                 <span className="bluefox-address-smart-copy">
-                  <small>{homeSmartSuggestion.kind === 'site' ? 'Entreprise ou site' : homeSmartSuggestion.kind === 'weather' ? 'Météo actuelle' : homeSmartSuggestion.kind === 'person' ? 'Personne' : homeSmartSuggestion.kind === 'game' ? 'Jeu vidéo' : homeSmartSuggestion.kind === 'subject' ? 'Sujet illustré' : 'Résultat reconnu'}</small>
+                  <small>{homeSmartSuggestion.kind === 'site' ? t('home.site') : homeSmartSuggestion.kind === 'weather' ? t('home.weather') : homeSmartSuggestion.kind === 'person' ? t('home.person') : homeSmartSuggestion.kind === 'game' ? t('home.game') : homeSmartSuggestion.kind === 'subject' ? t('home.subject') : t('home.recognized')}</small>
                   <strong>{homeSmartSuggestion.title}{homeSmartSuggestion.country ? ` · ${homeSmartSuggestion.country}` : ''}</strong>
-                  <span>{homeSmartSuggestion.weather?.temperature !== null && homeSmartSuggestion.weather ? `${homeSmartSuggestion.weather.temperature} °C · ${homeSmartSuggestion.weather.description}` : homeSmartSuggestion.admin || 'Voir les résultats sur le Web'}</span>
+                  <span>{homeSmartSuggestion.weather?.temperature !== null && homeSmartSuggestion.weather ? `${homeSmartSuggestion.weather.temperature} °C · ${homeSmartSuggestion.weather.description}` : homeSmartSuggestion.admin || t('home.seeWeb')}</span>
                 </span>
                 {homeSmartSuggestion.weather ? <MdWbSunny className="bluefox-address-smart-status" aria-hidden="true" /> : <MdNorthEast className="bluefox-address-smart-status" aria-hidden="true" />}
               </button>}
@@ -627,10 +648,10 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
                   ) : (
                     <MdSearch aria-hidden="true" />
                   )}
-                  <span><strong>{suggestion.label}</strong><small>{suggestion.kind === 'history' ? 'Historique' : suggestion.detail}</small></span>
+                  <span><strong>{suggestion.label}</strong><small>{suggestion.kind === 'history' ? t('home.history') : suggestion.detail}</small></span>
                 </button>
               ))}
-              {isHomeSuggestionsLoading && <div className="bluefox-home-search-status" role="status">Recherche de suggestions…</div>}
+              {isHomeSuggestionsLoading && <div className="bluefox-home-search-status" role="status">{t('topbar.searchSuggestionsLoading')}</div>}
               {homeSearch.trim() && <button
                 type="button"
                 className="bluefox-home-search-foxy-action"
@@ -643,17 +664,17 @@ const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPerson
                 }}
               >
                 <MdAutoAwesome aria-hidden="true" />
-                <span><strong>Demander à Foxy</strong><small>Ouvrir dans le mode IA</small></span>
+                <span><strong>{t('topbar.askFoxy')}</strong><small>{t('topbar.aiMode')}</small></span>
               </button>}
             </div>
           )}
         </section>
 
         <section className={`bluefox-home-news ${isHomeSearchFocused ? 'is-search-hidden' : ''}`}>
-          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">Suggestions Foxy IA</h2>
+          <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.02em] text-[#202124]">{t('home.foxySuggestions')}</h2>
           {newsLoading && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div key={index} className="h-[96px] animate-pulse rounded-[10px] border border-[#e6e6e8] bg-[#f7f7f8]" />)}</div>}
           {!newsLoading && visibleSuggestions.length > 0 && <div className="grid grid-cols-1 gap-3 md:grid-cols-3">{visibleSuggestions.map((article) => <SuggestionCard key={article.id} article={article} />)}</div>}
-          {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">Les suggestions ne sont pas disponibles pour le moment.</div>}
+          {!newsLoading && newsError && <div className="rounded-[10px] border border-[#e3e3e6] bg-[#f8f8f9] px-4 py-4 text-sm text-[#66676c]">{t('home.noNews')}</div>}
         </section>
       </div>
     </div>

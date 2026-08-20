@@ -1,1 +1,44 @@
-/* Languages uses the shared information card styling. */
+.bluefox-language-picker { display: grid; gap: 16px; }
+.bluefox-language-picker-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.bluefox-language-picker-header strong { color: #202124; font-size: 14px; }
+.bluefox-language-picker-header p { margin: 5px 0 0; color: #66727b; font-size: 13px; line-height: 1.5; }
+.bluefox-language-count { flex: 0 0 auto; padding: 6px 10px; border: 1px solid #dce8eb; border-radius: 999px; color: #137b8b; font-size: 12px; font-weight: 650; }
+.bluefox-language-auto { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 11px 12px; border: 1px solid #e8eef2; border-radius: 12px; background: #fff; color: #202124; cursor: pointer; text-align: left; transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease; }
+.bluefox-language-auto:hover { border-color: #9ed5dc; background: #f7fcfd; transform: translateY(-1px); }
+.bluefox-language-auto.is-selected { border-color: #62b8c4; background: #edf9fa; }
+.bluefox-language-search { position: relative; }
+.bluefox-language-search > svg { position: absolute; top: 50%; left: 13px; width: 19px; height: 19px; color: #7a858e; pointer-events: none; transform: translateY(-50%); }
+.bluefox-language-search input { width: 100%; height: 40px; padding: 0 14px 0 42px; border: 1px solid #dfe7ec; border-radius: 12px; outline: 0; background: #fff; color: #202124; font-size: 13px; }
+.bluefox-language-search input:focus { border-color: #62b8c4; box-shadow: 0 0 0 3px #e6f6f8; }
+.bluefox-language-list { display: grid; max-height: 430px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; overflow-y: auto; padding: 2px; }
+.bluefox-language-option { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border: 1px solid #e8eef2; border-radius: 12px; background: #fff; color: #202124; cursor: pointer; text-align: left; transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease; }
+.bluefox-language-option:hover { border-color: #9ed5dc; background: #f7fcfd; transform: translateY(-1px); }
+.bluefox-language-option.is-selected { border-color: #62b8c4; background: #edf9fa; }
+.bluefox-language-option-copy { min-width: 0; display: grid; gap: 3px; }
+.bluefox-language-option-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.bluefox-language-option-copy small { overflow: hidden; color: #7a858e; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-language-current { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; color: #137b8b; font-size: 11px; font-weight: 700; }
+.bluefox-language-current svg { width: 15px; height: 15px; }
+.bluefox-language-empty { grid-column: 1 / -1; margin: 10px 0; color: #66727b; font-size: 13px; text-align: center; }
+.bluefox-language-note { margin: 0; padding: 12px 14px; border-radius: 12px; background: #f5f8fa; color: #66727b; font-size: 12px; line-height: 1.55; }
+.bluefox-language-reset { justify-self: start; padding: 9px 12px; border: 1px solid #dce8eb; border-radius: 10px; background: transparent; color: #137b8b; cursor: pointer; font-size: 12px; font-weight: 650; }
+.bluefox-language-reset:hover { background: #f0fafb; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-picker-header strong,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-option,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-auto { color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-picker-header p,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-option-copy small,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-note { color: #b7c0ca; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-count { border-color: #3a6269; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-search input,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-option,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-auto { border-color: #3a424c; background: #1d2026; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-option:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-option.is-selected,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-auto:hover,
+:root[data-theme='dark'] .bluefox-app .bluefox-language-auto.is-selected { background: #24373b; }
+:root[data-theme='dark'] .bluefox-app .bluefox-language-note { background: #20262d; }
+@media (max-width: 640px) {
+  .bluefox-language-picker-header { display: grid; }
+  .bluefox-language-list { grid-template-columns: 1fr; }
+}

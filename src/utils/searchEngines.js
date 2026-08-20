@@ -199,30 +199,35 @@ export const readCustomSearchEngines = () => {
 export const getSearchEngines = () => [...SEARCH_ENGINES, ...readCustomSearchEngines()];
 
 const SEARCH_ENGINE_ORIGINS = {
-  google: 'États-Unis',
-  bing: 'États-Unis',
-  duckduckgo: 'États-Unis',
-  qwant: 'France',
-  ecosia: 'Allemagne',
-  brave: 'États-Unis',
-  startpage: 'Pays-Bas',
-  perplexity: 'États-Unis',
-  you: 'États-Unis',
-  kagi: 'Suisse',
-  mojeek: 'Royaume-Uni',
-  yahoo: 'États-Unis',
-  wikipedia: 'États-Unis',
-  yandex: 'Russie',
-  baidu: 'Chine',
-  naver: 'Corée du Sud',
-  swisscows: 'Suisse',
-  metager: 'Allemagne',
-  wolframalpha: 'États-Unis',
-  ask: 'États-Unis',
-  yep: 'États-Unis'
+  google: 'US',
+  bing: 'US',
+  duckduckgo: 'US',
+  qwant: 'FR',
+  ecosia: 'DE',
+  brave: 'US',
+  startpage: 'NL',
+  perplexity: 'US',
+  you: 'US',
+  kagi: 'CH',
+  mojeek: 'GB',
+  yahoo: 'US',
+  wikipedia: 'US',
+  yandex: 'RU',
+  baidu: 'CN',
+  naver: 'KR',
+  swisscows: 'CH',
+  metager: 'DE',
+  wolframalpha: 'US',
+  ask: 'US',
+  yep: 'US'
 };
 
-export const getSearchEngineOrigin = (engine) => engine.isCustom ? 'Personnalisé' : SEARCH_ENGINE_ORIGINS[engine.id] || 'International';
+export const getSearchEngineOrigin = (engine, language = 'fr') => {
+  if (engine.isCustom) return language.startsWith('en') ? 'Custom' : 'Personnalisé';
+  const region = SEARCH_ENGINE_ORIGINS[engine.id];
+  if (!region) return language.startsWith('en') ? 'International' : 'International';
+  try { return new Intl.DisplayNames([language.startsWith('en') ? 'en-US' : 'fr-FR'], { type: 'region' }).of(region) || region; } catch { return region; }
+};
 
 export const addCustomSearchEngine = ({ name, template }) => {
   const parsedUrl = new URL(template.replace('{query}', 'bluefox'));
@@ -261,9 +266,26 @@ export const extractSearchQuery = (url) => {
 
 export const buildSearchUrl = (engineId, query, safeSearchEnabled = true) => {
   const engine = getSearchEngine(engineId);
-  const url = engine.template.replace('{query}', encodeURIComponent(query));
+  const selectedLanguage = (() => {
+    try { return localStorage.getItem('bluefox_language')?.startsWith('en') ? 'en' : 'fr'; } catch { return 'fr'; }
+  })();
+  let template = engine.template;
+  if (engine.id === 'wikipedia' && selectedLanguage === 'en') template = 'https://en.wikipedia.org/w/index.php?search={query}';
+  const url = template.replace('{query}', encodeURIComponent(query));
   const safeParam = safeSearchEnabled ? SAFE_SEARCH_PARAMS[engine.id] : '';
-  return safeParam ? `${url}${url.includes('?') ? '&' : '?'}${safeParam}` : url;
+  const languageParam = selectedLanguage === 'en'
+    ? ({
+      google: 'hl=en&lr=lang_en',
+      bing: 'setlang=en-US',
+      duckduckgo: 'kl=us-en',
+      qwant: 'locale=en_US',
+      ecosia: 'language=en',
+      brave: 'language=en',
+      yahoo: 'b=1&guccounter=1'
+    }[engine.id] || '')
+    : '';
+  const params = [safeParam, languageParam].filter(Boolean).join('&');
+  return params ? `${url}${url.includes('?') ? '&' : '?'}${params}` : url;
 };
 
 export const getSearchEngineIcon = (engine) => engine.icon || `https://www.google.com/s2/favicons?domain=${engine.domain}&sz=64`;

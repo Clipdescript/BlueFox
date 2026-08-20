@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -364,6 +365,9 @@ function PdfThumbnail({ pdfDocument, pageNumber, rootRef, thumbnailRefs, isActiv
 }
 
 function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
+  const { t, i18n } = useTranslation('common');
+  const defaultAiPrompt = t('pdf.defaultPrompt');
+  const previousDefaultPromptRef = useRef(defaultAiPrompt);
   const [pdfDocument, setPdfDocument] = useState(null);
   const [sourceBytes, setSourceBytes] = useState(null);
   const [annotationsState, setAnnotationsState] = useState({ past: [], present: [], future: [] });
@@ -379,7 +383,7 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchPages, setSearchPages] = useState([]);
   const [isAiOpen, setIsAiOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('Résume ce document et propose les points importants à retenir.');
+  const [aiPrompt, setAiPrompt] = useState(defaultAiPrompt);
   const [aiAnswer, setAiAnswer] = useState('');
   const [isAiBusy, setIsAiBusy] = useState(false);
   const pageRefs = useRef(new Map());
@@ -387,6 +391,11 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
   const pagesScrollRef = useRef(null);
   const pagesSidebarRef = useRef(null);
   const lastAiInsertionRef = useRef('');
+
+  useEffect(() => {
+    setAiPrompt((currentPrompt) => currentPrompt === previousDefaultPromptRef.current ? defaultAiPrompt : currentPrompt);
+    previousDefaultPromptRef.current = defaultAiPrompt;
+  }, [defaultAiPrompt]);
   const pdfKey = `${file?.filePath || ''}:${file?.fileName || ''}`;
 
   const annotations = annotationsState.present;
@@ -525,12 +534,12 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
     if (!pdfDocument || !onOpenFoxy) return;
     try {
       const text = await extractText();
-      onOpenFoxy('Résume ce document PDF. Tu peux aussi proposer une modification si je te le demande.', text);
+      onOpenFoxy(t('pdf.foxyRequest'), text);
       setStatus('Foxy est ouvert avec le contenu du PDF.');
     } catch (requestError) {
       setError(`Impossible de préparer le PDF pour Foxy : ${requestError.message || 'erreur inconnue'}`);
     }
-  }, [extractText, fileName, onOpenFoxy, pdfDocument]);
+  }, [extractText, onOpenFoxy, pdfDocument, t]);
 
   const searchDocument = useCallback(async () => {
     const term = normalizeText(searchTerm).toLowerCase();
@@ -555,7 +564,7 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
     setAiAnswer('');
     try {
       const text = await extractText();
-      const result = await window.electron?.askAi?.(`${aiPrompt}\n\nContenu extrait du PDF :\n${text}`);
+      const result = await window.electron?.askAi?.(`${aiPrompt}\n\nContenu extrait du PDF :\n${text}`, { mode: 'document', language: i18n.resolvedLanguage || 'fr' });
       if (!result?.ok) throw new Error(result?.error || 'Foxy ne peut pas répondre.');
       setAiAnswer(result.answer || 'Aucune réponse.');
     } catch (aiError) {
@@ -653,7 +662,7 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
   const pageButtons = useMemo(() => Array.from({ length: pageCount }, (_, index) => index + 1), [pageCount]);
 
   return (
-    <section className="pdf-editor" aria-label="Éditeur PDF BlueFox">
+    <section className="pdf-editor" aria-label={t('pdf.editor')}>
       <header className="pdf-editor-header">
         <div className="pdf-editor-title-wrap">
           <div className="pdf-editor-file-icon" aria-hidden="true"><MdPictureAsPdf /></div>
@@ -666,17 +675,17 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
           <span>powered by</span> <strong>FoxyPDF</strong>
         </div>
         <div className="pdf-editor-header-actions">
-          <button type="button" className="pdf-ai-toggle-button" onClick={() => void requestFoxy()} disabled={!pdfDocument} aria-label="Ouvrir Foxy pour ce PDF" title="Demander à Foxy"><MdAutoAwesome /><span>Demander à Foxy</span></button>
-          <button type="button" className="pdf-save-button" onClick={() => void savePdf()} disabled={isSaving || isLoading}><MdSave />{isSaving ? 'Enregistrement…' : 'Enregistrer sous'}</button>
+          <button type="button" className="pdf-ai-toggle-button" onClick={() => void requestFoxy()} disabled={!pdfDocument} aria-label={t('pdf.askFoxy')} title={t('pdf.askFoxy')}><MdAutoAwesome /><span>{t('pdf.askFoxy')}</span></button>
+          <button type="button" className="pdf-save-button" onClick={() => void savePdf()} disabled={isSaving || isLoading}><MdSave />{isSaving ? t('pdf.saving') : t('pdf.save')}</button>
         </div>
       </header>
 
       <div className="pdf-editor-toolbar">
         <div className="pdf-tool-group">
           {TOOLS.map(({ id, label, icon: Icon }) => (
-            <button key={id} type="button" className={`pdf-tool-button ${activeTool === id ? 'is-active' : ''}`} onClick={() => setActiveTool(id)} aria-label={label} title={label} disabled={isLoading}>
+            <button key={id} type="button" className={`pdf-tool-button ${activeTool === id ? 'is-active' : ''}`} onClick={() => setActiveTool(id)} aria-label={t(`pdf.tools.${id}`)} title={t(`pdf.tools.${id}`)} disabled={isLoading}>
               <Icon />
-              <span>{label}</span>
+              <span>{t(`pdf.tools.${id}`)}</span>
             </button>
           ))}
         </div>
@@ -690,8 +699,8 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
       </div>
 
       <div className="pdf-editor-body">
-        <aside ref={pagesSidebarRef} className="pdf-pages-sidebar" aria-label="Pages du PDF">
-          <div className="pdf-sidebar-heading">Pages</div>
+        <aside ref={pagesSidebarRef} className="pdf-pages-sidebar" aria-label={t('pdf.pages')}>
+          <div className="pdf-sidebar-heading">{t('pdf.pages')}</div>
           <div className="pdf-page-list">
             {pdfDocument && pageButtons.map((pageNumber) => (
               <PdfThumbnail
@@ -712,14 +721,14 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
           <div className="pdf-workspace-topline">
             <div className="pdf-search-box">
               <MdSearch />
-              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void searchDocument(); }} placeholder="Rechercher dans le PDF" aria-label="Rechercher dans le PDF" />
+              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void searchDocument(); }} placeholder={t('pdf.search')} aria-label={t('pdf.search')} />
               <button type="button" onClick={() => void searchDocument()} disabled={!searchTerm} aria-label="Lancer la recherche"><MdSearch /></button>
             </div>
             {searchPages.length > 0 && <span className="pdf-search-result">{searchPages.length} page{searchPages.length > 1 ? 's' : ''}</span>}
             <div className="pdf-page-navigation">
-              <button type="button" onClick={() => scrollToPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1} aria-label="Page précédente"><MdChevronLeft /></button>
+              <button type="button" onClick={() => scrollToPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1} aria-label={t('pdf.previousPage')}><MdChevronLeft /></button>
               <span>{currentPage} / {pageCount || '—'}</span>
-              <button type="button" onClick={() => scrollToPage(Math.min(pageCount, currentPage + 1))} disabled={!pageCount || currentPage >= pageCount} aria-label="Page suivante"><MdChevronRight /></button>
+              <button type="button" onClick={() => scrollToPage(Math.min(pageCount, currentPage + 1))} disabled={!pageCount || currentPage >= pageCount} aria-label={t('pdf.nextPage')}><MdChevronRight /></button>
             </div>
           </div>
 
@@ -732,7 +741,7 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
             });
             if (visible) setCurrentPage(visible[0]);
           }}>
-            {isLoading && <div className="pdf-editor-empty"><MdRefresh className="pdf-spin" /><p>Ouverture de {fileName}…</p></div>}
+            {isLoading && <div className="pdf-editor-empty"><MdRefresh className="pdf-spin" /><p>{t('pdf.open', { name: fileName })}</p></div>}
             {error && <div className="pdf-editor-empty pdf-editor-error"><p>{error}</p></div>}
             {!isLoading && !error && pdfDocument && pageButtons.map((pageNumber) => (
               <div key={pageNumber} ref={(element) => { if (element) pageRefs.current.set(pageNumber, element); else pageRefs.current.delete(pageNumber); }} className="pdf-page-holder">
@@ -756,12 +765,12 @@ function PdfEditor({ file, onOpenFoxy, aiInsertion }) {
         </div>
 
         {isAiOpen && (
-          <aside className="pdf-ai-panel" aria-label="Foxy pour le PDF">
-            <div className="pdf-ai-heading"><div><MdAutoAwesome /><strong>Foxy PDF</strong></div><button type="button" onClick={() => setIsAiOpen(false)} aria-label="Fermer Foxy"><MdClose /></button></div>
-            <p className="pdf-ai-intro">Analyse le texte du document, puis ajoute la réponse comme annotation si tu le souhaites.</p>
+          <aside className="pdf-ai-panel" aria-label={t('pdf.askFoxy')}>
+            <div className="pdf-ai-heading"><div><MdAutoAwesome /><strong>Foxy PDF</strong></div><button type="button" onClick={() => setIsAiOpen(false)} aria-label={t('pdf.closeFoxy')}><MdClose /></button></div>
+            <p className="pdf-ai-intro">{t('pdf.foxyIntro')}</p>
             <textarea className="pdf-ai-prompt" value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} aria-label="Question à Foxy" />
-            <button type="button" className="pdf-ai-ask" onClick={() => void askFoxy()} disabled={isAiBusy || !pdfDocument}><MdAutoAwesome />{isAiBusy ? 'Analyse en cours…' : 'Demander à Foxy'}</button>
-            {aiAnswer && <div className="pdf-ai-answer"><p>{aiAnswer}</p>{!aiAnswer.startsWith('Erreur :') && <button type="button" onClick={insertAiAnswer}>Insérer dans le PDF</button>}</div>}
+            <button type="button" className="pdf-ai-ask" onClick={() => void askFoxy()} disabled={isAiBusy || !pdfDocument}><MdAutoAwesome />{isAiBusy ? t('pdf.analyzing') : t('pdf.askFoxy')}</button>
+            {aiAnswer && <div className="pdf-ai-answer"><p>{aiAnswer}</p>{!aiAnswer.startsWith('Erreur :') && <button type="button" onClick={insertAiAnswer}>{t('pdf.insert')}</button>}</div>}
           </aside>
         )}
       </div>

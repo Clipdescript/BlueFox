@@ -1,18 +1,20 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdCleaningServices } from 'react-icons/md';
 import { SectionShell } from './SettingsPrimitives.jsx';
 import './ClearBrowsingDataSettingsPage.css';
 
-const ClearBrowsingDataSettingsPage = ({ historyCount, onClear }) => (
-  <SectionShell
+const ClearBrowsingDataSettingsPage = ({ historyCount, onClear }) => {
+  const { t } = useTranslation('common');
+  return <SectionShell
     icon={MdCleaningServices}
-    title="Effacer les données de navigation"
-    description="Supprimez les données de navigation enregistrées localement par BlueFox."
+    title={t('settings.nav.clearData')}
+    description={t('settingsExtra.clearDataDescription')}
   >
     <div className="bluefox-settings-row">
       <div>
-        <strong>Historique de navigation</strong>
-        <p>{historyCount > 0 ? `${historyCount} page${historyCount > 1 ? 's' : ''} enregistrée${historyCount > 1 ? 's' : ''}.` : 'Aucune page enregistrée.'}</p>
+        <strong>{t('settingsExtra.browsingHistory')}</strong>
+        <p>{historyCount > 0 ? t('settingsMore.savedPage', { count: historyCount, plural: historyCount > 1 ? 's' : '' }) : t('settingsMore.noSavedPage')}</p>
       </div>
       <button
         type="button"
@@ -20,10 +22,10 @@ const ClearBrowsingDataSettingsPage = ({ historyCount, onClear }) => (
         onClick={onClear}
         disabled={historyCount === 0}
       >
-        Effacer l’historique
+        {t('settingsExtra.clearHistory')}
       </button>
     </div>
-  </SectionShell>
-);
+  </SectionShell>;
+};
 
 export default ClearBrowsingDataSettingsPage;

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdClose, MdSecurity } from 'react-icons/md';
 import { SectionShell, ToggleButton } from './SettingsPrimitives.jsx';
 import './PrivacySettingsPage.css';
 
 const PrivacySettingsPage = ({ enabled, onToggle, onClear }) => {
+  const { t } = useTranslation('common');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -36,31 +38,31 @@ const PrivacySettingsPage = ({ enabled, onToggle, onClear }) => {
 
   return (
     <>
-      <SectionShell icon={MdSecurity} title="Confidentialité et sécurité" description="Gardez le contrôle de vos données dans BlueFox.">
+      <SectionShell icon={MdSecurity} title={t('settings.nav.privacy')} description={t('settingsPages.privacyDescription')}>
         <div className="bluefox-settings-toggle-row bluefox-settings-history-preference">
           <div>
-            <strong>Enregistrer l’historique de navigation</strong>
-            <p>{enabled ? 'Les pages que vous visitez sont conservées localement sur cet appareil.' : 'Les nouvelles pages visitées ne seront plus enregistrées dans votre historique local.'}</p>
+            <strong>{t('settingsPages.historySave')}</strong>
+            <p>{enabled ? t('settingsPages.historyOnText') : t('settingsPages.historyOffText')}</p>
           </div>
-          <ToggleButton enabled={enabled && !isConfirmOpen} onClick={handleToggle} label={enabled ? 'Désactiver l’historique de navigation' : 'Activer l’historique de navigation'} />
+          <ToggleButton enabled={enabled && !isConfirmOpen} onClick={handleToggle} label={enabled ? t('settingsPages.disabled') : t('settingsPages.enabled')} />
         </div>
 
         <div className={`bluefox-settings-history-status ${enabled ? 'is-enabled' : 'is-disabled'}`} role="status">
           <span aria-hidden="true" />
-          {enabled ? 'Historique activé' : 'Historique désactivé'}
+          {enabled ? t('settingsPages.historyOn') : t('settingsPages.historyOff')}
         </div>
       </SectionShell>
 
       {isConfirmOpen && <div className="bluefox-history-confirm-backdrop" role="presentation" onMouseDown={cancelDisable}>
         <div className="bluefox-history-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="bluefox-history-confirm-title" onMouseDown={(event) => event.stopPropagation()}>
           <div className="bluefox-history-confirm-header">
-            <div><h2 id="bluefox-history-confirm-title">Désactiver l’historique ?</h2></div>
+            <div><h2 id="bluefox-history-confirm-title">{t('settingsMore.privacyDisableTitle')}</h2></div>
             <button type="button" className="bluefox-history-confirm-close" onClick={cancelDisable} aria-label="Fermer"><MdClose aria-hidden="true" /></button>
           </div>
-          <p>Cette action supprimera votre historique existant. Les nouvelles pages que vous visiterez ne seront plus enregistrées dans l’historique de navigation de BlueFox.</p>
+          <p>{t('settingsMore.privacyDisableText')}</p>
           <div className="bluefox-history-confirm-actions">
-            <button type="button" className="bluefox-history-confirm-cancel" onClick={cancelDisable}>Annuler</button>
-            <button type="button" className="bluefox-history-confirm-disable" onClick={confirmDisable}>Désactiver</button>
+            <button type="button" className="bluefox-history-confirm-cancel" onClick={cancelDisable}>{t('settingsMore.cancel')}</button>
+            <button type="button" className="bluefox-history-confirm-disable" onClick={confirmDisable}>{t('settingsMore.disable')}</button>
           </div>
         </div>
       </div>}

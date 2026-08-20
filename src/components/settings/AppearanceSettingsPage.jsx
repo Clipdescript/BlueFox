@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdComputer, MdFlashOn, MdNightsStay, MdPalette } from 'react-icons/md';
 import { InfoCard, SectionShell, ThemeCard } from './SettingsPrimitives.jsx';
 import './AppearanceSettingsPage.css';
@@ -9,11 +10,13 @@ const THEME_OPTIONS = [
   { id: 'system', name: 'Système', description: 'Suit automatiquement le thème de Windows.', icon: MdComputer },
 ];
 
-const AppearanceSettingsPage = ({ mode, resolvedTheme, onSetMode }) => (
-  <SectionShell icon={MdPalette} title="Apparence" description="Choisissez le thème utilisé par BlueFox.">
-    <div className="bluefox-settings-theme-grid">{THEME_OPTIONS.map((themeOption) => <ThemeCard key={themeOption.id} themeOption={themeOption} selected={themeOption.id === mode} onClick={() => onSetMode(themeOption.id)} />)}</div>
-    <InfoCard title="Thème actif" text={`BlueFox utilise actuellement le mode ${resolvedTheme === 'dark' ? 'sombre' : 'clair'}.`} />
-  </SectionShell>
-);
+const AppearanceSettingsPage = ({ mode, resolvedTheme, onSetMode }) => {
+  const { t } = useTranslation('common');
+  const localizedThemes = THEME_OPTIONS.map((theme) => ({ ...theme, name: t(`personalization.${theme.id}`), description: t(`personalization.${theme.id}Description`) }));
+  return <SectionShell icon={MdPalette} title={t('settings.nav.appearance')} description={t('settingsPages.appearanceDescription')}>
+    <div className="bluefox-settings-theme-grid">{localizedThemes.map((themeOption) => <ThemeCard key={themeOption.id} themeOption={themeOption} selected={themeOption.id === mode} onClick={() => onSetMode(themeOption.id)} />)}</div>
+    <InfoCard title={t('settingsPages.themeActive')} text={t('settingsPages.themeActiveText', { theme: resolvedTheme === 'dark' ? t('settingsPages.darkTheme') : t('settingsPages.lightTheme') })} />
+  </SectionShell>;
+};
 
 export default AppearanceSettingsPage;

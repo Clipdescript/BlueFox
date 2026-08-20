@@ -1,10 +1,12 @@
 import React, { Suspense, useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SidebarPanel } from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TabBar from './components/TabBar';
 import SpeedDial from './components/SpeedDial';
 import { MdClose, MdPublic, MdSearch, MdSkipNext } from 'react-icons/md';
 import { useTheme } from './utils/theme.js';
+import i18n from './i18n.js';
 import './styles/music.css';
 import './styles/search-suggestions.css';
 import { buildSearchUrl, DEFAULT_SEARCH_ENGINE_ID, extractSearchQuery, SAFE_SEARCH_STORAGE_KEY, SEARCH_ENGINE_STORAGE_KEY } from './utils/searchEngines.js';
@@ -83,6 +85,7 @@ const createHomeTab = () => ({
 });
 
 function App() {
+  const { t } = useTranslation('common');
   const { resolvedTheme } = useTheme();
   const hasCleanStartup = localStorage.getItem('bluefox_clean_startup_v1') === 'true';
   const savedTabs = hasCleanStartup ? localStorage.getItem('bluefox_tabs') : null;
@@ -252,6 +255,18 @@ function App() {
       if (connectionNoticeTimerRef.current) window.clearTimeout(connectionNoticeTimerRef.current);
     };
   }, [showConnectionNotice]);
+
+  useEffect(() => {
+    const handleLanguageChanged = (language) => {
+      const normalizedLanguage = String(language || 'fr').split('-')[0];
+      window.electron?.setBrowserLanguage?.(normalizedLanguage);
+      setTabs((currentTabs) => currentTabs.map((tab) => tab.isSearching && !tab.isSettings && !tab.isPdf
+        ? { ...tab, loadCount: (tab.loadCount || 0) + 1, isLoading: true }
+        : tab));
+    };
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => i18n.off('languageChanged', handleLanguageChanged);
+  }, []);
 
   useEffect(() => {
     const handleHistoryChanged = () => setHistory(readBrowserHistory());
@@ -1359,8 +1374,8 @@ function App() {
           <MdPublic aria-hidden="true" style={{ color: '#ffffff', fill: '#ffffff' }} />
           <span>
             {connectionNotice.status === 'offline'
-              ? 'Vous êtes hors ligne — Erreur réseau : ERR_INTERNET_DISCONNECTED. Vérifiez votre connexion Internet pour reprendre votre navigation.'
-              : 'Vous êtes en ligne — Connexion Internet rétablie. Vous pouvez reprendre votre navigation.'}
+              ? t('app.connectionOffline')
+              : t('app.connectionOnline')}
           </span>
         </div>
       )}
@@ -1635,12 +1650,12 @@ function App() {
                >
                    {tab.isGame ? (
                        tab.id === activeTabId ? (
-                         <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Tetris…</div>}>
+                         <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">{t('app.loadingGame')}</div>}>
                            <OfflineGame standalone />
                          </Suspense>
                        ) : null
                    ) : tab.isSettings ? (
-                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement des paramètres…</div>}>
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">{t('app.loadingSettings')}</div>}>
                          <SettingsPage
                            onClose={handleSettingsClose}
                            initialSection={settingsSection}
@@ -1655,7 +1670,7 @@ function App() {
                          />
                        </Suspense>
                    ) : tab.isPdf ? (
-                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">Ouverture de l’éditeur PDF…</div>}>
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#eef2f7] text-sm text-[#6c7789]">{t('app.loadingPdf')}</div>}>
                          <PdfEditor
                            file={tab.pdfFile || { fileName: tab.title, filePath: tab.pdfPath }}
                            onOpenFoxy={handleOpenPdfFoxy}
@@ -1665,13 +1680,13 @@ function App() {
                    ) : tab.isSearching ? (
                          tab.offlineFallback ? (
                            tab.id === activeTabId ? (
-                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">Chargement du mini-jeu hors ligne…</div>}>
+                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">{t('app.offlineGame')}</div>}>
                                <OfflineGame attemptedUrl={tab.url} errorKind="offline" onRetry={handleOfflineRetry} onGoHome={goHome} />
                              </Suspense>
                            ) : null
                          ) : tab.pageError ? (
                            tab.id === activeTabId ? (
-                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#667085]">Préparation de la page BlueFox…</div>}>
+                             <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#667085]">{t('app.preparingPage')}</div>}>
                                <OfflineGame attemptedUrl={tab.url} errorKind="site" onRetry={handleOfflineRetry} onGoHome={goHome} />
                              </Suspense>
                            ) : null
@@ -1695,7 +1710,7 @@ function App() {
                           </div>
                         )
                    ) : (
-                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
+                       <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">{t('app.loadingFoxy')}</div>}>
                          {isAiMode ? (
                            <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={tab.id === aiInitialPromptTabId ? aiInitialPrompt : ''} submitInitialPrompt={tab.id === aiInitialPromptTabId} hideModeSwitch hideThemeToggle conversation={aiSidebarTabs[tab.id]?.conversation} conversationKey={tab.id} onConversationChange={updateAiConversation} onMusicControl={controlMusicInNewTab} musicPlayback={musicPlayback} onMusicPlaybackChange={handleMusicPlaybackChange} hasMusicTab={hasMusicTab} />
                          ) : (

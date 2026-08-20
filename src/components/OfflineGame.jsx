@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdFullscreen, MdFullscreenExit } from 'react-icons/md';
 import '../styles/offline-game.css';
 
@@ -31,6 +32,7 @@ const collides = (board, piece, nextX = piece.x, nextY = piece.y, nextShape = pi
 }));
 
 const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, errorKind = 'offline', standalone = false }) => {
+  const { t } = useTranslation('common');
   const isSiteError = errorKind === 'site';
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -152,17 +154,17 @@ const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, errorKind = 'offlin
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.fillStyle = title;
         context.font = '800 28px Inter, sans-serif';
-        context.fillText(game.gameOver ? 'PARTIE TERMINÉE' : 'TETRIS', canvas.width / 2, canvas.height / 2 - 14);
+        context.fillText(game.gameOver ? t('game.gameOver') : 'TETRIS', canvas.width / 2, canvas.height / 2 - 14);
         context.fillStyle = copy;
         context.font = '600 13px Inter, sans-serif';
-        context.fillText(game.gameOver ? 'Espace pour recommencer' : 'Espace pour commencer', canvas.width / 2, canvas.height / 2 + 18);
+        context.fillText(game.gameOver ? t('game.restart') : t('game.start'), canvas.width / 2, canvas.height / 2 + 18);
       }
       context.textAlign = 'left';
       context.fillStyle = copy;
       context.font = '700 11px Inter, sans-serif';
-      context.fillText(`SCORE ${game.score}`, 12, 18);
+      context.fillText(`${t('game.score')} ${game.score}`, 12, 18);
       context.textAlign = 'right';
-      context.fillText(`LIGNES ${game.lines}`, canvas.width - 12, 18);
+      context.fillText(`${t('game.lines')} ${game.lines}`, canvas.width - 12, 18);
     };
 
     const frame = (now) => {
@@ -198,22 +200,22 @@ const OfflineGame = ({ attemptedUrl = '', onRetry, onGoHome, errorKind = 'offlin
     <section ref={stageRef} className={`bluefox-offline-page ${standalone ? 'is-standalone' : ''}`} aria-labelledby="bluefox-offline-title">
       {!standalone && attemptedUrl && (
         <div className="bluefox-offline-redirect" role="status">
-          <span>{isSiteError ? 'BlueFox n’a pas réussi à afficher cette page. Vous pouvez réessayer ou revenir à l’accueil.' : 'Vous serez redirigé automatiquement vers cette URL dès que la connexion Internet reviendra :'}</span>
+          <span>{isSiteError ? t('game.siteErrorText') : t('game.offlineText')}</span>
           <code title={attemptedUrl}>{attemptedUrl}</code>
         </div>
       )}
       <header className="bluefox-offline-header">
-        <h1 id="bluefox-offline-title">{isSiteError ? <>Page <span>introuvable</span></> : <>Vous êtes <span>hors ligne</span></>}</h1>
-        <p className="bluefox-offline-subtitle">{isSiteError ? 'Ce site n’a pas pu charger la page demandée.' : isOnline ? 'Connexion retrouvée.' : 'La connexion est interrompue pour le moment.'}</p>
+        <h1 id="bluefox-offline-title">{isSiteError ? <>{t('game.siteErrorTitle')}</> : <>{t('game.offlineTitle')}</>}</h1>
+        <p className="bluefox-offline-subtitle">{isSiteError ? t('game.siteErrorText') : isOnline ? t('app.connectionOnline') : t('game.offlineText')}</p>
       </header>
       <div className="bluefox-offline-tetris-heading">
-        <strong>Tetris hors ligne</strong>
-        <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Quitter le plein écran' : 'Ouvrir en plein écran'} title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}>
+        <strong>{t('game.playTetris')}</strong>
+        <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? t('game.goHome') : t('game.playTetris')} title={isFullscreen ? t('game.goHome') : t('game.playTetris')}>
           {isFullscreen ? <MdFullscreenExit aria-hidden="true" /> : <MdFullscreen aria-hidden="true" />}
         </button>
       </div>
       <div className="bluefox-offline-tetris-stage">
-        <canvas ref={canvasRef} aria-label="Tetris hors ligne" />
+        <canvas ref={canvasRef} aria-label={t('game.playTetris')} />
       </div>
     </section>
   );

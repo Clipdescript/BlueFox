@@ -1,13 +1,15 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MdAutoAwesome } from 'react-icons/md';
 import { InfoCard, SectionShell, ToggleButton } from './SettingsPrimitives.jsx';
 import './FoxySettingsPage.css';
 
-const FoxySettingsPage = ({ enabled, onToggle }) => (
-  <SectionShell icon={MdAutoAwesome} title="Mode IA Foxy" description="Activez Foxy pour analyser, expliquer et transformer ce que vous consultez.">
-    <div className="bluefox-settings-toggle-row"><div><strong>Foxy IA</strong><p>Foxy reste disponible dans le navigateur et peut être désactivé à tout moment.</p></div><ToggleButton enabled={enabled} onClick={onToggle} label={enabled ? 'Activé' : 'Désactivé'} /></div>
-    <InfoCard title="Ce que Foxy peut faire" text="Répondre à vos questions, résumer une page, analyser un PDF et vous aider à écrire. L’IA reste facultative." />
-  </SectionShell>
-);
+const FoxySettingsPage = ({ enabled, onToggle }) => {
+  const { t } = useTranslation('common');
+  return <SectionShell icon={MdAutoAwesome} title={t('settings.nav.foxy')} description={t('settingsPages.foxyDescription')}>
+    <div className="bluefox-settings-toggle-row"><div><strong>{t('settingsPages.foxyTitle')}</strong><p>{t('settingsPages.foxyText')}</p></div><ToggleButton enabled={enabled} onClick={onToggle} label={enabled ? t('settingsPages.enabled') : t('settingsPages.disabled')} /></div>
+    <InfoCard title={t('settingsPages.foxyInfoTitle')} text={t('settingsPages.foxyInfoText')} />
+  </SectionShell>;
+};
 
 export default FoxySettingsPage;
