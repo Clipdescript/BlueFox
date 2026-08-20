@@ -17,6 +17,7 @@ const PdfEditor = React.lazy(() => import('./components/PdfEditor'));
 const OfflineGame = React.lazy(() => import('./components/OfflineGame'));
 const SETTINGS_URL = 'bluefox://parametres';
 const BROWSER_HISTORY_STORAGE_KEY = 'bluefox_history';
+const BROWSER_HISTORY_ENABLED_STORAGE_KEY = 'bluefox_history_enabled_v1';
 const DISCORD_PROFILE_STORAGE_KEY = 'bluefox_discord_profile_v1';
 
 const readBrowserHistory = () => {
@@ -27,6 +28,8 @@ const readBrowserHistory = () => {
     return [];
   }
 };
+
+const isBrowserHistoryEnabled = () => localStorage.getItem(BROWSER_HISTORY_ENABLED_STORAGE_KEY) !== 'false';
 
 // Local development servers commonly omit a domain suffix (for example,
 // "localhost:3000"). Treat them as addresses rather than search queries.
@@ -155,7 +158,7 @@ function App() {
   }, [hasCleanStartup]);
 
   const recordHistoryVisit = useCallback((entry) => {
-    if (!entry?.url || !String(entry.url).startsWith('http')) return;
+    if (!isBrowserHistoryEnabled() || !entry?.url || !String(entry.url).startsWith('http')) return;
     setHistory((currentHistory) => {
       const nextEntry = {
         id: `${Date.now()}-${entry.url}`,
@@ -173,7 +176,7 @@ function App() {
   }, []);
 
   const updateHistoryEntry = useCallback((entry) => {
-    if (!entry?.url) return;
+    if (!isBrowserHistoryEnabled() || !entry?.url) return;
     setHistory((currentHistory) => {
       let changed = false;
       const nextHistory = currentHistory.map((item) => {

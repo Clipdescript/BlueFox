@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdSearch } from 'react-icons/md';
 import { SectionShell, ToggleButton } from './SettingsPrimitives.jsx';
+import './SafeSearchSettingsPage.css';
 
 const SafeSearchSettingsPage = ({ enabled, onToggle }) => (
   <SectionShell icon={MdSearch} title="Safe Search" description="Réduisez l’exposition aux contenus explicites dans les recherches.">

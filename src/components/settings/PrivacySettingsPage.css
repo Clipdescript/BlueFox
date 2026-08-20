@@ -1,0 +1,36 @@
+.bluefox-settings-history-preference { margin-bottom: 0; }
+.bluefox-settings-history-status { display: flex; align-items: center; gap: 7px; margin: 13px 0 2px; color: #66727b; font-size: 11px; font-weight: 650; }
+.bluefox-settings-history-status > span { width: 7px; height: 7px; border-radius: 50%; background: #7a858e; }
+.bluefox-settings-history-status.is-enabled { color: #16834b; }
+.bluefox-settings-history-status.is-enabled > span { background: #20a464; box-shadow: 0 0 0 3px #e5f7ed; }
+.bluefox-settings-history-status.is-disabled { color: #875b19; }
+.bluefox-settings-history-status.is-disabled > span { background: #d89018; box-shadow: 0 0 0 3px #fff1d8; }
+.bluefox-history-confirm-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(24, 30, 36, .42); animation: bluefox-history-fade-in 160ms ease-out; }
+.bluefox-history-confirm-dialog { width: min(100%, 420px); padding: 18px; border: 1px solid #e2e8ec; border-radius: 10px; background: #fff; box-shadow: 0 18px 55px rgba(24, 30, 36, .2); animation: bluefox-history-dialog-in 180ms ease-out; }
+.bluefox-history-confirm-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.bluefox-history-confirm-header > div { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.bluefox-history-confirm-header h2 { margin: 0; color: #202124; font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.bluefox-history-confirm-close { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; flex: 0 0 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #66727b; cursor: pointer; }
+.bluefox-history-confirm-close:hover { background: #f1f4f6; color: #202124; }
+.bluefox-history-confirm-close svg { width: 19px; height: 19px; }
+.bluefox-history-confirm-dialog > p { margin: 16px 2px 20px; color: #66727b; font-size: 12px; line-height: 1.6; }
+.bluefox-history-confirm-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.bluefox-history-confirm-actions button { min-width: 90px; padding: 10px 14px; border-radius: 9px; cursor: pointer; font-size: 11px; font-weight: 700; transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease; }
+.bluefox-history-confirm-actions button:active { transform: translateY(1px); }
+.bluefox-history-confirm-cancel { border: 1px solid #dfe7ec; background: #fff; color: #4f5c65; }
+.bluefox-history-confirm-cancel:hover { border-color: #b8c8d0; background: #f7fafb; }
+.bluefox-history-confirm-disable { border: 1px solid #1a73e8; background: #1a73e8; color: #fff !important; -webkit-text-fill-color: #fff !important; }
+:root[data-theme='light'] .bluefox-app .bluefox-history-confirm-disable,
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-disable { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.bluefox-history-confirm-disable:hover { border-color: #155fc0; background: #155fc0; }
+@keyframes bluefox-history-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bluefox-history-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-status.is-enabled { color: #8ee0a8; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-status.is-disabled { color: #f2c47c; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-dialog { border-color: #3a424c; background: #1d2026; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-header h2 { color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-dialog > p { color: #b7c0ca; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-close { color: #b7c0ca; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-close:hover { background: #303640; color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-cancel { border-color: #4a5964; background: #1d2026; color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-history-confirm-cancel:hover { border-color: #70818d; background: #303640; }

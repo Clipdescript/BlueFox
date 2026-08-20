@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdInfoOutline, MdKey } from 'react-icons/md';
 import { InfoCard, SectionShell, StatusPill } from './SettingsPrimitives.jsx';
+import './PasswordsSettingsPage.css';
 
 const PasswordsSettingsPage = () => (
   <SectionShell icon={MdKey} title="Mots de passe et saisie automatique" description="Comprenez ce qui est actuellement géré par BlueFox.">

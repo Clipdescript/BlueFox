@@ -3,7 +3,8 @@ import { MdArrowBack, MdBrush, MdCheck, MdClose, MdComputer, MdFlashOn, MdNights
 import { useTheme } from '../utils/theme.js';
 import { ThemeCard } from './settings/SettingsPrimitives.jsx';
 import '../styles/personalization.css';
-import '../styles/settings.css';
+import './settings/SettingsPrimitives.css';
+import './settings/AppearanceSettingsPage.css';
 
 const LIGHT_DEFAULT_TAB_COLOR = '#f3f2f0';
 const DARK_DEFAULT_TAB_COLOR = '#1d2026';

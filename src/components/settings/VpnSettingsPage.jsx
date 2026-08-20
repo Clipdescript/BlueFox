@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdWifi } from 'react-icons/md';
 import { InfoCard, SectionShell, StatusPill } from './SettingsPrimitives.jsx';
+import './VpnSettingsPage.css';
 
 const VpnSettingsPage = () => (
   <SectionShell icon={MdWifi} title="VPN BlueFox" description="État du service de protection de la connexion.">

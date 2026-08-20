@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdComputer, MdFlashOn, MdNightsStay, MdPalette } from 'react-icons/md';
 import { InfoCard, SectionShell, ThemeCard } from './SettingsPrimitives.jsx';
+import './AppearanceSettingsPage.css';
 
 const THEME_OPTIONS = [
   { id: 'light', name: 'Clair', description: 'Interface blanche et lumineuse.', icon: MdFlashOn },

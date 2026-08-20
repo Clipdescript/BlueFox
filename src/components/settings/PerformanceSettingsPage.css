@@ -1,0 +1,36 @@
+.bluefox-performance-dashboard { display: grid; gap: 14px; }
+.bluefox-performance-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.bluefox-performance-metric, .bluefox-performance-panel { padding: 15px; border: 1px solid #e8eef2; border-radius: 14px; background: #fff; }
+.bluefox-performance-metric-top, .bluefox-performance-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.bluefox-performance-metric-top span, .bluefox-performance-panel-heading p, .bluefox-performance-metric small, .bluefox-performance-chart-block small, .bluefox-performance-day span, .bluefox-performance-day small { color: #69757e !important; font-size: 10px; }
+.bluefox-performance-metric-top strong { color: #202124 !important; font-size: 20px; letter-spacing: -.04em; }
+.bluefox-performance-metric > small { display: block; margin-top: 5px; }
+.bluefox-performance-panel-heading h3 { margin: 0; color: #202124 !important; font-size: 14px; }
+.bluefox-performance-panel-heading p { margin: 4px 0 0; font-size: 11px; }
+.bluefox-performance-live { display: inline-flex; align-items: center; gap: 5px; color: #16834b !important; font-size: 10px; font-weight: 700; }
+.bluefox-performance-live i { width: 7px; height: 7px; border-radius: 50%; background: #20a464; box-shadow: 0 0 0 3px #e5f7ed; }
+.bluefox-performance-sparkline { display: block; width: 100%; height: 38px; margin-top: 11px; overflow: visible; }
+.bluefox-performance-empty-chart { display: grid; min-height: 48px; place-items: center; color: #7a858e !important; font-size: 11px; }
+.bluefox-performance-chart-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.bluefox-performance-chart-block { min-width: 0; padding: 12px; border-radius: 10px; background: #f7fbfc; }
+.bluefox-performance-chart-block > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bluefox-performance-chart-block strong { color: #202124 !important; font-size: 11px; }
+.bluefox-performance-process-count { color: #137b8b !important; font-size: 10px; font-weight: 700; }
+.bluefox-performance-process-list { display: grid; gap: 5px; margin-top: 16px; }
+.bluefox-performance-process { display: grid; grid-template-columns: minmax(0, 1fr) 90px 85px; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px; background: #f7fbfc; color: #202124 !important; font-size: 11px; }
+.bluefox-performance-process-name { min-width: 0; }
+.bluefox-performance-process-name strong { display: block; overflow: hidden; color: #202124 !important; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-performance-process-name small { display: block; margin-top: 3px; color: #69757e !important; font-size: 9px; }
+.bluefox-performance-process > span { color: #137b8b !important; font-size: 10px; font-weight: 700; text-align: right; }
+.bluefox-performance-history { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+.bluefox-performance-day { display: flex; min-width: 0; min-height: 110px; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px 4px; border-radius: 10px; background: #f7fbfc; }
+.bluefox-performance-day strong { color: #202124 !important; font-size: 11px; text-transform: capitalize; }
+.bluefox-performance-day-bars { display: flex; width: 32px; height: 54px; align-items: flex-end; justify-content: center; gap: 4px; }
+.bluefox-performance-day-bars i { display: block; width: 9px; min-height: 5px; border-radius: 4px 4px 2px 2px; background: #1a73e8; }
+.bluefox-performance-day-bars i + i { background: #137b8b; }
+.bluefox-performance-footnote { margin: 0 2px; color: #69757e !important; font-size: 10px; line-height: 1.5; }
+@media (max-width: 760px) { .bluefox-performance-cards, .bluefox-performance-chart-grid { grid-template-columns: 1fr; } .bluefox-performance-process { grid-template-columns: minmax(0, 1fr) 72px; } .bluefox-performance-process > span:last-child { grid-column: 2; } .bluefox-performance-history { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+:root[data-theme='dark'] .bluefox-app .bluefox-performance-metric, :root[data-theme='dark'] .bluefox-app .bluefox-performance-panel { border-color: #3a424c; background: #1d2026; }
+:root[data-theme='dark'] .bluefox-app .bluefox-performance-chart-block, :root[data-theme='dark'] .bluefox-app .bluefox-performance-day, :root[data-theme='dark'] .bluefox-app .bluefox-performance-process { background: #202a2f; }
+:root[data-theme='dark'] .bluefox-app .bluefox-performance-metric-top strong, :root[data-theme='dark'] .bluefox-app .bluefox-performance-panel-heading h3, :root[data-theme='dark'] .bluefox-app .bluefox-performance-chart-block strong, :root[data-theme='dark'] .bluefox-app .bluefox-performance-day strong, :root[data-theme='dark'] .bluefox-app .bluefox-performance-process-name strong { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-performance-process-name small, :root[data-theme='dark'] .bluefox-app .bluefox-performance-metric-top span, :root[data-theme='dark'] .bluefox-app .bluefox-performance-panel-heading p, :root[data-theme='dark'] .bluefox-app .bluefox-performance-metric small, :root[data-theme='dark'] .bluefox-app .bluefox-performance-chart-block small, :root[data-theme='dark'] .bluefox-app .bluefox-performance-day span, :root[data-theme='dark'] .bluefox-app .bluefox-performance-day small, :root[data-theme='dark'] .bluefox-app .bluefox-performance-footnote { color: #b7c0ca !important; }

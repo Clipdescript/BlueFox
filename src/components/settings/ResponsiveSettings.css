@@ -1,0 +1,5 @@
+@media (max-width: 540px) {
+  .bluefox-settings-section { padding: 18px; border-radius: 16px; }
+  .bluefox-settings-default-browser { align-items: flex-start; flex-direction: column; }
+  .bluefox-settings-default-button { width: 100%; justify-content: center; }
+}

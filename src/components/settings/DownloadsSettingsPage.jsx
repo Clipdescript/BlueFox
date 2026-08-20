@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdDownload } from 'react-icons/md';
 import { InfoCard, SectionShell } from './SettingsPrimitives.jsx';
+import './DownloadsSettingsPage.css';
 
 const DownloadsSettingsPage = () => (
   <SectionShell icon={MdDownload} title="Téléchargements" description="Les téléchargements s’ouvrent avec les réglages Windows habituels.">

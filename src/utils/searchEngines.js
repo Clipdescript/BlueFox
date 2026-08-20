@@ -1,6 +1,7 @@
 export const DEFAULT_SEARCH_ENGINE_ID = 'google';
 export const SEARCH_ENGINE_STORAGE_KEY = 'bluefox_search_engine_v1';
 export const SAFE_SEARCH_STORAGE_KEY = 'bluefox_safe_search_v1';
+export const CUSTOM_SEARCH_ENGINES_STORAGE_KEY = 'bluefox_custom_search_engines_v1';
 
 const SAFE_SEARCH_PARAMS = {
   google: 'safe=active',
@@ -118,15 +119,135 @@ export const SEARCH_ENGINES = [
     template: 'https://fr.wikipedia.org/w/index.php?search={query}',
     description: 'L’encyclopédie libre et collaborative de la Wikimedia Foundation.',
     strength: 'Connaissances de référence, articles détaillés et sources citées.'
+  },
+  {
+    id: 'yandex',
+    name: 'Yandex',
+    domain: 'yandex.com',
+    template: 'https://yandex.com/search/?text={query}',
+    description: 'Un moteur international avec recherche Web, images et actualités.',
+    strength: 'Recherche multimédia et couverture internationale.'
+  },
+  {
+    id: 'baidu',
+    name: 'Baidu',
+    domain: 'baidu.com',
+    template: 'https://www.baidu.com/s?wd={query}',
+    description: 'Le moteur de recherche généraliste le plus utilisé en Chine.',
+    strength: 'Résultats et services adaptés au Web chinois.'
+  },
+  {
+    id: 'naver',
+    name: 'Naver',
+    domain: 'naver.com',
+    template: 'https://search.naver.com/search.naver?query={query}',
+    description: 'Le portail et moteur de recherche sud-coréen.',
+    strength: 'Recherche locale et contenus coréens.'
+  },
+  {
+    id: 'swisscows',
+    name: 'Swisscows',
+    domain: 'swisscows.com',
+    template: 'https://swisscows.com/en/web?query={query}',
+    description: 'Un moteur européen axé sur la confidentialité et la protection familiale.',
+    strength: 'Recherche privée avec filtrage familial.'
+  },
+  {
+    id: 'metager',
+    name: 'MetaGer',
+    domain: 'metager.org',
+    template: 'https://metager.org/meta/meta.ger3?eingabe={query}',
+    description: 'Un métamoteur allemand qui combine plusieurs sources de recherche.',
+    strength: 'Résultats issus de plusieurs moteurs et respect de la vie privée.'
+  },
+  {
+    id: 'wolframalpha',
+    name: 'WolframAlpha',
+    domain: 'wolframalpha.com',
+    template: 'https://www.wolframalpha.com/input?i={query}',
+    description: 'Un moteur computationnel pour obtenir des réponses calculées.',
+    strength: 'Calculs, données scientifiques et réponses structurées.'
+  },
+  {
+    id: 'ask',
+    name: 'Ask.com',
+    domain: 'ask.com',
+    icon: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Ask.com_Logo.svg',
+    template: 'https://www.ask.com/web?q={query}',
+    description: 'Un moteur généraliste orienté questions et réponses.',
+    strength: 'Recherche formulée sous forme de questions.'
+  },
+  {
+    id: 'yep',
+    name: 'Yep',
+    domain: 'yep.com',
+    template: 'https://yep.com/web?q={query}',
+    description: 'Un moteur indépendant qui met en avant la confidentialité.',
+    strength: 'Recherche Web sans profilage publicitaire personnalisé.'
   }
 ];
 
-export const getSearchEngine = (id) => SEARCH_ENGINES.find((engine) => engine.id === id) || SEARCH_ENGINES[0];
+export const readCustomSearchEngines = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CUSTOM_SEARCH_ENGINES_STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored.filter((engine) => engine?.id && engine?.name && engine?.domain && engine?.template) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getSearchEngines = () => [...SEARCH_ENGINES, ...readCustomSearchEngines()];
+
+const SEARCH_ENGINE_ORIGINS = {
+  google: 'États-Unis',
+  bing: 'États-Unis',
+  duckduckgo: 'États-Unis',
+  qwant: 'France',
+  ecosia: 'Allemagne',
+  brave: 'États-Unis',
+  startpage: 'Pays-Bas',
+  perplexity: 'États-Unis',
+  you: 'États-Unis',
+  kagi: 'Suisse',
+  mojeek: 'Royaume-Uni',
+  yahoo: 'États-Unis',
+  wikipedia: 'États-Unis',
+  yandex: 'Russie',
+  baidu: 'Chine',
+  naver: 'Corée du Sud',
+  swisscows: 'Suisse',
+  metager: 'Allemagne',
+  wolframalpha: 'États-Unis',
+  ask: 'États-Unis',
+  yep: 'États-Unis'
+};
+
+export const getSearchEngineOrigin = (engine) => engine.isCustom ? 'Personnalisé' : SEARCH_ENGINE_ORIGINS[engine.id] || 'International';
+
+export const addCustomSearchEngine = ({ name, template }) => {
+  const parsedUrl = new URL(template.replace('{query}', 'bluefox'));
+  if (!/^https?:$/i.test(parsedUrl.protocol) || !template.includes('{query}')) throw new Error('URL de recherche invalide');
+  const customEngine = {
+    id: `custom-${Date.now()}`,
+    name: name.trim(),
+    domain: parsedUrl.hostname,
+    template: template.trim(),
+    description: 'Moteur de recherche personnalisé ajouté localement.',
+    strength: 'URL personnalisée pour vos recherches.',
+    isCustom: true
+  };
+  const nextEngines = [...readCustomSearchEngines(), customEngine];
+  localStorage.setItem(CUSTOM_SEARCH_ENGINES_STORAGE_KEY, JSON.stringify(nextEngines));
+  window.dispatchEvent(new CustomEvent('bluefox-search-engines-changed'));
+  return customEngine;
+};
+
+export const getSearchEngine = (id) => getSearchEngines().find((engine) => engine.id === id) || SEARCH_ENGINES[0];
 
 export const extractSearchQuery = (url) => {
   try {
     const parsedUrl = new URL(url);
-    const knownEngine = SEARCH_ENGINES.find((engine) => parsedUrl.hostname === engine.domain || parsedUrl.hostname.endsWith(`.${engine.domain}`));
+    const knownEngine = getSearchEngines().find((engine) => parsedUrl.hostname === engine.domain || parsedUrl.hostname.endsWith(`.${engine.domain}`));
     if (!knownEngine) return '';
     return parsedUrl.searchParams.get('q')
       || parsedUrl.searchParams.get('query')
@@ -145,4 +266,4 @@ export const buildSearchUrl = (engineId, query, safeSearchEnabled = true) => {
   return safeParam ? `${url}${url.includes('?') ? '&' : '?'}${safeParam}` : url;
 };
 
-export const getSearchEngineIcon = (engine) => `https://www.google.com/s2/favicons?domain=${engine.domain}&sz=64`;
+export const getSearchEngineIcon = (engine) => engine.icon || `https://www.google.com/s2/favicons?domain=${engine.domain}&sz=64`;

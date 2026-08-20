@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdLanguage } from 'react-icons/md';
 import { InfoCard, SectionShell } from './SettingsPrimitives.jsx';
+import './LanguagesSettingsPage.css';
 
 const LanguagesSettingsPage = () => (
   <SectionShell icon={MdLanguage} title="Langues" description="BlueFox est actuellement configuré en français.">

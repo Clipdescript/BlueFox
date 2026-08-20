@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdCleaningServices } from 'react-icons/md';
 import { SectionShell } from './SettingsPrimitives.jsx';
+import './ClearBrowsingDataSettingsPage.css';
 
 const ClearBrowsingDataSettingsPage = ({ historyCount, onClear }) => (
   <SectionShell

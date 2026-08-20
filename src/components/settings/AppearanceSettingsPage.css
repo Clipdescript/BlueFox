@@ -1,0 +1,2 @@
+.bluefox-settings-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+@media (max-width: 700px) { .bluefox-settings-theme-grid { grid-template-columns: 1fr; } }

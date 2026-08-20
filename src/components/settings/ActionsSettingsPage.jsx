@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdClose, MdKeyboard, MdRefresh, MdSave, MdTab, MdUndo } from 'react-icons/md';
 import { InfoCard, SectionShell } from './SettingsPrimitives.jsx';
+import './ActionsSettingsPage.css';
 
 const SHORTCUTS = [
   { icon: MdTab, title: 'Nouvel onglet', shortcut: 'Ctrl + T', description: 'Ouvre un nouvel onglet BlueFox.' },

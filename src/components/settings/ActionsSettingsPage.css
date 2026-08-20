@@ -1,0 +1,14 @@
+.bluefox-settings-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bluefox-settings-action { display: flex; min-width: 0; align-items: flex-start; gap: 11px; padding: 13px; border: 1px solid #e8eef2; border-radius: 14px; background: #fff; color: #202124 !important; cursor: pointer; text-align: left; transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease; }
+.bluefox-settings-action:hover { border-color: #abd4da; background: #f7fcfd; transform: translateY(-1px); }
+.bluefox-settings-action > svg { width: 21px; height: 21px; flex: 0 0 21px; color: #137b8b !important; }
+.bluefox-settings-action span { min-width: 0; flex: 1; }
+.bluefox-settings-action strong { display: block; color: #202124 !important; font-size: 12px; }
+.bluefox-settings-action small { display: block; margin-top: 4px; color: #69757e !important; font-size: 10px; line-height: 1.45; }
+.bluefox-settings-shortcut-key { display: inline-flex; min-width: max-content; align-items: center; justify-content: center; margin-left: auto; padding: 4px 7px; border: 1px solid #d8e1e6; border-radius: 6px; background: #f5f8fa; color: #52616b; font-family: inherit; font-size: 10px; font-weight: 700; white-space: nowrap; }
+@media (max-width: 620px) { .bluefox-settings-action-grid { grid-template-columns: 1fr; } }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-shortcut-key { border-color: #4a5964; background: #273139; color: #dbe5eb; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-action { border-color: #3a424c; background: #1d2026; color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-action:hover { background: #242a32; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-action strong { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-action small { color: #b7c0ca !important; }

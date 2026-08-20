@@ -40,7 +40,8 @@ import PasswordsSettingsPage from './settings/PasswordsSettingsPage.jsx';
 import VpnSettingsPage from './settings/VpnSettingsPage.jsx';
 import WalletSettingsPage from './settings/WalletSettingsPage.jsx';
 import { InfoCard } from './settings/SettingsPrimitives.jsx';
-import '../styles/settings.css';
+import './settings/SettingsPage.css';
+import './settings/ResponsiveSettings.css';
 
 const NAV_ITEMS = [
   { id: 'general', label: 'BlueFox et vous', keywords: 'général navigateur réglages', icon: MdAccountCircle },
@@ -66,6 +67,7 @@ const NAV_ITEMS = [
 const MODE_STORAGE_KEY = 'bluefox_browser_mode_v1';
 const FOXY_MODE_STORAGE_KEY = 'bluefox_foxy_mode_v1';
 const BROWSER_HISTORY_STORAGE_KEY = 'bluefox_history';
+const BROWSER_HISTORY_ENABLED_STORAGE_KEY = 'bluefox_history_enabled_v1';
 
 const readBrowserHistory = () => {
   try {
@@ -89,6 +91,7 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
   const [foxyEnabled, setFoxyEnabled] = useState(() => localStorage.getItem(FOXY_MODE_STORAGE_KEY) !== 'false');
   const [defaultBrowserState, setDefaultBrowserState] = useState({ checked: false, isDefault: false });
   const [browserHistory, setBrowserHistory] = useState(readBrowserHistory);
+  const [historyEnabled, setHistoryEnabled] = useState(() => localStorage.getItem(BROWSER_HISTORY_ENABLED_STORAGE_KEY) !== 'false');
   const [historyQuery, setHistoryQuery] = useState('');
 
   useEffect(() => {
@@ -184,6 +187,12 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
     window.dispatchEvent(new CustomEvent('bluefox-foxy-mode-changed', { detail: nextValue }));
   };
 
+  const toggleHistory = (nextValue) => {
+    setHistoryEnabled(nextValue);
+    localStorage.setItem(BROWSER_HISTORY_ENABLED_STORAGE_KEY, String(nextValue));
+    window.dispatchEvent(new CustomEvent('bluefox-history-setting-changed', { detail: nextValue }));
+  };
+
   const checkForUpdates = async () => {
     setUpdateState({ status: 'checking', availableVersion: '' });
     try {
@@ -197,7 +206,7 @@ const SettingsPage = ({ initialSection = 'general', onClose, onPrint, onNewWindo
   const renderActivePage = () => {
     switch (activeSection) {
       case 'appearance': return <AppearanceSettingsPage mode={mode} resolvedTheme={resolvedTheme} onSetMode={setMode} />;
-      case 'privacy': return <PrivacySettingsPage />;
+      case 'privacy': return <PrivacySettingsPage enabled={historyEnabled} onToggle={toggleHistory} onClear={clearBrowserHistory} />;
       case 'history': return <HistorySettingsPage history={browserHistory} query={historyQuery} onQueryChange={setHistoryQuery} onClear={clearBrowserHistory} onRemove={removeHistoryEntry} />;
       case 'clear-data': return <ClearBrowsingDataSettingsPage historyCount={browserHistory.length} onClear={clearBrowserHistory} />;
       case 'safe-search': return <SafeSearchSettingsPage enabled={safeSearchEnabled} onToggle={toggleSafeSearch} />;

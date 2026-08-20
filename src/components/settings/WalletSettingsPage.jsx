@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdInfoOutline, MdWallet } from 'react-icons/md';
 import { SectionShell, StatusPill } from './SettingsPrimitives.jsx';
+import './WalletSettingsPage.css';
 
 const WalletSettingsPage = () => (
   <SectionShell icon={MdWallet} title="Portefeuille BlueFox" description="Informations importantes avant toute utilisation d’un portefeuille numérique.">

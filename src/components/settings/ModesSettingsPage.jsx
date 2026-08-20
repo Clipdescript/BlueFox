@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdBusinessCenter, MdCode, MdDashboard, MdFamilyRestroom, MdSchool, MdSelfImprovement, MdSportsEsports, MdToggleOn } from 'react-icons/md';
 import { ModeCard, SectionShell } from './SettingsPrimitives.jsx';
+import './ModesSettingsPage.css';
 
 const MODE_OPTIONS = [
   { id: 'standard', name: 'Standard', description: 'Navigation équilibrée pour tous les usages.', icon: MdDashboard, color: '#64748b' },

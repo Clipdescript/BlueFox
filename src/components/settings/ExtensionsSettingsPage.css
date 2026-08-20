@@ -1,0 +1,7 @@
+.bluefox-settings-extensions-section .bluefox-settings-section-header > svg,
+.bluefox-settings-extensions-section .bluefox-settings-section-header > svg > path:not([fill='none']) { color: #1a73e8 !important; fill: currentColor !important; }
+.bluefox-settings-extensions-button { border: 1px solid #1a73e8; background: #e8f1ff; color: #1a73e8 !important; -webkit-text-fill-color: #1a73e8 !important; }
+.bluefox-settings-extensions-button:hover { border-color: #155fc0; background: #dbe9ff; color: #155fc0 !important; -webkit-text-fill-color: #155fc0 !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-extensions-section .bluefox-settings-section-header > svg,
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-extensions-section .bluefox-settings-section-header > svg > path:not([fill='none']) { color: #8ab4f8 !important; fill: currentColor !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-extensions-button { border-color: #8ab4f8; background: #243b63; color: #d8e7ff !important; -webkit-text-fill-color: #d8e7ff !important; }

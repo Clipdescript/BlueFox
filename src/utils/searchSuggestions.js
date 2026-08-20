@@ -37,10 +37,12 @@ const SUGGESTION_DELAY = 180;
 const SMART_SUGGESTION_DELAY = 450;
 const MAX_REMOTE_SUGGESTIONS = 6;
 const HISTORY_KEY = 'bluefox_history';
+const HISTORY_ENABLED_KEY = 'bluefox_history_enabled_v1';
 
 const normalize = (value = '') => String(value).trim().toLocaleLowerCase();
 
 const readLocalSuggestions = (query) => {
+  if (localStorage.getItem(HISTORY_ENABLED_KEY) === 'false') return [];
   try {
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
     if (!Array.isArray(history)) return [];
@@ -97,6 +99,13 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
   const [smartSuggestionQuery, setSmartSuggestionQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [historyEnabled, setHistoryEnabled] = useState(() => localStorage.getItem(HISTORY_ENABLED_KEY) !== 'false');
+
+  useEffect(() => {
+    const handleHistorySettingChanged = (event) => setHistoryEnabled(event.detail !== false);
+    window.addEventListener('bluefox-history-setting-changed', handleHistorySettingChanged);
+    return () => window.removeEventListener('bluefox-history-setting-changed', handleHistorySettingChanged);
+  }, []);
 
   const cleanQuery = query.trim();
   const visibleSuggestions = suggestionsQuery === cleanQuery ? suggestions : [];
@@ -123,7 +132,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
-      const localSuggestions = readLocalSuggestions(cleanQuery);
+      const localSuggestions = historyEnabled ? readLocalSuggestions(cleanQuery) : [];
       let remoteSuggestions = [];
 
       // Do not send queries to Google when another search engine is selected.
@@ -148,7 +157,7 @@ export const useSearchSuggestions = ({ query, focused, searchEngineId }) => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [cleanQuery, focused, searchEngineId]);
+  }, [cleanQuery, focused, historyEnabled, searchEngineId]);
 
   useEffect(() => {
     if (!focused || cleanQuery.length < 3) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MdSpeed } from 'react-icons/md';
+import './PerformanceSettingsPage.css';
 import { SectionShell } from './SettingsPrimitives.jsx';
 
 const PERFORMANCE_HISTORY_KEY = 'bluefox_performance_history_v1';

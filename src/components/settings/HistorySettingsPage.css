@@ -1,0 +1,36 @@
+.bluefox-settings-history-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.bluefox-settings-history-search { position: relative; min-width: 0; flex: 1; }
+.bluefox-settings-history-search > svg { position: absolute; top: 50%; left: 12px; width: 17px; height: 17px; color: #7a858e !important; pointer-events: none; transform: translateY(-50%); }
+.bluefox-settings-history-search input { width: 100%; height: 38px; padding: 0 12px 0 37px; border: 1px solid #dfe7ec; border-radius: 10px; outline: 0; background: #fff; color: #202124 !important; font-size: 12px; }
+.bluefox-settings-history-search input:focus { border-color: #62b8c4; box-shadow: 0 0 0 3px #e6f6f8; }
+.bluefox-settings-history-clear { flex: 0 0 auto; padding: 9px 11px; border: 1px solid #f0c4c4; border-radius: 9px; background: #fff; color: #b42318 !important; cursor: pointer; font-size: 10px; font-weight: 700; }
+.bluefox-settings-history-clear:hover { background: #fff4f4; border-color: #e49a9a; }
+.bluefox-settings-history-clear:disabled { opacity: .5; cursor: not-allowed; }
+.bluefox-settings-history-list { display: grid; max-height: 420px; gap: 7px; overflow-y: auto; }
+.bluefox-settings-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 3px 5px; color: #202124 !important; }
+.bluefox-settings-history-heading strong { font-size: 12px; }
+.bluefox-settings-history-heading span { color: #69757e !important; font-size: 10px; }
+.bluefox-settings-history-entry { display: flex; min-width: 0; align-items: center; gap: 11px; padding: 12px 13px; border: 1px solid #e8eef2; border-radius: 12px; background: #fbfdff; transition: border-color 150ms ease, background-color 150ms ease; }
+.bluefox-settings-history-entry:hover { border-color: #abd4da; background: #f5fbfc; }
+.bluefox-settings-history-entry > img { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; object-fit: contain; }
+.bluefox-settings-history-copy { min-width: 0; flex: 1; }
+.bluefox-settings-history-copy strong { display: block; overflow: hidden; color: #202124 !important; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-settings-history-copy small { display: block; margin-top: 4px; overflow: hidden; color: #69757e !important; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.bluefox-settings-history-entry > button { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; flex: 0 0 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #7a858e !important; cursor: pointer; }
+.bluefox-settings-history-entry > button:hover { background: #fff0f0; color: #b42318 !important; }
+.bluefox-settings-history-entry > button svg { width: 18px; height: 18px; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-search input { border-color: #3a424c; background: #1d2026; color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-clear { border-color: #6f3b3b; background: #2c2022; color: #ffaaa5 !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-clear:hover { background: #3a2528; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-heading strong,
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-entry { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-entry { border-color: #3a424c; background: #1d2026; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-entry:hover { border-color: #579ca5; background: #23383d; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-copy strong { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-copy small { color: #b7c0ca !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-entry > button { color: #b7c0ca !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-history-entry > button:hover { background: #3a2528; color: #ffaaa5 !important; }
+@media (max-width: 540px) {
+  .bluefox-settings-history-toolbar { align-items: stretch; flex-direction: column; }
+  .bluefox-settings-history-clear { width: 100%; }
+}

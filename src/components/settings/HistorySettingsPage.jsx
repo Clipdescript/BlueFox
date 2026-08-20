@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdDeleteOutline, MdHistory, MdSearch } from 'react-icons/md';
 import { InfoCard, SectionShell } from './SettingsPrimitives.jsx';
+import './HistorySettingsPage.css';
 
 const HistorySettingsPage = ({ history, query, onQueryChange, onClear, onRemove }) => {
   const normalizedQuery = query.trim().toLocaleLowerCase('fr-FR');

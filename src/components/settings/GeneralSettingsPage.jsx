@@ -2,6 +2,7 @@ import React from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { MdAccountCircle } from 'react-icons/md';
 import { SectionShell } from './SettingsPrimitives.jsx';
+import './GeneralSettingsPage.css';
 
 const GeneralSettingsPage = ({ defaultBrowserState, onOpenDefaultBrowserSettings, discordProfile, onDiscordLogin, onDiscordLogout }) => (
   <SectionShell icon={MdAccountCircle} title="BlueFox et vous" description="Personnalisez votre navigateur et connectez votre compte Discord si vous le souhaitez.">

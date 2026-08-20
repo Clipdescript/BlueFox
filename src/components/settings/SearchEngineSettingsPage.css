@@ -1,0 +1,47 @@
+.bluefox-settings-engine-list { display: grid; gap: 8px; }
+.bluefox-settings-engine { display: flex; width: 100%; align-items: flex-start; gap: 12px; padding: 13px 14px; border: 1px solid #e8eef2; border-radius: 14px; background: #fff; color: #202124 !important; cursor: pointer; text-align: left; transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease; }
+.bluefox-settings-engine:hover { border-color: #abd4da; background: #fbfeff; transform: translateY(-1px); }
+.bluefox-settings-engine.is-selected { border-color: #57aeba; background: #f2fbfc; }
+.bluefox-settings-engine > img, .bluefox-settings-engine-globe { width: 25px; height: 25px; flex: 0 0 25px; margin-top: 2px; object-fit: contain; }
+.bluefox-settings-engine-globe { color: #1a73e8 !important; fill: currentColor !important; }
+.bluefox-settings-engine-copy { min-width: 0; flex: 1; }
+.bluefox-settings-engine-copy strong { display: block; color: #202124 !important; font-size: 13px; font-weight: 650; }
+.bluefox-settings-engine-copy strong em { margin-left: 7px; padding: 3px 6px; border-radius: 999px; background: #e8f1ff; color: #1a73e8 !important; font-size: 9px; font-style: normal; font-weight: 700; }
+.bluefox-settings-engine-copy small { display: block; color: #69757e !important; font-size: 11px; line-height: 1.5; }
+.bluefox-settings-engine-copy small + small { margin-top: 3px; color: #137b8b !important; }
+.bluefox-settings-engine-copy small + small + small { color: #69757e !important; }
+.bluefox-settings-engine-status { flex: 0 0 auto; padding-top: 2px; color: #137b8b !important; font-size: 10px; font-weight: 700; }
+
+.bluefox-settings-custom-engine { display: grid; gap: 11px; margin-top: 22px; padding: 17px; border: 1px solid #dfe7ec; border-radius: 14px; background: #f7fbfc; }
+.bluefox-settings-custom-engine-heading { display: flex; align-items: flex-start; gap: 10px; }
+.bluefox-settings-custom-engine-icon { display: grid; width: 30px; height: 30px; place-items: center; flex: 0 0 30px; border-radius: 8px; background: #e8f1ff; color: #1a73e8; }
+.bluefox-settings-custom-engine-icon svg { width: 18px; height: 18px; }
+.bluefox-settings-custom-engine-heading strong { display: block; color: #202124; font-size: 13px; }
+.bluefox-settings-custom-engine-heading p { margin: 4px 0 0; color: #69757e; font-size: 11px; }
+.bluefox-settings-custom-engine label { display: grid; gap: 5px; }
+.bluefox-settings-custom-engine label > span { color: #52616b; font-size: 10px; font-weight: 700; }
+.bluefox-settings-custom-engine input { width: 100%; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid #dfe7ec; border-radius: 9px; outline: 0; background: #fff; color: #202124; font-size: 12px; }
+.bluefox-settings-custom-engine input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px #e8f1ff; }
+.bluefox-settings-custom-engine-input { position: relative; }
+.bluefox-settings-custom-engine-input > svg { position: absolute; top: 50%; left: 10px; width: 16px; height: 16px; color: #7a858e; pointer-events: none; transform: translateY(-50%); }
+.bluefox-settings-custom-engine-input input { padding-left: 33px; }
+.bluefox-settings-custom-engine-help { margin: -2px 0 0; color: #69757e; font-size: 10px; }
+.bluefox-settings-custom-engine-help code { padding: 2px 4px; border-radius: 4px; background: #e8f1ff; color: #1a73e8; font-family: inherit; font-weight: 700; }
+.bluefox-settings-custom-engine-error { margin: -2px 0 0; color: #b42318; font-size: 10px; font-weight: 650; }
+.bluefox-settings-custom-engine-submit { justify-self: start; padding: 9px 12px; border: 1px solid #1a73e8; border-radius: 9px; background: #1a73e8; color: #fff !important; -webkit-text-fill-color: #fff !important; cursor: pointer; font-size: 11px; font-weight: 700; }
+.bluefox-settings-custom-engine-submit:hover { border-color: #155fc0; background: #155fc0; }
+
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine { border-color: #3a424c; background: #1d2026; color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine:hover { background: #242a32; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine.is-selected { border-color: #579ca5; background: #23383d; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine-copy strong { color: #fff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine-copy strong em { background: #243b63; color: #d8e7ff !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-engine-copy small { color: #b7c0ca !important; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine { border-color: #3a424c; background: #202a2f; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine-heading strong { color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine-heading p,
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine-help { color: #b7c0ca; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine-icon { background: #243b63; color: #8ab4f8; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine label > span { color: #d5dbe5; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine input { border-color: #4a5964; background: #1d2026; color: #fff; }
+:root[data-theme='dark'] .bluefox-app .bluefox-settings-custom-engine-help code { background: #243b63; color: #d8e7ff; }

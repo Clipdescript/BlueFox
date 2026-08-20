@@ -1,8 +1,9 @@
 import React from 'react';
 import { MdAutorenew, MdCheckCircle, MdErrorOutline, MdInfoOutline, MdUpdate } from 'react-icons/md';
+import './SettingsPrimitives.css';
 
-export const SectionShell = ({ icon: Icon, title, description, children }) => (
-  <section className="bluefox-settings-section">
+export const SectionShell = ({ icon: Icon, title, description, children, className = '' }) => (
+  <section className={`bluefox-settings-section ${className}`.trim()}>
     <div className="bluefox-settings-section-header">
       <Icon aria-hidden="true" />
       <div><h2>{title}</h2><p>{description}</p></div>
@@ -28,7 +29,7 @@ export const ThemeCard = ({ themeOption, selected, onClick, compact = false }) =
 
 export const ModeCard = ({ mode, selected, onClick }) => {
   const ModeIcon = mode.icon;
-  return <button type="button" className={`bluefox-settings-mode ${selected ? 'is-selected' : ''}`} style={{ '--mode-color': mode.color }} onClick={onClick} aria-pressed={selected}><ModeIcon /><span><strong>{mode.name}</strong><small>{mode.description}</small></span>{selected && <b>Actuel</b>}</button>;
+  return <button type="button" className={`bluefox-settings-mode ${selected ? 'is-selected' : ''}`} style={{ '--mode-color': mode.color }} onClick={onClick} aria-pressed={selected}><ModeIcon style={{ color: mode.color, fill: mode.color, stroke: mode.color }} /><span><strong>{mode.name}</strong><small>{mode.description}</small></span>{selected && <b>Actuel</b>}</button>;
 };
 
 export const RuntimeInfoCard = ({ runtimeInfo }) => {

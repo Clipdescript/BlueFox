@@ -1,6 +1,7 @@
 import React from 'react';
 import { MdAutoAwesome } from 'react-icons/md';
 import { InfoCard, SectionShell, ToggleButton } from './SettingsPrimitives.jsx';
+import './FoxySettingsPage.css';
 
 const FoxySettingsPage = ({ enabled, onToggle }) => (
   <SectionShell icon={MdAutoAwesome} title="Mode IA Foxy" description="Activez Foxy pour analyser, expliquer et transformer ce que vous consultez.">
