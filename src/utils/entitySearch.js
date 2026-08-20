@@ -8,6 +8,11 @@ const normalizeText = (value = '') => String(value)
   .trim();
 
 const weatherPattern = /\b(meteo|météo|weather|forecast|previsions|prévisions|temperature|température)\b/i;
+const placeDescriptionPattern = /ville|commune|city|town|village|municipalit|capitale|localit|settlement|district|county|province/i;
+const personDescriptionPattern = /personne|acteur|actrice|chanteur|chanteuse|joueur|joueuse|auteur|autrice|politicien|scientifique|artiste|person|actor|singer|player|author|politician|scientist/i;
+const gameDescriptionPattern = /jeu vidéo|jeu video|video game|game series|franchise de jeux/i;
+const subjectDescriptionPattern = /plante|fleur|arbre|animal|espèce|espece|montagne|monument|plant|flower|tree|animal|species|mountain|monument/i;
+const osmBusinessPattern = /amenity|shop|office|craft|tourism|leisure|restaurant|cafe|fast_food|company|commercial/i;
 
 const getWeatherContext = (value = '') => {
   const query = String(value).trim();
@@ -33,7 +38,23 @@ const getClaimValue = (claims, property) => {
   return claim?.mainsnak?.datavalue?.value;
 };
 
-const getEntityData = async (id, signal) => {
+const fetchWikipediaImage = async (title, language, signal) => {
+  const languages = [language, 'fr', 'en'].filter((value, index, list) => value && list.indexOf(value) === index);
+  for (const currentLanguage of languages) {
+    try {
+      const response = await fetch(`https://${currentLanguage}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal });
+      if (!response.ok) continue;
+      const summary = await response.json();
+      const image = summary.thumbnail?.source || summary.originalimage?.source || '';
+      if (image) return image;
+    } catch {
+      // Continue with another language or without an image.
+    }
+  }
+  return '';
+};
+
+const fetchEntityData = async (id, signal) => {
   const params = new URLSearchParams({
     action: 'wbgetentities',
     ids: id,
@@ -57,56 +78,121 @@ const searchWikidata = async (query, signal) => {
       language,
       uselang: language,
       type: 'item',
-      limit: '5',
+      limit: '10',
       format: 'json',
       origin: '*'
     });
     const response = await fetch(`https://www.wikidata.org/w/api.php?${params}`, { signal });
     if (!response.ok) return [];
     const data = await response.json();
-    return (data.search || []).map((item) => ({ ...item, language }));
+    return (data.search || []).map((item) => ({ ...item, language, source: 'wikidata' }));
   }));
 
   const candidates = responses.flat();
   const normalizedQuery = normalizeText(query);
-  const exact = candidates.find((candidate) => normalizeText(candidate.label) === normalizedQuery);
-  const candidate = exact || candidates.find((item) => normalizeText(item.label).length >= 3) || null;
+  const uniqueCandidates = [...new Map(candidates.map((item) => [item.id, item])).values()];
+  const exact = uniqueCandidates.find((candidate) => normalizeText(candidate.label) === normalizedQuery);
+  const candidate = exact || uniqueCandidates.find((item) => normalizeText(item.label).length >= 3);
   if (!candidate) return null;
 
-  const entity = await getEntityData(candidate.id, signal);
+  const entity = await fetchEntityData(candidate.id, signal);
   const claims = entity?.claims || {};
   const website = typeof getClaimValue(claims, 'P856') === 'string' ? getClaimValue(claims, 'P856') : '';
-  const imageFile = typeof getClaimValue(claims, 'P18') === 'string' ? getClaimValue(claims, 'P18') : '';
   const label = entity?.labels?.fr?.value || entity?.labels?.en?.value || candidate.label;
   const description = entity?.descriptions?.fr?.value || entity?.descriptions?.en?.value || candidate.description || '';
-  const exactMatch = normalizeText(label) === normalizedQuery;
-  const shortQuery = normalizedQuery.split(' ').length <= 4;
+  const normalizedLabel = normalizeText(label);
+  const exactMatch = normalizedLabel === normalizedQuery;
+  const queryWordCount = normalizedQuery.split(' ').length;
+  if (!exactMatch && queryWordCount > 5) return null;
 
-  if (!exactMatch && !shortQuery) return null;
   return {
+    source: 'wikidata',
     id: candidate.id,
-    label,
+    title: label,
     description,
     website,
-    imageFile,
-    language: candidate.language || 'fr'
+    imageFile: typeof getClaimValue(claims, 'P18') === 'string' ? getClaimValue(claims, 'P18') : '',
+    language: candidate.language || 'fr',
+    exact: exactMatch,
+    score: (exactMatch ? 100 : 45) + (website ? 8 : 0)
   };
 };
 
-const getWikipediaImage = async (title, language, signal) => {
-  const languages = [language, 'fr', 'en'].filter((value, index, list) => value && list.indexOf(value) === index);
-  for (const currentLanguage of languages) {
-    try {
-      const response = await fetch(`https://${currentLanguage}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal });
-      if (!response.ok) continue;
-      const summary = await response.json();
-      const image = summary.thumbnail?.source || summary.originalimage?.source || '';
-      if (image) return image;
-    } catch {
-      // Try the next language or continue without an image.
-    }
-  }
-  return '';
+const searchWikipedia = async (query, signal) => {
+  const languages = ['fr', 'en'];
+  const responses = await Promise.all(languages.map(async (language) => {
+    const params = new URLSearchParams({
+      action: 'query',
+      list: 'search',
+      srsearch: query,
+      srlimit: '5',
+      srprop: 'snippet',
+      format: 'json',
+      origin: '*'
+    });
+    const response = await fetch(`https://${language}.wikipedia.org/w/api.php?${params}`, { signal });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.query?.search || []).map((item) => ({ ...item, language, source: 'wikipedia' }));
+  }));
+
+  const candidates = responses.flat();
+  const normalizedQuery = normalizeText(query);
+  const candidate = candidates.find((item) => normalizeText(item.title) === normalizedQuery) || candidates[0];
+  if (!candidate) return null;
+  const exact = normalizeText(candidate.title) === normalizedQuery;
+  if (!exact && normalizedQuery.split(' ').length > 5) return null;
+  return {
+    source: 'wikipedia',
+    title: candidate.title,
+    description: candidate.snippet?.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"') || '',
+    website: '',
+    language: candidate.language,
+    exact,
+    score: exact ? 82 : 34
+  };
+};
+
+const getOsmTitle = (item) => item.namedetails?.name || item.name || String(item.display_name || '').split(',')[0].trim();
+const getOsmWebsite = (item) => item.extratags?.website || item.extratags?.['contact:website'] || item.extratags?.url || '';
+const getOsmDescription = (item) => {
+  const type = item.type || item.class || 'lieu';
+  const city = item.address?.city || item.address?.town || item.address?.village || item.address?.municipality || '';
+  return `${type.replace(/_/g, ' ')}${city ? ` · ${city}` : ''}`;
+};
+
+const searchOpenStreetMap = async (query, signal) => {
+  const params = new URLSearchParams({
+    q: query,
+    format: 'jsonv2',
+    addressdetails: '1',
+    extratags: '1',
+    namedetails: '1',
+    limit: '8',
+    'accept-language': 'fr,en'
+  });
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { signal });
+  if (!response.ok) return null;
+  const data = await response.json();
+  const normalizedQuery = normalizeText(query);
+  const candidates = (data || []).map((item) => {
+    const title = getOsmTitle(item);
+    const exact = normalizeText(title) === normalizedQuery;
+    const website = getOsmWebsite(item);
+    const isBusiness = osmBusinessPattern.test(`${item.class || ''} ${item.type || ''}`);
+    return {
+      source: 'osm',
+      title,
+      description: getOsmDescription(item),
+      website,
+      country: item.address?.country || '',
+      admin: item.address?.state || item.address?.county || item.address?.city || item.address?.town || '',
+      exact,
+      isBusiness,
+      score: (exact ? 90 : 38) + (isBusiness ? 14 : 0) + (website ? 6 : 0)
+    };
+  }).filter((item) => item.title);
+  return candidates.sort((first, second) => second.score - first.score)[0] || null;
 };
 
 const getWeatherResult = async (query, locationQuery, signal) => {
@@ -147,11 +233,22 @@ const getWeatherResult = async (query, locationQuery, signal) => {
 };
 
 const classifyEntity = (description = '') => {
-  if (/ville|commune|city|town|village|municipalit|capitale|localit|settlement/i.test(description)) return 'city';
-  if (/personne|acteur|actrice|chanteur|chanteuse|joueur|joueuse|auteur|autrice|politicien|scientifique|artiste/i.test(description)) return 'person';
-  if (/jeu vidéo|jeu video|video game|game series/i.test(description)) return 'game';
-  if (/plante|fleur|arbre|animal|espèce|espece|montagne|monument/i.test(description)) return 'subject';
+  if (placeDescriptionPattern.test(description)) return 'city';
+  if (personDescriptionPattern.test(description)) return 'person';
+  if (gameDescriptionPattern.test(description)) return 'game';
+  if (subjectDescriptionPattern.test(description)) return 'subject';
   return 'entity';
+};
+
+const chooseCandidate = (candidates, query) => {
+  const normalizedQuery = normalizeText(query);
+  return candidates
+    .filter(Boolean)
+    .sort((first, second) => {
+      const firstExact = normalizeText(first.title) === normalizedQuery ? 1 : 0;
+      const secondExact = normalizeText(second.title) === normalizedQuery ? 1 : 0;
+      return (secondExact - firstExact) || ((second.score || 0) - (first.score || 0));
+    })[0] || null;
 };
 
 export const findSmartSearchResult = async (query, { signal } = {}) => {
@@ -167,19 +264,32 @@ export const findSmartSearchResult = async (query, { signal } = {}) => {
     if (weatherIntent) {
       result = await getWeatherResult(cleanQuery, locationQuery, signal);
     } else {
-      const entity = await searchWikidata(cleanQuery, signal);
-      if (entity) {
-        const kind = classifyEntity(entity.description);
-        const image = await getWikipediaImage(entity.label, entity.language, signal);
+      const simplifiedQuery = cleanQuery
+        .replace(/\b(entreprise|entreprises|société|societe|company|site|magasin|restaurant|landais|landaise|français|francaise)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const lookupQueries = [...new Set([cleanQuery, simplifiedQuery].filter((value) => value.length >= 3))];
+      const lookups = await Promise.all(lookupQueries.flatMap((lookupQuery) => [
+        searchWikidata(lookupQuery, signal),
+        searchWikipedia(lookupQuery, signal),
+        searchOpenStreetMap(lookupQuery, signal)
+      ].map((request) => Promise.resolve(request).catch(() => null))));
+      const candidate = chooseCandidate(lookups, cleanQuery);
+
+      if (candidate) {
+        const image = candidate.source === 'wikipedia'
+          ? await fetchWikipediaImage(candidate.title, candidate.language, signal)
+          : await fetchWikipediaImage(candidate.title, candidate.language || 'fr', signal);
+        const kind = candidate.website ? 'site' : candidate.source === 'osm' && candidate.isBusiness ? 'site' : classifyEntity(candidate.description);
         result = {
-          kind: entity.website ? 'site' : kind,
-          title: entity.label,
-          country: '',
-          admin: entity.description || 'Résultat reconnu',
+          kind,
+          title: candidate.title,
+          country: candidate.country || '',
+          admin: candidate.admin || candidate.description || 'Résultat reconnu',
           image,
-          favicon: entity.website ? getFavicon(entity.website) : '',
+          favicon: candidate.website ? getFavicon(candidate.website) : '',
           weather: null,
-          target: entity.website || '',
+          target: candidate.website || '',
           searchQuery: cleanQuery
         };
       }
