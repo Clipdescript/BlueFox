@@ -45,6 +45,7 @@ import fetchJsonp from 'fetch-jsonp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserSecret } from '@fortawesome/free-solid-svg-icons';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
+import { findSmartSearchResult } from '../utils/entitySearch.js';
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
@@ -112,69 +113,6 @@ const formatCompactAddress = (url) => {
   }
 };
 
-const normalizeSmartSearchText = (value = '') => String(value)
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toLocaleLowerCase()
-  .replace(/[^a-z0-9]+/g, ' ')
-  .trim();
-
-const getSmartSearchContext = (value = '') => {
-  const query = String(value).trim();
-  const weatherIntent = /\b(meteo|météo|temps|temperature|température|previsions|prévisions)\b/i.test(query);
-  const locationQuery = query
-    .replace(/^(quelle est la|donne-moi|donne moi|voir|affiche)?\s*(meteo|météo|temps|temperature|température|previsions|prévisions)?\s*(a|à|de|pour)?\s*/i, '')
-    .replace(/\s+(aujourd'hui|aujourd hui|demain|ce soir|cette semaine).*$/i, '')
-    .trim();
-  return { weatherIntent, locationQuery: locationQuery || query };
-};
-
-const getWeatherDescription = (code) => {
-  if ([0].includes(Number(code))) return 'Ciel dégagé';
-  if ([1, 2].includes(Number(code))) return 'Éclaircies';
-  if ([3].includes(Number(code))) return 'Nuageux';
-  if ([45, 48].includes(Number(code))) return 'Brouillard';
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(Number(code))) return 'Pluie';
-  if ([71, 73, 75, 77, 85, 86].includes(Number(code))) return 'Neige';
-  if ([95, 96, 99].includes(Number(code))) return 'Orages';
-  return 'Conditions actuelles';
-};
-
-const SMART_SITE_ENTITIES = [
-  { names: ['amazon', 'amazon fr'], title: 'Amazon', domain: 'amazon.fr', subtitle: 'Boutique en ligne', url: 'https://www.amazon.fr' },
-  { names: ['google'], title: 'Google', domain: 'google.com', subtitle: 'Moteur de recherche', url: 'https://www.google.com' },
-  { names: ['youtube'], title: 'YouTube', domain: 'youtube.com', subtitle: 'Vidéos et musique', url: 'https://www.youtube.com' },
-  { names: ['netflix'], title: 'Netflix', domain: 'netflix.com', subtitle: 'Films et séries', url: 'https://www.netflix.com' },
-  { names: ['spotify'], title: 'Spotify', domain: 'spotify.com', subtitle: 'Musique et podcasts', url: 'https://open.spotify.com' },
-  { names: ['discord'], title: 'Discord', domain: 'discord.com', subtitle: 'Communauté et messagerie', url: 'https://discord.com' },
-  { names: ['facebook'], title: 'Facebook', domain: 'facebook.com', subtitle: 'Réseau social', url: 'https://www.facebook.com' },
-  { names: ['instagram'], title: 'Instagram', domain: 'instagram.com', subtitle: 'Réseau social', url: 'https://www.instagram.com' },
-  { names: ['microsoft'], title: 'Microsoft', domain: 'microsoft.com', subtitle: 'Technologies et logiciels', url: 'https://www.microsoft.com' },
-  { names: ['apple'], title: 'Apple', domain: 'apple.com', subtitle: 'Technologies et appareils', url: 'https://www.apple.com' },
-  { names: ['openai'], title: 'OpenAI', domain: 'openai.com', subtitle: 'Intelligence artificielle', url: 'https://openai.com' },
-  { names: ['mistral ai', 'mistral'], title: 'Mistral AI', domain: 'mistral.ai', subtitle: 'Intelligence artificielle française', url: 'https://mistral.ai' },
-  { names: ['carrefour'], title: 'Carrefour', domain: 'carrefour.fr', subtitle: 'Courses et grande distribution', url: 'https://www.carrefour.fr' },
-  { names: ['fnac'], title: 'Fnac', domain: 'fnac.com', subtitle: 'Culture, électronique et achats', url: 'https://www.fnac.com' },
-  { names: ['cdiscount'], title: 'Cdiscount', domain: 'cdiscount.com', subtitle: 'Achats en ligne', url: 'https://www.cdiscount.com' }
-];
-
-const getSmartSiteEntity = (value = '') => {
-  const normalized = normalizeSmartSearchText(value);
-  return SMART_SITE_ENTITIES.find((entity) => entity.names.some((name) => normalized === name)) || null;
-};
-
-const getWikipediaSummary = async (title, signal) => {
-  try {
-    const response = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal });
-    if (!response.ok) return null;
-    const summary = await response.json();
-    return summary.thumbnail?.source || summary.originalimage?.source
-      ? { title: summary.title || title, description: summary.description || summary.extract || '', image: summary.thumbnail?.source || summary.originalimage?.source }
-      : null;
-  } catch {
-    return null;
-  }
-};
 
 const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) => (
   <button type="button" onClick={onClick} className={`bluefox-topbar-menu-row flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] text-[#303134] transition-colors hover:bg-[#f0efed] ${className}`}>
@@ -451,9 +389,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
 
   useEffect(() => {
     const query = inputVal.trim();
-    const { weatherIntent, locationQuery } = getSmartSearchContext(query);
-    const imageTopicQuery = /\b(plante|plantes|fleur|fleurs|rose|tulipe|arbre|animal|chat|chien|montagne|monument)\b/i.test(query);
-    if (!isAddressFocused || query.length < 3 || locationQuery.length < 2) {
+    if (!isAddressFocused || query.length < 3) {
       setSmartSuggestion(null);
       return undefined;
     }
@@ -461,115 +397,10 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
     const controller = new AbortController();
     let cancelled = false;
     const timer = window.setTimeout(async () => {
-      try {
-        const siteEntity = getSmartSiteEntity(query);
-        if (siteEntity) {
-          if (!cancelled) {
-            setSmartSuggestion({
-              kind: 'site',
-              title: siteEntity.title,
-              country: '',
-              admin: siteEntity.subtitle,
-              image: '',
-              favicon: `https://www.google.com/s2/favicons?domain=${siteEntity.domain}&sz=128`,
-              weather: null,
-              target: siteEntity.url,
-              searchQuery: query
-            });
-            setShowSuggestions(true);
-          }
-          return;
-        }
-
-        if (!weatherIntent && imageTopicQuery) {
-          const summary = await getWikipediaSummary(query, controller.signal);
-          if (summary && !cancelled) {
-            setSmartSuggestion({
-              kind: 'subject',
-              title: summary.title,
-              country: '',
-              admin: summary.description || 'Sujet illustré',
-              image: summary.image,
-              favicon: '',
-              weather: null,
-              target: '',
-              searchQuery: query
-            });
-            setShowSuggestions(true);
-            return;
-          }
-        }
-
-        let location = null;
-        try {
-          const geocodeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationQuery)}&count=1&language=fr&format=json`, { signal: controller.signal });
-          if (geocodeResponse.ok) {
-            const geocode = await geocodeResponse.json();
-            location = geocode.results?.[0] || null;
-          }
-        } catch {
-          // Continue with the Wikipedia topic fallback below.
-        }
-
-        if (location) {
-          const normalizedQuery = normalizeSmartSearchText(query);
-          const normalizedLocation = normalizeSmartSearchText(location.name);
-          const isCityQuery = normalizedQuery === normalizedLocation
-            || normalizedQuery === `${normalizedLocation} ${normalizeSmartSearchText(location.country || '')}`;
-          if (weatherIntent || isCityQuery) {
-            let weather = null;
-            if (weatherIntent) {
-              const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,weather_code&timezone=auto`, { signal: controller.signal });
-              if (weatherResponse.ok) {
-                const weatherData = await weatherResponse.json();
-                weather = {
-                  temperature: Number.isFinite(Number(weatherData.current?.temperature_2m)) ? Math.round(Number(weatherData.current.temperature_2m)) : null,
-                  description: getWeatherDescription(weatherData.current?.weather_code)
-                };
-              }
-            }
-
-            const summary = weatherIntent ? null : await getWikipediaSummary(location.name, controller.signal);
-            if (!cancelled) {
-              setSmartSuggestion({
-                kind: weatherIntent ? 'weather' : 'city',
-                title: location.name,
-                country: location.country || '',
-                admin: location.admin1 || '',
-                image: summary?.image || '',
-                favicon: '',
-                weather,
-                target: '',
-                searchQuery: query
-              });
-              setShowSuggestions(true);
-            }
-            return;
-          }
-        }
-
-        if (!weatherIntent && imageTopicQuery) {
-          const summary = await getWikipediaSummary(query, controller.signal);
-          if (summary && !cancelled) {
-            setSmartSuggestion({
-              kind: 'subject',
-              title: summary.title,
-              country: '',
-              admin: summary.description || 'Sujet illustré',
-              image: summary.image,
-              favicon: '',
-              weather: null,
-              target: '',
-              searchQuery: query
-            });
-            setShowSuggestions(true);
-            return;
-          }
-        }
-
-        if (!cancelled) setSmartSuggestion(null);
-      } catch {
-        if (!cancelled) setSmartSuggestion(null);
+      const result = await findSmartSearchResult(query, { signal: controller.signal });
+      if (!cancelled) {
+        setSmartSuggestion(result);
+        if (result) setShowSuggestions(true);
       }
     }, 380);
 
@@ -683,7 +514,7 @@ const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, is
                 ) : smartSuggestion.kind === 'weather' ? <MdLocationOn aria-hidden="true" /> : <MdPublic aria-hidden="true" />}
               </span>
               <span className="bluefox-address-smart-copy">
-                <small>{smartSuggestion.kind === 'site' ? 'Entreprise ou site' : smartSuggestion.kind === 'weather' ? 'Météo actuelle' : smartSuggestion.kind === 'subject' ? 'Sujet illustré' : 'Ville reconnue'}</small>
+                <small>{smartSuggestion.kind === 'site' ? 'Entreprise ou site' : smartSuggestion.kind === 'weather' ? 'Météo actuelle' : smartSuggestion.kind === 'person' ? 'Personne' : smartSuggestion.kind === 'game' ? 'Jeu vidéo' : smartSuggestion.kind === 'subject' ? 'Sujet illustré' : smartSuggestion.kind === 'city' ? 'Ville reconnue' : 'Résultat reconnu'}</small>
                 <strong>{smartSuggestion.title}{smartSuggestion.country ? ` · ${smartSuggestion.country}` : ''}</strong>
                 <span>{smartSuggestion.weather?.temperature !== null && smartSuggestion.weather ? `${smartSuggestion.weather.temperature} °C · ${smartSuggestion.weather.description}` : smartSuggestion.admin || 'Voir les résultats sur le Web'}</span>
               </span>
