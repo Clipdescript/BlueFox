@@ -1,7 +1,7 @@
 {
   "name": "bluefox-browser",
   "private": true,
-  "version": "2.0.63",
+  "version": "2.0.64",
   "author": "BlueFox Team",
   "description": "Navigateur BlueFox - Rapide, Stable, Gaming",
   "main": "main.js",
@@ -19,6 +19,7 @@
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
+    "@huggingface/transformers": "^4.2.0",
     "electron-is-dev": "^3.0.1",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",

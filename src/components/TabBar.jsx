@@ -107,7 +107,8 @@ const TabBar = React.memo(({
   onNewTab,
   onTabsReorder,
   isSettingsOpen = false,
-  tabColor = '#f3f2f0'
+  tabColor = '#f3f2f0',
+  tabBackground = ''
 }) => {
   const [closingTabs, setClosingTabs] = useState(() => new Set());
   const [dragState, setDragState] = useState(null);
@@ -318,7 +319,7 @@ const TabBar = React.memo(({
   const draggedTab = dragState ? tabs.find((tab) => tab.id === dragState.id) : null;
 
   return (
-    <div className="drag-region bluefox-tab-bar flex h-12 items-center border-b border-[#d8d7d4] px-2 text-[#282828] select-none" style={{ '--bluefox-tab-color': tabColor }}>
+    <div className={`drag-region bluefox-tab-bar flex h-12 items-center border-b border-[#d8d7d4] px-2 text-[#282828] select-none ${tabBackground ? 'bluefox-tab-image-mode' : ''}`} style={{ '--bluefox-tab-color': tabColor, '--bluefox-tab-background-image': tabBackground || 'none' }}>
       <div className="relative no-drag flex h-full min-w-0 flex-1 items-center">
         {canScrollLeft && <button type="button" onClick={() => scrollTabs(-1)} className="absolute left-0 z-20 flex h-8 w-8 items-center justify-center rounded-full bluefox-tab-control-bg text-[#66676b] shadow-[2px_0_8px_rgba(0,0,0,0.08)] hover:bg-[#e8e7e4]" aria-label="Onglets précédents"><MdChevronLeft className="text-xl" /></button>}
         <div

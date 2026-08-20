@@ -16,6 +16,7 @@ import {
   MdArrowBack,
   MdArrowForward,
   MdMoreHoriz,
+  MdNorthEast,
   MdDownload,
   MdExpandMore,
   MdExtension,
@@ -45,6 +46,56 @@ import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_
 
 const ICON_COLOR = 'text-[#6d6e72]';
 const BLUEFOX_ADDONS_URL = 'https://bluefox-add-ons.pages.dev/';
+const ADDRESS_PLACEHOLDERS = [
+  'Rechercher ou saisir une URL',
+  'Rechercher avec Foxy',
+  'Trouver un site ou une information',
+  'Poser une question à Foxy'
+];
+let whisperPipelinePromise = null;
+
+const getWhisperPipeline = async (onProgress) => {
+  if (!whisperPipelinePromise) {
+    whisperPipelinePromise = import('@huggingface/transformers').then(({ env, pipeline }) => {
+      env.allowLocalModels = false;
+      env.useBrowserCache = true;
+      const files = new Map();
+      const reportProgress = (progress) => {
+        if (!onProgress || !progress) return;
+        if (progress.status === 'progress' || progress.status === 'done') {
+          const file = progress.file || 'model';
+          const total = Number(progress.total);
+          const loaded = progress.status === 'done' && Number.isFinite(total)
+            ? total
+            : Number(progress.loaded);
+          files.set(file, {
+            loaded: Number.isFinite(loaded) ? loaded : 0,
+            total: Number.isFinite(total) && total > 0 ? total : 0,
+            progress: Number(progress.progress) || 0
+          });
+          const entries = [...files.values()];
+          const totalBytes = entries.reduce((sum, entry) => sum + entry.total, 0);
+          const loadedBytes = entries.reduce((sum, entry) => sum + entry.loaded, 0);
+          const percent = totalBytes > 0
+            ? (loadedBytes / totalBytes) * 100
+            : Math.max(...entries.map((entry) => entry.progress), 0);
+          onProgress({ ...progress, progress: percent });
+          return;
+        }
+        onProgress(progress);
+      };
+      // The q8 decoder currently fails in ONNX Runtime on some Windows GPUs,
+      // while Whisper Small can exceed the available WASM memory on ordinary PCs.
+      // Base keeps local transcription reliable without a large allocation.
+      return pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+        dtype: 'fp32',
+        progress_callback: reportProgress
+      });
+    });
+  }
+  return whisperPipelinePromise;
+};
+
 const SecretAgentIcon = (props) => <FontAwesomeIcon icon={faUserSecret} {...props} />;
 
 const formatCompactAddress = (url) => {
@@ -69,15 +120,29 @@ const MenuRow = ({ icon: Icon, children, shortcut, onClick, className = '' }) =>
   </button>
 );
 
-const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isPageError = false, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
+const TopBar = React.memo(({ onSearch, onAskFoxy, currentUrl, currentFavicon, isAiMode, isSettingsOpen, isGame, isPageError = false, isOfflineFallback, showHomeButton, onHome, onReload, onBack, onForward, onAssistant, onSettings, onSettingsSection, onModeChange, isAssistantActive, isMenuOpen = false, onMenuChange, onNewTab, onOpenPdf, onPrint, onNewWindow, onNewPrivateWindow, onPlayGame, onZoomOut, onZoomIn, zoomFactor = 1, discordProfile, onDiscordLogin, onDiscordLogout }) => {
   const [inputVal, setInputVal] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
+  const [isInputDirty, setIsInputDirty] = useState(false);
   const [isFaviconBroken, setIsFaviconBroken] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [isPlaceholderVisible, setIsPlaceholderVisible] = useState(true);
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const [isDiscordProfileOpen, setIsDiscordProfileOpen] = useState(false);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
+  const [isWhisperPreparing, setIsWhisperPreparing] = useState(false);
+  const [whisperDownloadProgress, setWhisperDownloadProgress] = useState(null);
+  const [voiceError, setVoiceError] = useState('');
   const menuRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const voiceChunksRef = useRef([]);
+  const voiceStopTimerRef = useRef(null);
+  const voiceLiveTranscribingRef = useRef(false);
+  const voiceLastPreviewAtRef = useRef(0);
   const discordProfileRef = useRef(null);
 
   useEffect(() => {
@@ -91,7 +156,30 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
     };
   }, [suggestions]);
 
-  useEffect(() => setInputVal(currentUrl || ''), [currentUrl]);
+  useEffect(() => {
+    setInputVal(currentUrl || '');
+    setIsInputDirty(false);
+  }, [currentUrl]);
+  useEffect(() => {
+    if (isAddressFocused || currentUrl || inputVal) {
+      setIsPlaceholderVisible(false);
+      return undefined;
+    }
+
+    setIsPlaceholderVisible(true);
+    let transitionTimer = null;
+    const timer = window.setInterval(() => {
+      setIsPlaceholderVisible(false);
+      transitionTimer = window.setTimeout(() => {
+        setPlaceholderIndex((index) => (index + 1) % ADDRESS_PLACEHOLDERS.length);
+        setIsPlaceholderVisible(true);
+      }, 260);
+    }, 3200);
+    return () => {
+      window.clearInterval(timer);
+      if (transitionTimer) window.clearTimeout(transitionTimer);
+    };
+  }, [currentUrl, inputVal, isAddressFocused]);
   useEffect(() => setIsFaviconBroken(false), [currentFavicon, currentUrl, isAiMode, isSettingsOpen]);
   useEffect(() => {
     const handleSearchEngineChange = (event) => {
@@ -132,6 +220,146 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
     if (!discordProfile) setIsDiscordProfileOpen(false);
   }, [discordProfile]);
 
+  useEffect(() => () => {
+    if (voiceStopTimerRef.current) window.clearTimeout(voiceStopTimerRef.current);
+    mediaRecorderRef.current?.stop?.();
+    mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+    mediaRecorderRef.current = null;
+    mediaStreamRef.current = null;
+  }, []);
+
+  const stopVoiceRecorder = () => {
+    if (voiceStopTimerRef.current) {
+      window.clearTimeout(voiceStopTimerRef.current);
+      voiceStopTimerRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state === 'recording') recorder.stop();
+  };
+
+  const transcribeVoicePreview = async (chunks) => {
+    if (voiceLiveTranscribingRef.current || chunks.length < 2) return;
+    voiceLiveTranscribingRef.current = true;
+    let audioUrl = '';
+    try {
+      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+      audioUrl = URL.createObjectURL(audioBlob);
+      const transcriber = await getWhisperPipeline((progress) => {
+        if ((progress?.status === 'progress' || progress?.status === 'done') && Number.isFinite(Number(progress.progress))) {
+          setWhisperDownloadProgress(Math.max(0, Math.min(100, Math.round(Number(progress.progress)))));
+          if (progress.status === 'done') setIsWhisperPreparing(true);
+        }
+      });
+      setIsWhisperPreparing(false);
+      const result = await transcriber(audioUrl, { language: 'fr', task: 'transcribe' });
+      const transcript = String(result?.text || '').replace(/\s+/g, ' ').trim();
+      if (transcript) {
+        setInputVal(transcript);
+        setIsInputDirty(true);
+        setIsAddressFocused(true);
+      }
+    } catch {
+      // Partial chunks are sometimes not decodable yet; the final recording is retried on stop.
+    } finally {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      voiceLiveTranscribingRef.current = false;
+    }
+  };
+
+  const handleVoiceSearch = async () => {
+    if (isVoiceTranscribing) return;
+    if (isVoiceListening) {
+      stopVoiceRecorder();
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setVoiceError('La capture audio locale n’est pas disponible dans cette version.');
+      window.setTimeout(() => setVoiceError(''), 5000);
+      return;
+    }
+
+    setVoiceError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+      });
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus']
+        .find((type) => MediaRecorder.isTypeSupported?.(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      voiceChunksRef.current = [];
+      voiceLastPreviewAtRef.current = 0;
+      mediaStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (!event.data?.size) return;
+        voiceChunksRef.current.push(event.data);
+        const now = Date.now();
+        if (voiceChunksRef.current.length >= 2 && now - voiceLastPreviewAtRef.current >= 1500) {
+          voiceLastPreviewAtRef.current = now;
+          void transcribeVoicePreview([...voiceChunksRef.current]);
+        }
+      };
+      recorder.onerror = () => {
+        setVoiceError('La capture du microphone a échoué.');
+        setIsVoiceListening(false);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        setIsVoiceListening(false);
+        while (voiceLiveTranscribingRef.current) {
+          await new Promise((resolve) => window.setTimeout(resolve, 50));
+        }
+        const chunks = voiceChunksRef.current;
+        voiceChunksRef.current = [];
+        if (!chunks.length) {
+          setVoiceError('Aucune voix n’a été détectée.');
+          window.setTimeout(() => setVoiceError(''), 4000);
+          return;
+        }
+
+        setIsVoiceTranscribing(true);
+        setWhisperDownloadProgress(null);
+        try {
+          const audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const transcriber = await getWhisperPipeline((progress) => {
+            if ((progress?.status === 'progress' || progress?.status === 'done') && Number.isFinite(Number(progress.progress))) {
+              setWhisperDownloadProgress(Math.max(0, Math.min(100, Math.round(Number(progress.progress)))));
+              if (progress.status === 'done') setIsWhisperPreparing(true);
+            }
+          });
+          setIsWhisperPreparing(false);
+          const result = await transcriber(audioUrl, { language: 'fr', task: 'transcribe' });
+          URL.revokeObjectURL(audioUrl);
+          const transcript = String(result?.text || '').replace(/\s+/g, ' ').trim();
+          if (!transcript) throw new Error('Aucune phrase reconnue.');
+          setInputVal(transcript);
+          setShowSuggestions(false);
+          setIsAddressFocused(true);
+        } catch (error) {
+          setVoiceError(`Transcription impossible : ${error.message || 'erreur inconnue'}`);
+          window.setTimeout(() => setVoiceError(''), 6000);
+        } finally {
+          setWhisperDownloadProgress(null);
+          setIsWhisperPreparing(false);
+          setIsVoiceTranscribing(false);
+        }
+      };
+      recorder.start(250);
+      setIsVoiceListening(true);
+      voiceStopTimerRef.current = window.setTimeout(stopVoiceRecorder, 10000);
+    } catch (error) {
+      setIsVoiceListening(false);
+      setVoiceError(error.name === 'NotAllowedError'
+        ? 'Autorise l’accès au microphone pour utiliser la recherche vocale.'
+        : 'La capture du microphone a échoué.');
+      window.setTimeout(() => setVoiceError(''), 5000);
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (inputVal.length > 1 && document.activeElement?.tagName === 'INPUT') {
@@ -139,7 +367,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(inputVal)}&hl=fr`);
           if (response.ok) {
             const data = await response.json();
-            setSuggestions(data[1] || []);
+            setSuggestions((data[1] || []).slice(0, 8));
             setShowSuggestions(true);
           }
         } catch {
@@ -156,6 +384,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
+      setIsInputDirty(false);
       onSearch(inputVal);
       setShowSuggestions(false);
     }
@@ -163,6 +392,7 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
 
   const selectSuggestion = (suggestion) => {
     setInputVal(suggestion);
+    setIsInputDirty(false);
     onSearch(suggestion);
     setShowSuggestions(false);
   };
@@ -206,34 +436,51 @@ const TopBar = React.memo(({ onSearch, currentUrl, currentFavicon, isAiMode, isS
           ) : (
             <MdPublic className="bluefox-address-fallback-icon mr-2 h-[18px] w-[18px] shrink-0" aria-label="Site sans favicon" />
           )}
-          <input
-            type="text"
-            className="w-full bg-transparent text-[13px] text-[#292929] outline-none placeholder:text-[#77787b]"
-            placeholder="Rechercher ou saisir une adresse"
-            value={isAddressFocused ? inputVal : formatCompactAddress(currentUrl)}
-            onChange={(event) => setInputVal(event.target.value)}
-            onClick={(event) => event.currentTarget.select()}
-            onKeyDown={handleKeyDown}
-            onBlur={() => {
-              setIsAddressFocused(false);
-              setTimeout(() => setShowSuggestions(false), 200);
-            }}
-            onFocus={() => {
-              setIsAddressFocused(true);
-              if (inputVal.length > 1) setShowSuggestions(true);
-            }}
-          />
-          <button type="button" onClick={() => onSearch(inputVal)} className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Rechercher"><MdSearch className="text-[17px]" /></button>
-          <button type="button" className={`ml-0.5 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Recherche vocale"><MdMic className="text-[17px]" /></button>
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              className="relative z-10 w-full bg-transparent text-[13px] text-[#292929] outline-none placeholder:text-[#77787b]"
+              placeholder=""
+              value={isAddressFocused || isInputDirty ? inputVal : formatCompactAddress(currentUrl)}
+              onChange={(event) => {
+                setInputVal(event.target.value);
+                setIsInputDirty(true);
+              }}
+              onClick={(event) => event.currentTarget.select()}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                setIsAddressFocused(false);
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              onFocus={() => {
+                setIsAddressFocused(true);
+                if (inputVal.length > 1) setShowSuggestions(true);
+              }}
+            />
+            {!isAddressFocused && !currentUrl && !inputVal && <span key={placeholderIndex} className={`bluefox-address-placeholder pointer-events-none absolute inset-0 flex items-center text-[13px] text-[#77787b] ${isPlaceholderVisible ? 'is-visible' : 'is-leaving'}`} aria-hidden="true">{ADDRESS_PLACEHOLDERS[placeholderIndex]}</span>}
+          </div>
+          <button type="button" onClick={() => { setIsInputDirty(false); onSearch(inputVal); }} className={`ml-1 flex h-7 w-7 items-center justify-center rounded-full ${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`} aria-label="Rechercher"><MdSearch className="text-[17px]" /></button>
+          <button type="button" onClick={handleVoiceSearch} disabled={isVoiceTranscribing} className={`ml-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:cursor-wait ${isVoiceListening || isVoiceTranscribing ? 'bg-[#dff3f5] text-[#137b8b]' : `${ICON_COLOR} hover:bg-[#f0efed] hover:text-[#292929]`}`} aria-label={isVoiceTranscribing ? 'Transcription en cours' : isVoiceListening ? 'Arrêter la recherche vocale' : 'Recherche vocale'} aria-pressed={isVoiceListening} title={voiceError || (isVoiceTranscribing ? 'Transcription locale en cours…' : isVoiceListening ? 'Écoute en cours… Cliquez pour terminer' : 'Recherche vocale')}><MdMic className={`text-[17px] ${isVoiceListening || isVoiceTranscribing ? 'animate-pulse' : ''}`} /></button>
+          <span className="sr-only" aria-live="polite">{voiceError || (whisperDownloadProgress !== null ? `Téléchargement du modèle Whisper ${whisperDownloadProgress}%` : isWhisperPreparing ? 'Préparation du modèle Whisper' : isVoiceTranscribing ? 'Transcription locale en cours' : isVoiceListening ? 'Recherche vocale en cours' : '')}</span>
         </div>
+        {(voiceError || isVoiceListening || isVoiceTranscribing || isWhisperPreparing) && <div className={`absolute left-0 right-0 top-10 z-[110] rounded-b-[9px] border border-t-0 px-3 py-2 text-[11px] shadow-[0_8px_18px_rgba(32,33,36,0.10)] ${voiceError ? 'border-[#e5b9bd] bg-[#fff5f5] text-[#a33e49]' : 'border-[#b9dfe4] bg-[#f0fbfc] text-[#137b8b]'}`} role="status" aria-live="polite">
+          {voiceError || (whisperDownloadProgress !== null ? `Téléchargement du modèle Whisper : ${whisperDownloadProgress}%` : isWhisperPreparing ? 'Préparation du modèle Whisper…' : isVoiceTranscribing ? 'Transcription locale en cours…' : 'Écoute en cours… parle maintenant')}
+          {whisperDownloadProgress !== null && <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#d7edf0]"><span className="block h-full bg-[#16899b] transition-[width] duration-150" style={{ width: `${whisperDownloadProgress}%` }} /></div>}
+        </div>}
 
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && (suggestions.length > 0 || inputVal.trim()) && (
           <div className="bluefox-address-suggestions absolute left-0 right-0 top-9 z-[100] overflow-hidden rounded-b-[12px] border border-t-0 border-[#8fcbd4] bg-white/90 py-1.5 shadow-[0_16px_34px_rgba(32,33,36,0.14)]">
-            {suggestions.map((suggestion, index) => (
+            {inputVal.trim() && <button type="button" className="bluefox-address-suggestion bluefox-address-first-result flex w-full items-center px-3 py-2 text-left text-sm font-medium text-[#292929] transition-colors duration-150" onMouseDown={() => { setIsInputDirty(false); onSearch(inputVal.trim()); setShowSuggestions(false); }}>
+              <MdNorthEast className={`mr-3 ${ICON_COLOR}`} />Rechercher « {inputVal.trim()} »
+            </button>}
+            {suggestions.filter((suggestion) => suggestion.trim().toLocaleLowerCase() !== inputVal.trim().toLocaleLowerCase()).map((suggestion, index) => (
               <button type="button" key={`${suggestion}-${index}`} className="bluefox-address-suggestion flex w-full items-center px-3 py-2 text-left text-sm text-[#4f5054] transition-colors duration-150 hover:bg-[#eef8fa] hover:text-[#202124]" onMouseDown={() => selectSuggestion(suggestion)}>
                 <MdSearch className={`mr-3 ${ICON_COLOR}`} />{suggestion}
               </button>
             ))}
+            {inputVal.trim() && <button type="button" className="bluefox-address-foxy-action flex w-full items-center gap-2 border-t border-[#d9eef0] px-3 py-2 text-left text-sm font-medium text-[#137b8b] transition-colors hover:bg-[#eef8fa]" onMouseDown={() => { setIsInputDirty(false); onAskFoxy?.(inputVal.trim()); setShowSuggestions(false); }}>
+              <MdAutoAwesome className="text-[16px]" /> Demander à Foxy
+            </button>}
           </div>
         )}
       </div>

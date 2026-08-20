@@ -1294,6 +1294,21 @@ app.whenReady().then(() => {
     }
   }
 
+  // Allow microphone access only to BlueFox's own renderer for voice search.
+  // External webviews must not receive microphone permission automatically.
+  const isBlueFoxOrigin = (origin, webContents) => {
+    const candidate = String(origin || webContents?.getURL?.() || '');
+    return /^file:\/\//i.test(candidate)
+      || /^http:\/\/localhost(?::\d+)?/i.test(candidate)
+      || /^http:\/\/127\.0\.0\.1(?::\d+)?/i.test(candidate);
+  };
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    callback(permission === 'media' && isBlueFoxOrigin(details?.requestingOrigin, webContents));
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => (
+    permission === 'media' && isBlueFoxOrigin(requestingOrigin, webContents)
+  ));
+
   // Fix User-Agent globally for all sessions to prevent ERR_ABORTED on some sites
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
   

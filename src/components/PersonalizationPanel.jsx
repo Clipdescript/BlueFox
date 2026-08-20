@@ -416,7 +416,7 @@ const IMAGE_CATEGORIES = [
 
 const formatBackground = (value) => `${value} center / cover no-repeat`;
 
-const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabColor, onTabColorChange, resolvedTheme = 'light', onClose }) => {
+const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabColor, onTabColorChange, tabBackground = '', onTabBackgroundChange, resolvedTheme = 'light', onClose }) => {
   const [activeSection, setActiveSection] = useState('tabs');
   const [activeCategory, setActiveCategory] = useState(null);
   const [categoryImages, setCategoryImages] = useState({});
@@ -441,6 +441,15 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = () => setHomeBackground(`url("${reader.result}") center / cover no-repeat`);
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const selectTabBackground = (event) => {
+    const [file] = event.target.files || [];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => onTabBackgroundChange?.(`url(\"${reader.result}\")`);
     reader.readAsDataURL(file);
     event.target.value = '';
   };
@@ -502,7 +511,7 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
 
               {activeSection === 'tabs' ? (
                 <section className="bluefox-personalization-section" role="tabpanel">
-                  <div className="bluefox-section-heading"><h2>Choisir un style d’onglet</h2><p>La couleur s’applique à la barre des onglets et aux contrôles de la fenêtre.</p></div>
+                  <div className="bluefox-section-heading"><h2>Personnaliser les onglets</h2><p>Choisissez une couleur ou insérez une image en arrière-plan de la barre des onglets.</p></div>
                   <div className="bluefox-tab-palette-toolbar">
                     <span><strong>{availableTabStyles.length}</strong> couleurs disponibles</span>
                     <span>Choisissez une teinte ou créez la vôtre</span>
@@ -524,7 +533,12 @@ const PersonalizationPanel = ({ isOpen, homeBackground, setHomeBackground, tabCo
                     <input type="color" value={customTabColor} onChange={handleCustomTabColor} aria-label="Choisir une couleur personnalisée" />
                     {isCustomTabColor && <MdCheck aria-hidden="true" />}
                   </label>
-                  <button type="button" className="bluefox-reset-control" onClick={() => onTabColorChange(defaultTabColor)}>Réinitialiser les onglets</button>
+                  <label className={`bluefox-import-background bluefox-import-tab-background ${tabBackground ? 'is-selected' : ''}`}>
+                    {tabBackground ? <span className="bluefox-tab-background-preview" style={{ backgroundImage: tabBackground }} /> : <MdUpload aria-hidden="true" />}
+                    <span>{tabBackground ? 'Modifier l’image des onglets' : 'Insérer une image dans les onglets'}</span>
+                    <input type="file" accept="image/*" onChange={selectTabBackground} />
+                  </label>
+                  <button type="button" className="bluefox-reset-control" onClick={() => { onTabColorChange(defaultTabColor); onTabBackgroundChange?.(''); }}>Réinitialiser les onglets</button>
                 </section>
               ) : (
                 <section className="bluefox-personalization-section" role="tabpanel">

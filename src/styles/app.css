@@ -141,6 +141,9 @@ body {
 
 .bluefox-tab-bar {
   background-color: var(--bluefox-tab-color, #f3f2f0) !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)), var(--bluefox-tab-background-image, none) !important;
+  background-position: center;
+  background-size: cover;
   color: #282828;
 }
 
@@ -1807,6 +1810,35 @@ html[data-theme='dark'] ::-moz-selection {
 
 :root[data-theme='dark'] .bluefox-app .bluefox-tab-bar .bluefox-tab-visual .bluefox-tab-close:hover {
   background-color: #667386 !important;
+  color: #ffffff !important;
+}
+
+/* An imported tab image should remain visible behind the tab labels instead of
+ * being hidden by opaque tab tiles. */
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-visual {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(3px) saturate(110%);
+  -webkit-backdrop-filter: blur(3px) saturate(110%);
+}
+
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-visual.bluefox-tab-active {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.68) !important;
+  color: #ffffff !important;
+}
+
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-visual:hover,
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-visual.bluefox-tab-active:hover {
+  background-color: rgba(255, 255, 255, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-title,
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-close,
+.bluefox-tab-bar.bluefox-tab-image-mode .bluefox-tab-close svg {
   color: #ffffff !important;
 }
 

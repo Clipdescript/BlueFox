@@ -55,6 +55,30 @@
   --tw-ring-color: rgba(139, 92, 246, 0.28) !important;
 }
 
+/* The idle address bar cycles through helpful actions until the user focuses it. */
+.bluefox-address-placeholder {
+  opacity: 0;
+  transform: translateY(5px);
+  filter: blur(3px);
+  transition: opacity 260ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms ease;
+}
+
+.bluefox-address-placeholder.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.bluefox-address-placeholder.is-leaving {
+  opacity: 0;
+  transform: translateY(-5px);
+  filter: blur(4px);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-placeholder {
+  color: #a7aab2 !important;
+}
+
 /* Address suggestions share one soft surface with the address bar. */
 .bluefox-address-suggestions {
   transform-origin: top center;
@@ -76,13 +100,60 @@
 }
 
 :root[data-theme='light'] .bluefox-app .bluefox-address-suggestions {
-  border-color: #8fcbd4 !important;
-  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(169, 213, 221, 0.72) !important;
+  background: rgba(255, 255, 255, 0.70) !important;
+  box-shadow: 0 14px 30px rgba(32, 33, 36, 0.10) !important;
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-address-suggestions {
-  border-color: #66758a !important;
-  background: rgba(28, 34, 43, 0.96) !important;
+  border-color: rgba(167, 139, 250, 0.34) !important;
+  background: rgba(28, 34, 43, 0.72) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24) !important;
+}
+
+.bluefox-address-suggestions .bluefox-address-suggestion:hover {
+  background: rgba(255, 255, 255, 0.56) !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-suggestions .bluefox-address-suggestion:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+}
+
+.bluefox-address-suggestions .bluefox-address-first-result {
+  border-bottom: 0;
+  background: transparent;
+}
+
+.bluefox-address-suggestions .bluefox-address-foxy-action {
+  border-top: 0 !important;
+  background: transparent !important;
+  color: #30343a !important;
+}
+
+.bluefox-address-suggestions .bluefox-address-foxy-action:hover {
+  background: rgba(255, 255, 255, 0.56) !important;
+  color: #202124 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-suggestions .bluefox-address-first-result {
+  border-bottom-color: rgba(167, 139, 250, 0.22);
+  background: transparent !important;
+  color: #d7dbe2 !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-suggestions .bluefox-address-foxy-action:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+
+.bluefox-address-foxy-action {
+  border-top-color: rgba(169, 213, 221, 0.48) !important;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-address-foxy-action {
+  border-top-color: rgba(167, 139, 250, 0.24) !important;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Homepage cards keep a soft, quiet hover in both normal and image-backed modes. */

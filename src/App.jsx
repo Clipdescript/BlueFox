@@ -107,6 +107,7 @@ function App() {
   const [searchEngineId, setSearchEngineId] = useState(() => localStorage.getItem(SEARCH_ENGINE_STORAGE_KEY) || DEFAULT_SEARCH_ENGINE_ID);
   const [safeSearchEnabled, setSafeSearchEnabled] = useState(() => localStorage.getItem(SAFE_SEARCH_STORAGE_KEY) !== 'false');
   const [aiInitialPrompt, setAiInitialPrompt] = useState('');
+  const [aiInitialPromptTabId, setAiInitialPromptTabId] = useState(null);
   const [aiSidebarTabs, setAiSidebarTabs] = useState({});
   const [isSpotifyOpen, setIsSpotifyOpen] = useState(false);
   const [isYouTubeOpen, setIsYouTubeOpen] = useState(false);
@@ -142,6 +143,7 @@ function App() {
   const [musicPlayback, setMusicPlayback] = useState(null);
   const [activeSidebarApps, setActiveSidebarApps] = useState(new Set());
   const [tabColor, setTabColor] = useState(() => localStorage.getItem('bluefox_home_tab_color_v1') || (resolvedTheme === 'dark' ? '#1d2026' : '#f3f2f0'));
+  const [tabBackground, setTabBackground] = useState(() => localStorage.getItem('bluefox_tab_background_v1') || '');
   // Keep the clean-startup migration for tabs, but preserve the real browsing history.
   useEffect(() => {
      if (!hasCleanStartup) {
@@ -493,6 +495,11 @@ function App() {
   }, [homeBackground]);
 
   useEffect(() => {
+    if (tabBackground) localStorage.setItem('bluefox_tab_background_v1', tabBackground);
+    else localStorage.removeItem('bluefox_tab_background_v1');
+  }, [tabBackground]);
+
+  useEffect(() => {
     // Wake up active tab
     setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, hibernated: false } : t));
   }, [activeTabId]);
@@ -668,7 +675,9 @@ function App() {
       url = `${isLocalAddress ? 'http' : 'https'}://${url}`;
     }
 
-    const tab = { id: Date.now(), title: query, url, initialUrl: url, isSearching: true, favicon: '', isLoading: true, offlineFallback: !navigator.onLine, loadCount: 0 };
+    // Let the webview report a real navigation failure instead of trusting
+    // navigator.onLine, which can be false inside Electron while the site works.
+    const tab = { id: Date.now(), title: query, url, initialUrl: url, isSearching: true, favicon: '', isLoading: true, offlineFallback: false, loadCount: 0 };
     if (activeTabId === null) {
       setTabs([tab]);
       setActiveTabId(tab.id);
@@ -676,10 +685,35 @@ function App() {
     }
 
     setTabs(prev => prev.map(t => 
-      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isPdf: false, isSettings: false, isGame: false, title: query, favicon: '', isLoading: true, offlineFallback: !navigator.onLine, loadCount: (t.loadCount || 0) + 1 }
+      t.id === activeTabId          ? { ...t, url: url, initialUrl: url, isSearching: true, isPdf: false, isSettings: false, isGame: false, title: query, favicon: '', isLoading: true, offlineFallback: false, loadCount: (t.loadCount || 0) + 1 }
         : t
     ));
   }, [activeTabId, isAiMode, safeSearchEnabled, searchEngineId, tabs]);
+
+  const handleAskFoxyFromAddress = useCallback((question) => {
+    const prompt = String(question || '').trim().slice(0, 4000);
+    if (!prompt) return;
+
+    const existingAiTab = tabs.find((tab) => tab.isAi && !tab.isSearching);
+    const targetId = existingAiTab?.id || Date.now();
+    if (!existingAiTab) {
+      setTabs((currentTabs) => [...currentTabs, {
+        id: targetId,
+        title: 'Foxy IA',
+        url: '',
+        isSearching: false,
+        isAi: true,
+        isGame: false,
+        favicon: '',
+        isLoading: false
+      }]);
+    }
+    setAiInitialPrompt(prompt);
+    setAiInitialPromptTabId(targetId);
+    setIsSettingsOpen(false);
+    setIsAiMode(true);
+    setActiveTabId(targetId);
+  }, [tabs]);
 
   const handleAssistantToggle = useCallback(() => {
     if (activeTabId === null) return;
@@ -754,45 +788,10 @@ function App() {
       isAi: false,
       favicon: '',
       isLoading: true,
-      offlineFallback: !navigator.onLine
+      offlineFallback: false
     }]);
     setActiveTabId(id);
   }, []);
-
-  const openMusicInNewTab = useCallback((video) => {
-    const youtubeUrl = video?.youtubeUrl || (video?.id ? `https://www.youtube.com/watch?v=${video.id}` : '');
-    if (!youtubeUrl) return;
-    const existingMusicTab = tabs.find((tab) => tab.isMusic && (tab.musicVideoId === video.id || tab.url === youtubeUrl));
-    if (existingMusicTab) {
-      setActiveTabId(existingMusicTab.id);
-      setMusicPlayback((currentPlayback) => currentPlayback?.tabId === existingMusicTab.id
-        ? { ...currentPlayback, isPlaying: true }
-        : { videoId: video.id, tabId: existingMusicTab.id, isPlaying: true, position: 0, duration: 0 });
-      return;
-    }
-    const id = Date.now();
-    tabs.filter((tab) => tab.isSearching).forEach((tab) => {
-      const webview = webviewRefs.current[tab.id];
-      if (webview?.executeJavaScript) {
-        void webview.executeJavaScript('document.querySelector(\'video\')?.pause()', true).catch(() => {});
-      }
-    });
-    setMusicPlayback({ videoId: video.id, tabId: id, isPlaying: true, position: 0, duration: 0 });
-    setTabs(prev => [...prev, {
-      id,
-      title: video.title || 'YouTube',
-      musicVideoId: video.id,
-      url: youtubeUrl,
-      initialUrl: youtubeUrl,
-      isSearching: true,
-      isMusic: true,
-      isPdf: false,
-      isAi: false,
-      favicon: '',
-      isLoading: true,
-      offlineFallback: !navigator.onLine
-    }]);
-  }, [tabs]);
 
   const skipYouTubeAd = useCallback(async () => {
     const musicTab = musicPlayback?.tabId === null || musicPlayback?.tabId === undefined
@@ -1581,10 +1580,12 @@ function App() {
             onTabsReorder={handleTabsReorder}
             isSettingsOpen={isSettingsOpen}
             tabColor={tabColor}
+            tabBackground={tabBackground}
         />
 
         <TopBar 
             onSearch={handleSearch}
+            onAskFoxy={handleAskFoxyFromAddress}
             onAssistant={handleAssistantToggle}
             onSettings={handleSettingsOpen}
             onSettingsSection={handleSettingsOpen}
@@ -1598,7 +1599,7 @@ function App() {
             currentFavicon={activeTab?.favicon || ''}
             isGame={Boolean(activeTab?.isGame)}
             isPageError={Boolean(activeTab?.pageError)}
-            isOfflineFallback={Boolean(activeTab?.offlineFallback || (!isOnline && activeTab?.isLoading))}
+            isOfflineFallback={Boolean(activeTab?.offlineFallback)}
             onPlayGame={handleOpenGame}
             isAiMode={isAiMode}
             isSettingsOpen={isSettingsOpen}
@@ -1692,9 +1693,9 @@ function App() {
                    ) : (
                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-white text-sm text-[#77787c]">Chargement de Foxy…</div>}>
                          {isAiMode ? (
-                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={aiInitialPrompt} hideModeSwitch hideThemeToggle conversation={aiSidebarTabs[tab.id]?.conversation} conversationKey={tab.id} onConversationChange={updateAiConversation} onOpenMusic={openMusicInNewTab} onMusicControl={controlMusicInNewTab} musicPlayback={musicPlayback} onMusicPlaybackChange={handleMusicPlaybackChange} hasMusicTab={hasMusicTab} />
+                           <AiPage isAiMode={isAiMode} onModeChange={handleModeChange} initialPrompt={tab.id === aiInitialPromptTabId ? aiInitialPrompt : ''} submitInitialPrompt={tab.id === aiInitialPromptTabId} hideModeSwitch hideThemeToggle conversation={aiSidebarTabs[tab.id]?.conversation} conversationKey={tab.id} onConversationChange={updateAiConversation} onMusicControl={controlMusicInNewTab} musicPlayback={musicPlayback} onMusicPlaybackChange={handleMusicPlaybackChange} hasMusicTab={hasMusicTab} />
                          ) : (
-                           <SpeedDial onNavigate={handleSearch} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={tab.id === activeTabId && isPersonalizationOpen} onPersonalizationChange={handlePersonalizationChange} homeBackground={homeBackground} />
+                           <SpeedDial onNavigate={handleSearch} onAskFoxy={handleAskFoxyFromAddress} tabColor={tabColor} onTabColorChange={setTabColor} isPersonalizationOpen={tab.id === activeTabId && isPersonalizationOpen} onPersonalizationChange={handlePersonalizationChange} homeBackground={homeBackground} />
                          )}
                        </Suspense>
                    )}
@@ -1768,7 +1769,6 @@ function App() {
             currentUrl={activeTab?.url || ''}
             currentFavicon={activeTab?.favicon || ''}
             onAnswer={handlePdfAiAnswer}
-            onOpenMusic={openMusicInNewTab}
             onMusicControl={controlMusicInNewTab}
             musicPlayback={musicPlayback}
             onMusicPlaybackChange={handleMusicPlaybackChange}
@@ -1792,10 +1792,12 @@ function App() {
         <PersonalizationPanel
           isOpen={isPersonalizationOpen}
           homeBackground={homeBackground}
-          setHomeBackground={setHomeBackground}
-          tabColor={tabColor}
-          onTabColorChange={setTabColor}
-          resolvedTheme={resolvedTheme}
+          setHomeBackground={setHomeBackground}           tabColor={tabColor}
+           onTabColorChange={setTabColor}
+           tabBackground={tabBackground}
+           onTabBackgroundChange={setTabBackground}
+           resolvedTheme={resolvedTheme}
+
           onClose={() => handlePersonalizationChange(false)}
         />
       </Suspense>

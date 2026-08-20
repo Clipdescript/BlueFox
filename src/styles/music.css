@@ -113,41 +113,56 @@
 .bluefox-youtube-skip-ad:hover { background: #34363a; }
 .bluefox-youtube-skip-ad svg { width: 17px; height: 17px; }
 
-/* Lecteur musical de Foxy : l’audio est lu dans un onglet YouTube. */
-.foxy-music-conversation-player { width: min(100%, 760px); margin: 16px 0 4px; overflow: hidden; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; }
-.foxy-music-conversation-main { display: flex; min-width: 0; gap: 14px; padding: 12px; }
-.foxy-music-conversation-cover { width: 92px; height: 92px; flex: 0 0 92px; border-radius: 6px; background: #f1f1f1; object-fit: cover; }
+/* Lecteur musical de Foxy : carte légère, bleue et cohérente avec BlueFox. */
+.foxy-music-conversation-player { width: min(100%, 760px); margin: 16px 0 4px; overflow: hidden; border: 1px solid #d8e5f5; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(50, 104, 164, .08); transition: border-color 180ms ease, box-shadow 180ms ease; }
+.foxy-music-conversation-player:hover { border-color: #b8d1ee; box-shadow: 0 10px 28px rgba(50, 104, 164, .12); }
+.foxy-music-conversation-main { display: flex; min-width: 0; gap: 14px; padding: 13px; }
+.foxy-music-conversation-cover { width: 84px; height: 84px; flex: 0 0 84px; border-radius: 10px; background: #edf4fc; object-fit: cover; box-shadow: 0 2px 8px rgba(49, 95, 145, .12); }
+
 .foxy-music-conversation-copy { min-width: 0; flex: 1; }
-.foxy-music-conversation-heading { display: flex; min-width: 0; align-items: center; gap: 10px; }
-.foxy-music-conversation-icon { display: grid; width: 28px; height: 28px; place-items: center; flex: 0 0 28px; border-radius: 8px; background: #c9ddfb; color: #1769e8 !important; }
+.foxy-music-conversation-heading { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.foxy-music-conversation-icon { display: grid; width: 24px; height: 24px; place-items: center; flex: 0 0 24px; color: #4b91dc !important; font-size: 22px; }
 .foxy-music-conversation-heading div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.foxy-music-conversation-heading strong { color: #183b69 !important; font-size: 11px; }
-.foxy-music-conversation-heading span:not(.foxy-music-conversation-icon) { overflow: hidden; color: #41658f !important; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.foxy-music-conversation-progress { margin-top: 14px; }
-.foxy-music-conversation-progress input { display: block; width: 100%; height: 4px; accent-color: #9fc5f5; cursor: pointer; }
-.foxy-music-conversation-progress > div { display: flex; justify-content: space-between; margin-top: 5px; color: #52749f !important; font-size: 9px; }
-.foxy-music-conversation-controls { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
-.foxy-music-conversation-controls button { display: inline-flex; height: 28px; min-width: 28px; align-items: center; justify-content: center; gap: 4px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; color: #37699d !important; cursor: pointer; font-size: 10px; }
-.foxy-music-conversation-controls button:hover { background: #c9ddfb; color: #1259c4 !important; }
+.foxy-music-conversation-heading strong { color: #315f91 !important; font-size: 11px; font-weight: 700; }
+.foxy-music-conversation-heading span:not(.foxy-music-conversation-icon) { overflow: hidden; color: #6c819a !important; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.foxy-music-conversation-progress { margin-top: 13px; }
+.foxy-music-conversation-progress input { display: block; width: 100%; height: 3px; appearance: none; border-radius: 2px; background: linear-gradient(90deg, #6fa9e8 0 var(--music-progress, 0%), #e6eff9 var(--music-progress, 0%) 100%); cursor: pointer; outline: none; }
+.foxy-music-conversation-progress input::-webkit-slider-thumb { width: 9px; height: 9px; appearance: none; border: 1px solid #fff; border-radius: 50%; background: #5f9fe0; box-shadow: 0 1px 4px rgba(52, 105, 163, .25); }
+.foxy-music-conversation-progress input::-moz-range-thumb { width: 8px; height: 8px; border: 1px solid #fff; border-radius: 50%; background: #5f9fe0; box-shadow: 0 1px 4px rgba(52, 105, 163, .25); }
+.foxy-music-conversation-progress input:focus-visible { box-shadow: 0 0 0 3px rgba(95, 159, 224, .2); }
+.foxy-music-conversation-progress > div { display: flex; justify-content: space-between; margin-top: 6px; color: #7890aa !important; font-size: 9px; }
+.foxy-music-conversation-controls { display: flex; align-items: center; gap: 5px; margin-top: 9px; }
+.foxy-music-conversation-controls button { display: inline-flex; height: 30px; min-width: 30px; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 1px solid #d4e5f7; border-radius: 9px; background: #edf5fd; color: #4e80ad !important; cursor: pointer; font-family: Roboto, 'DM Sans', sans-serif; font-size: 10px; }
+.foxy-music-conversation-controls button:hover { background: #e3f0fc; color: #2e73b6 !important; }
 .foxy-music-conversation-controls button svg { width: 17px; height: 17px; }
-.foxy-music-conversation-controls button.is-main { width: 32px; height: 32px; border-radius: 50%; background: #9fc5f5; color: #fff !important; }
-.foxy-music-conversation-controls button.is-main:hover { background: #8bb7ed; color: #fff !important; }
-.foxy-music-conversation-controls button.foxy-music-conversation-open { min-width: 0; margin-left: auto; color: #1769e8 !important; font-weight: 650; }
+.foxy-music-conversation-controls button.is-main { width: 30px; height: 30px; border-radius: 9px; background: #dcecfb; color: #3f82c4 !important; box-shadow: none; }
+.foxy-music-conversation-controls button.is-main:hover { background: #d1e6f9; color: #2e73b6 !important; }
+.foxy-music-conversation-controls button.foxy-music-conversation-open { width: 30px; min-width: 30px; margin-left: auto; padding: 0; gap: 0; overflow: hidden; border: 1px solid #c5dcf3; border-radius: 9px; background: #edf5fd; color: #3178bb !important; font-family: Roboto, 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; white-space: nowrap; transition: width 160ms ease, min-width 160ms ease, padding 160ms ease, gap 160ms ease; }
+.foxy-music-conversation-controls button.foxy-music-conversation-open > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width 160ms ease, opacity 120ms ease; }
+.foxy-music-conversation-controls button.foxy-music-conversation-open:hover,
+.foxy-music-conversation-controls button.foxy-music-conversation-open:focus-visible { width: 78px; min-width: 78px; padding: 0 10px; gap: 6px; background: #e3f0fc; color: #23669f !important; }
+.foxy-music-conversation-controls button.foxy-music-conversation-open:hover > span,
+.foxy-music-conversation-controls button.foxy-music-conversation-open:focus-visible > span { max-width: 42px; opacity: 1; }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-youtube-skip-ad { border-color: #536fc4; background: linear-gradient(135deg, #294dba, #6b42b8); }
 :root[data-theme='dark'] .bluefox-app .bluefox-youtube-skip-ad:hover { background: linear-gradient(135deg, #3766e8, #8053d5); }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-player { border-color: #d9d9d9; background: #fff; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-cover { background: #f1f1f1; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-icon { background: rgba(174, 112, 255, .2); color: #d09aff !important; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-heading strong { color: #f4f6ff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-player { border-color: #31465e; background: #182536; box-shadow: 0 10px 26px rgba(0, 0, 0, .2); }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-player:hover { border-color: #45698f; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-cover { background: #22364d; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-icon { color: #8fc5f5 !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-heading strong { color: #e6f1ff !important; }
 :root[data-theme='dark'] .bluefox-app .foxy-music-conversation-heading span:not(.foxy-music-conversation-icon),
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress > div { color: #d7baf3 !important; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress input { accent-color: #9fc5f5; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button { color: #dfc5ff !important; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button:hover { background: rgba(177, 101, 255, .22); color: #f0ddff !important; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main { background: #9fc5f5; color: #fff !important; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main:hover { background: #8bb7ed; }
-:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.foxy-music-conversation-open { color: #d4a9ff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress > div { color: #9fb8d2 !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress input { background: linear-gradient(90deg, #78b5f0 0 var(--music-progress, 0%), #2a4058 var(--music-progress, 0%) 100%); }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress input::-webkit-slider-thumb { border-color: #182536; background: #8fc5f5; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-progress input::-moz-range-thumb { border-color: #182536; background: #8fc5f5; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button { border-color: #3a5875; background: #243d58; color: #b8d7f3 !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button:hover { background: #2d4c6c; color: #d9ecff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main { border-color: #41698e; background: #2a4d70; color: #a9d4f7 !important; box-shadow: none; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.is-main:hover { background: #345d84; color: #d4ecff !important; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.foxy-music-conversation-open { border-color: #47739d; background: #243d58; color: #9bc9f5 !important; font-family: Roboto, 'DM Sans', sans-serif; }
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.foxy-music-conversation-open:hover,
+:root[data-theme='dark'] .bluefox-app .foxy-music-conversation-controls button.foxy-music-conversation-open:focus-visible { background: #2d4c6c; color: #c5e3ff !important; }
 
 @media (max-width: 520px) {
   .foxy-music-conversation-cover { width: 70px; height: 70px; flex-basis: 70px; }

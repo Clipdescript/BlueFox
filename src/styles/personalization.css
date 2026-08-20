@@ -293,6 +293,10 @@
 .bluefox-custom-tab-color input { width: 36px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: transparent; cursor: pointer; }
 .bluefox-custom-tab-color > svg { width: 18px; height: 18px; color: #2563eb !important; }
 
+.bluefox-import-tab-background { position: relative; overflow: hidden; justify-content: flex-start; padding: 7px 10px; }
+.bluefox-import-tab-background.is-selected { border-style: solid; border-color: #7ca9ed; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+.bluefox-tab-background-preview { width: 54px; height: 30px; flex: 0 0 54px; border: 1px solid rgba(0, 0, 0, 0.14); border-radius: 6px; background-position: center; background-size: cover; box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.12); }
+
 .bluefox-reset-control { display: block; margin: 14px auto 0; border: 0; background: transparent; color: #777d87 !important; cursor: pointer; font-size: 12px; }
 .bluefox-reset-control:hover { color: #174ea6 !important; text-decoration: underline; }
 
@@ -364,6 +368,8 @@
 :root[data-theme='dark'] .bluefox-custom-tab-color { border-color: #3b414d; background: #292d35; }
 :root[data-theme='dark'] .bluefox-tab-style-label,
 :root[data-theme='dark'] .bluefox-custom-tab-color-copy strong { color: #f4f5f7 !important; }
+:root[data-theme='dark'] .bluefox-import-tab-background { border-color: #596273; color: #f4f5f7; }
+:root[data-theme='dark'] .bluefox-import-tab-background.is-selected { border-color: #8ca8e8; background: #303640; }
 :root[data-theme='dark'] .bluefox-custom-tab-color-copy small,
 :root[data-theme='dark'] .bluefox-tab-palette-toolbar { color: #aeb5c0 !important; }
 :root[data-theme='dark'] .bluefox-personalization-back:hover,

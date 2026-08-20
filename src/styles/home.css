@@ -135,8 +135,18 @@
   transition: background-color 160ms ease, color 160ms ease;
 }
 
-.bluefox-home-search-results button:hover { background: #f1f2f5; color: #202124; }
+.bluefox-home-search-results button:hover { background: rgba(255, 255, 255, 0.56); color: #202124; }
 .bluefox-home-search-results button > svg { width: 19px; height: 19px; flex: 0 0 19px; color: #30343a !important; }
+.bluefox-home-search-results .bluefox-home-search-foxy-action {
+  border-top: 1px solid rgba(169, 213, 221, 0.42);
+  background: rgba(255, 255, 255, 0.16);
+  color: #30343a;
+}
+.bluefox-home-search-results .bluefox-home-search-foxy-action > svg { color: #30343a !important; }
+.bluefox-home-search-results .bluefox-home-search-foxy-action:hover {
+  background: rgba(255, 255, 255, 0.56);
+  color: #202124;
+}
 .bluefox-home-search-results button > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .bluefox-home-search-results strong { overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .bluefox-home-search-results small { color: #8a9099; font-size: 11px; }
@@ -358,7 +368,18 @@
 }
 
 :root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results button:hover {
-  background: #303844 !important;
+  background: rgba(167, 139, 250, 0.13) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results .bluefox-home-search-foxy-action {
+  border-top-color: rgba(167, 139, 250, 0.24) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #cbbcff !important;
+}
+
+:root[data-theme='dark'] .bluefox-app .bluefox-reference-home .bluefox-home-search-results .bluefox-home-search-foxy-action:hover {
+  background: rgba(167, 139, 250, 0.16) !important;
   color: #ffffff !important;
 }
 

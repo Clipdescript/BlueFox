@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { MdApps, MdClose, MdPalette, MdPublic, MdSearch } from 'react-icons/md';
+import { MdApps, MdAutoAwesome, MdClose, MdNorthEast, MdPalette, MdPublic, MdSearch } from 'react-icons/md';
 import fetchJsonp from 'fetch-jsonp';
 import { useTheme } from '../utils/theme.js';
 import { DEFAULT_SEARCH_ENGINE_ID, getSearchEngine, getSearchEngineIcon, SEARCH_ENGINE_STORAGE_KEY } from '../utils/searchEngines.js';
@@ -214,7 +214,7 @@ const SuggestionCard = ({ article }) => (
   </a>
 );
 
-const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
+const SpeedDial = ({ onNavigate, onAskFoxy, tabColor, onTabColorChange, isPersonalizationOpen = false, onPersonalizationChange, homeBackground }) => {
   const { resolvedTheme } = useTheme();
   const [shortcuts, setShortcuts] = useState(readHomeShortcuts);
   const [homeSearch, setHomeSearch] = useState('');
@@ -309,7 +309,7 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
         const response = await fetchJsonp(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(query)}&hl=fr`);
         if (!cancelled && response.ok) {
           const data = await response.json();
-          setHomeSearchSuggestions(Array.isArray(data[1]) ? data[1].slice(0, 6) : []);
+          setHomeSearchSuggestions(Array.isArray(data[1]) ? data[1].slice(0, 4) : []);
         }
       } catch {
         if (!cancelled) setHomeSearchSuggestions([]);
@@ -490,9 +490,9 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
     submitHomeSearchValue(homeSearch);
   };
 
-  const homeSearchResults = homeSearchSuggestions.length > 0
-    ? homeSearchSuggestions
-    : (homeSearch.trim() ? [homeSearch.trim()] : []);
+  const homeSearchResults = homeSearch.trim()
+    ? [homeSearch.trim(), ...homeSearchSuggestions.filter((suggestion) => suggestion.trim().toLocaleLowerCase() !== homeSearch.trim().toLocaleLowerCase())]
+    : [];
   const activeSearchEngine = getSearchEngine(searchEngineId);
   const activeSearchEngineIcon = getSearchEngineIcon(activeSearchEngine);
 
@@ -577,10 +577,24 @@ const SpeedDial = ({ onNavigate, tabColor, onTabColorChange, isPersonalizationOp
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => submitHomeSearchValue(suggestion)}
                 >
-                  <MdSearch aria-hidden="true" />
-                  <span><strong>{suggestion}</strong>{index === 0 && <small>Recherche {activeSearchEngine.name}</small>}</span>
+                  {index === 0 ? <MdNorthEast aria-hidden="true" /> : <MdSearch aria-hidden="true" />}
+                  <span><strong>{suggestion}</strong></span>
                 </button>
               ))}
+              {homeSearch.trim() && <button
+                type="button"
+                className="bluefox-home-search-foxy-action"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  const question = homeSearch.trim();
+                  setIsHomeSearchFocused(false);
+                  setHomeSearchSuggestions([]);
+                  onAskFoxy?.(question);
+                }}
+              >
+                <MdAutoAwesome aria-hidden="true" />
+                <span><strong>Demander à Foxy</strong><small>Ouvrir dans le mode IA</small></span>
+              </button>}
             </div>
           )}
         </section>
