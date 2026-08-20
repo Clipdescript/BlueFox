@@ -364,6 +364,7 @@ function App() {
 
     let cancelled = false;
     let attempts = 0;
+    let blankChecks = 0;
     let retryTimer = null;
     const inspectLoadedPage = async () => {
       if (cancelled) return;
@@ -379,18 +380,30 @@ function App() {
         const isChromiumErrorPage = /^chrome-error:\/\//i.test(renderedUrl);
         const pageError = isChromiumErrorPage ? { description: 'La page interne d’erreur Chromium n’a pas pu charger le site.' } : await webview.executeJavaScript?.(`(() => {
           const text = (document.body?.innerText || '').slice(0, 5000);
-          const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"]')].some((element) => {
+          const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"], [role="application"]')].some((element) => {
             const rect = element.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 && (Boolean(element.innerText?.trim()) || ['IMG', 'VIDEO', 'CANVAS', 'IFRAME'].includes(element.tagName));
           });
-          const isError = /HTTP ERROR [45]\\d{2}/i.test(text)
-            || /ERR_(NAME_NOT_RESOLVED|CONNECTION|TIMED_OUT|INTERNET_DISCONNECTED)/i.test(text)
-            || /page du site .* est introuvable|page est introuvable|page n['’]existe pas/i.test(text);
-          return { isError, isBlank: document.readyState === 'complete' && !text.trim() && !meaningful };
+          // Do not classify arbitrary page copy as an error: services such as
+          // YouTube can contain these words in hidden templates or help text.
+          const isError = /HTTP ERROR [45]\\d{2}/i.test(text);
+          const hasRenderedBody = Boolean(document.body?.children.length);
+          return { isError, isBlank: document.readyState === 'complete' && !text.trim() && !meaningful && !hasRenderedBody };
         })()`, true);
-        if (pageError && (pageError.isError || pageError.isBlank || isChromiumErrorPage)) {
+        if (pageError?.isError || isChromiumErrorPage) {
           setTabs((currentTabs) => currentTabs.map((tab) => tab.id === activeTabId
             ? { ...tab, isLoading: false, offlineFallback: false, pageError: typeof pageError === 'object' ? pageError : { description: 'Page web introuvable.' } }
+            : tab));
+          return;
+        }
+        if (pageError?.isBlank) blankChecks += 1;
+        else blankChecks = 0;
+        // A blank body can be a normal intermediate state for React, canvas and
+        // iframe applications. Only treat it as an error after it stays empty
+        // across several completed inspections.
+        if (blankChecks >= 5) {
+          setTabs((currentTabs) => currentTabs.map((tab) => tab.id === activeTabId
+            ? { ...tab, isLoading: false, offlineFallback: false, pageError: { isBlank: true, description: 'La page est restée vide.' } }
             : tab));
           return;
         }
@@ -1036,16 +1049,16 @@ function App() {
                       const pageError = await webview.executeJavaScript(`(() => {
                         const title = document.title || '';
                         const text = (document.body?.innerText || '').slice(0, 5000);
-                        const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"]')].some((element) => {
+                        const meaningful = [...document.querySelectorAll('h1, h2, h3, p, a, img, video, canvas, iframe, main, article, [role="main"], [role="application"]')].some((element) => {
                           const rect = element.getBoundingClientRect();
                           return rect.width > 0 && rect.height > 0 && (Boolean(element.innerText?.trim()) || ['IMG', 'VIDEO', 'CANVAS', 'IFRAME'].includes(element.tagName));
                         });
+                        // Rely on Chromium's error URL and main-frame load events
+                        // for network failures. Only a clear HTTP status in the
+                        // document title is treated as a site error here.
                         const isError = /HTTP ERROR [45]\\d{2}/i.test(text)
-                          || /ERR_(NAME_NOT_RESOLVED|CONNECTION|TIMED_OUT|INTERNET_DISCONNECTED)/i.test(text)
-                          || /page du site .* est introuvable|page est introuvable|page n['’]existe pas/i.test(text)
                           || /^(404|403|500|502|503|504)\\b/.test(title.trim());
-                        const isBlank = document.readyState === 'complete' && !text.trim() && !meaningful;
-                        return (isError || isBlank) ? { title, text: text.slice(0, 240), isBlank } : null;
+                        return isError ? { title, text: text.slice(0, 240), isBlank: false } : null;
                       })()`, true);
                       if (pageError) {
                           setTabs(prev => prev.map(t => t.id === tab.id
@@ -1068,14 +1081,25 @@ function App() {
                   void detectPageError();
               });
               webview.addEventListener('did-fail-load', (e) => {
-                  // Ignore harmless aborts and common errors
-                  if (e.errorCode !== -3) {
+                  // Subresource and iframe failures must never replace a working
+                  // page. Only the main-frame navigation can show the fallback.
+                  if (e.isMainFrame === true && e.errorCode !== -3) {
+                      const currentUrl = typeof webview.getURL === 'function' ? webview.getURL() : '';
+                      const failedUrl = e.validatedURL || e.url || '';
+                      const isStaleNavigationFailure = currentUrl && failedUrl
+                        && !/^chrome-error:\/\//i.test(currentUrl)
+                        && currentUrl !== failedUrl;
+                      if (isStaleNavigationFailure) return;
                       const shouldShowOfflineGame = !navigator.onLine || isNetworkLoadError(e);
+                      // Non-network failures can be caused by a redirect,
+                      // sub-navigation or a site-specific response. Leave the
+                      // webview visible instead of replacing a usable page.
+                      if (!shouldShowOfflineGame) return;
                       setTabs(prev => prev.map(t => t.id === tab.id
-                        ? { ...t, isLoading: false, offlineFallback: shouldShowOfflineGame, pageError: shouldShowOfflineGame ? null : { code: e.errorCode, description: e.errorDescription } }
+                        ? { ...t, isLoading: false, offlineFallback: true, pageError: null }
                         : t));
                       setLoading(false);
-                      console.log('Webview load failed:', e.errorCode, e.errorDescription);
+                      console.log('Webview network load failed:', e.errorCode, e.errorDescription);
                   }
               });
               
@@ -1634,7 +1658,7 @@ function App() {
                          />
                        </Suspense>
                    ) : tab.isSearching ? (
-                         (tab.offlineFallback || (!isOnline && tab.isLoading)) ? (
+                         tab.offlineFallback ? (
                            tab.id === activeTabId ? (
                              <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-[#f7f9fc] text-sm text-[#667085]">Chargement du mini-jeu hors ligne…</div>}>
                                <OfflineGame attemptedUrl={tab.url} errorKind="offline" onRetry={handleOfflineRetry} onGoHome={goHome} />
